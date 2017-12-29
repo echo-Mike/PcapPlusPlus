@@ -223,6 +223,9 @@ bool Packet::insertLayer(Layer* prevLayer, Layer* newLayer)
 		return false;
 	}
 
+	if (!m_RawPacket->isPacketSet())
+		reallocateRawData(m_MaxPacketLen);
+
 	if (m_RawPacket->getRawDataLen() + newLayer->getHeaderLen() > m_MaxPacketLen)
 	{
 		// reallocate to maximum value of: twice the max size of the packet or max size + new required length

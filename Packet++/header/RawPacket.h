@@ -216,6 +216,15 @@ namespace pcpp
 	 * This class holds the packet as raw (not parsed) data. The data is held as byte array. In addition to the data itself
 	 * every instance also holds a timestamp representing the time the packet was received by the NIC.
 	 * RawPacket instance isn't read only. The user can change the packet data, add or remove data, etc.
+	 * This class has the null-object state in which any object can be set to by call to clear member function.
+	 * Owning rules of underlying data:  
+	 * * Objects in null-state don't own anything;  
+	 * * Objects created by copy from other owns their copy of underlying data;  
+	 * * Move operation transfers owning state from one object to another (a.e. if object from which move was made owns it's data then object to which move was made now owns this data and vise-versa);  
+	 * * Object from which move was made is a object in null-state;  
+	 * * Underlying data is freed on object deconstruction only if object owns it;  
+	 * * appendData, insertData and removeData operations doesn't change owning state;  
+	 * * Object which data was reallocated using reallocateData owns it's underlying data.  
 	 */
 	class RawPacket
 	{
@@ -224,16 +233,60 @@ namespace pcpp
 		int m_RawDataLen;
 		int m_FrameLength;
 		timeval m_TimeStamp;
+		LinkLayerType m_linkLayerType;
 		bool m_DeleteRawDataAtDestructor;
 		bool m_RawPacketSet;
-		LinkLayerType m_linkLayerType;
-		void Init();
+
+		/**
+		 * @brief Setups RawPacket object to a null-state.
+		 * Basically zeroes all fields, no data is touched.\n
+		 * m_TimeStamp field isn't touched either.\n
+		 * Both SafeToDeleteDataCondition and SafeToCopyDataCondition evaluate to false after this function call on the object.
+		 */
+		void initialize();
+
+		/**
+		 * @brief Makes current object a copy of the other.
+		 * Will not make anything if other don't satisfy SafeToCopyDataCondition requirements.
+		 * @param[in] other Object to make copy from.
+		 * @param[in] allocateData If true new memory for data is allocated otherwise old memory is used.
+		 */
 		void copyDataFrom(const RawPacket& other, bool allocateData = true);
+
+		/**
+		 * @brief Moves data from other.
+		 * Deallocates current data if it is safe. Underlying raw data is not copied.\n
+		 * other is set to the null-state - state after default construction.
+		 * @param[in:out] other Object to move from.
+		 */
+		void moveDataFrom(RawPacket&& other);
+
+		/**
+		 * @brief Checks the condition in which underlying raw data may be safely deallocated.
+		 * @return true if condition is satisfied, false otherwise.
+		 */
+		inline bool SafeToDeleteDataCondition() const { return m_DeleteRawDataAtDestructor && m_RawPacketSet && static_cast<bool>(m_pRawData) && m_RawDataLen > 0; }
+		
+		/**
+		 * @brief Checks the condition in which underlying raw data may be safely copied to another object.
+		 * @return true if condition is satisfied, false otherwise.
+		 */
+		inline bool SafeToCopyDataCondition() const { return m_RawPacketSet && static_cast<bool>(m_pRawData) && m_RawDataLen > 0; }
+	
 	public:
+
+		/**
+		 * @brief A default constructor that initializes class'es attributes to default value.
+		 * Internally calls initialize member function.
+		 * @todo timestamp isn't set here to a default value
+		 */
+		RawPacket();
+
 		/**
 		 * A constructor that receives a pointer to the raw data (allocated elsewhere). This constructor is usually used when packet
 		 * is captured using a packet capturing engine (like libPcap. WinPcap, PF_RING, etc.). The capturing engine allocates the raw data
-		 * memory and give the user a pointer to it + a timestamp it has arrived to the device
+		 * memory and give the user a pointer to it + a timestamp it has arrived to the device.
+		 * If provided pRawData is nullptr or rawDataLen is less than 1 object is set to the null-state.
 		 * @param[in] pRawData A pointer to the raw data
 		 * @param[in] rawDataLen The raw data length in bytes
 		 * @param[in] timestamp The timestamp packet was received by the NIC
@@ -244,135 +297,175 @@ namespace pcpp
 		RawPacket(const uint8_t* pRawData, int rawDataLen, timeval timestamp, bool deleteRawDataAtDestructor, LinkLayerType layerType = LINKTYPE_ETHERNET);
 
 		/**
-		 * A default constructor that initializes class'es attributes to default value:
-		 * - data pointer is set to NULL
-		 * - data length is set to 0
-		 * - deleteRawDataAtDestructor is set to 'true'
-		 * @todo timestamp isn't set here to a default value
-		 */
-		RawPacket();
-
-		/**
-		 * A destructor for this class. Frees the raw data if deleteRawDataAtDestructor was set to 'true'
-		 */
-		virtual ~RawPacket();
-
-		/**
-		 * A copy constructor that copies all data from another instance. Notice all raw data is copied (using memcpy), so when the original or
-		 * the other instance are freed, the other won't be affected
-		 * @param[in] other The instance to copy from
+		 * @brief Copy constructor that copies all data from another instance.
+		 * Notice all raw data is copied (using std::memcpy), so when the original or
+		 * the other instance are freed, the other won't be affected.\n
+		 * Sets the new object to the null-state and internally calls copyDataFrom member function.\n
+		 * Data of other may not be copied if other don't satisfy SafeToCopyDataCondition.
+		 * @param[in] other The instance to make copy of.
 		 */
 		RawPacket(const RawPacket& other);
 
 		/**
-		 * Assignment operator overload for this class. When using this operator on an already initialized RawPacket instance,
-		 * the original raw data is freed first. Then the other instance is copied to this instance, the same way the copy constructor works
-		 * @todo free raw data only if deleteRawDataAtDestructor was set to 'true'
-		 * @param[in] other The instance to copy from
+		 * @brief Assignment operator of this class.
+		 * When using this operator on an already initialized RawPacket instance,
+		 * the original raw data is freed first. Then the other instance is copied to 
+		 * this instance, the same way the copy constructor works.
+		 * Data of other may not be copied if other don't satisfy SafeToCopyDataCondition.
+		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
+		 * @param[in] other The instance to make copy of.
 		 */
 		RawPacket& operator=(const RawPacket& other);
 
 		/**
-		 * Set a raw data. If data was already set and deleteRawDataAtDestructor was set to 'true' the old data will be freed first
+		 * @brief Move constructor that moves all data from another instance.
+		 * Notice no raw data is copied all other data members are copied.\n
+		 * Sets the new object to the null-state and internally calls moveDataFrom member function.\n
+		 * other object is set to the null-state.
+		 * @param[in] other The instance to move from.
+		 */
+		RawPacket(RawPacket&& other);
+
+		/**
+		 * @brief Move assignment operator of this class.
+		 * When using this operator on an already initialized RawPacket instance,
+		 * the original raw data is freed first if it is safe. Then the data of other instance 
+		 * is moved to this instance, the same way the move constructor works.\n
+		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
+		 * @param[in] other The instance to move from.
+		 */
+		RawPacket& operator=(RawPacket&& other);
+
+		/**
+		 * @brief Virtual destructor of this class.
+		 * Frees the raw data if SafeToDeleteDataCondition is satisfied.
+		 */
+		virtual ~RawPacket();
+
+		/**
+		 * @brief Sets provided raw data as new data to handle. 
+		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
+		 * If provided pRawData is nullptr or rawDataLen less than 1 nothing happens with data and false is returned.
 		 * @param[in] pRawData A pointer to the new raw data
 		 * @param[in] rawDataLen The new raw data length in bytes
 		 * @param[in] timestamp The timestamp packet was received by the NIC
 		 * @param[in] layerType The link layer type for this raw data
 		 * @param[in] frameLength When reading from pcap files, sometimes the captured length is different from the actual packet length. This parameter represents the packet 
 		 * length. This parameter is optional, if not set or set to -1 it is assumed both lengths are equal
-		 * @return True if raw data was set successfully, false otherwise
+		 * @return true if raw data was set successfully, false otherwise.
 		 */
 		virtual bool setRawData(const uint8_t* pRawData, int rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, int frameLength = -1);
 
 		/**
-		 * Get raw data pointer
-		 * @return A pointer to the raw data
+		 * @brief Method to get raw data pointer.
+		 * This overload is called if object is not const-qualified.
+		 * @return A pointer to the raw data.
 		 */
-		const uint8_t* getRawData();
+		inline uint8_t* getRawData() { return m_pRawData; }
 
 		/**
-		 * Get read only raw data pointer
-		 * @return A read-only pointer to the raw data
-		 */
-		const uint8_t* getRawDataReadOnly() const;
+		* @brief Method to get raw data pointer.
+		* This overload is called if object is const-qualified.
+		* @return A pointer to the const-qualified raw data.
+		*/
+		inline const uint8_t* getRawData() const { return m_pRawData; }
 
 		/**
-		 * Get the link layer tpye
-		 * @return the type of the link layer
+		 * @brief Method to get raw data pointer.
+		 * Same as call to getRawData member function of const object.
+		 * @return A pointer to the const-qualified raw data.
 		 */
-		LinkLayerType getLinkLayerType() const;
+		inline const uint8_t* getRawDataReadOnly() const { return m_pRawData; }
 
 		/**
-		 * Get raw data length in bytes
-		 * @return Raw data length in bytes
+		 * @brief Method to get the link layer tpye.
+		 * @return The type of the link layer.
 		 */
-		int getRawDataLen() const;
+		inline LinkLayerType getLinkLayerType() const { return m_linkLayerType; }
 
 		/**
-		 * Get frame length in bytes
-		 * @return frame length in bytes
+		 * @brief Method to get raw data length in bytes.
+		 * @return Raw data length in bytes.
 		 */
-		int getFrameLength() const;
-		/**
-		 * Get raw data timestamp
-		 * @return Raw data timestamp
-		 */
-		timeval getPacketTimeStamp();
+		inline int getRawDataLen() const { return m_RawDataLen; }
 
 		/**
-		 * Get an indication whether raw data was already set for this instance.
+		 * @brief Method to get frame length in bytes.
+		 * @return Frame length in bytes.
+		 */
+		inline int getFrameLength() const { return m_FrameLength; }
+
+		/**
+		 * @brief Method to get raw data timestamp.
+		 * @return Raw data timestamp.
+		 */
+		inline timeval getPacketTimeStamp() const { return m_TimeStamp; }
+
+		/**
+		 * @brief Method to get an indication whether raw data was already set for this instance.
 		 * @return True if raw data was set for this instance. Raw data can be set using the non-default constructor, using setRawData(), using
 		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
-		 * default constructor or clear() was called
+		 * default constructor or clear() was called.
 		 */
-		inline bool isPacketSet() { return m_RawPacketSet; }
+		inline bool isPacketSet() const { return static_cast<bool>(m_RawPacketSet); }
 
 		/**
-		 * Clears all members of this instance, meaning setting raw data to NULL, raw data length to 0, etc. Currently raw data is always freed,
-		 * even if deleteRawDataAtDestructor was set to 'false'
-		 * @todo deleteRawDataAtDestructor was set to 'true', don't free the raw data
+		 * @brief Clears all members of this instance.
+		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
+		 * Then internally calls initialize member function.
+		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
 		 * @todo set timestamp to a default value as well
 		 */
 		virtual void clear();
 
 		/**
-		 * Append data to the end of current data. This method works without allocating more memory, it just uses memcpy() to copy dataToAppend at
-		 * the end of the current data. This means that the method assumes this memory was already allocated by the user. If it isn't the case then
-		 * this method will cause memory corruption
-		 * @param[in] dataToAppend A pointer to the data to append to current raw data
-		 * @param[in] dataToAppendLen Length in bytes of dataToAppend
+		 * @brief Append data to the end of current data. 
+		 * This method works without allocating more memory, it just uses std::memmove() to copy dataToAppend at
+		 * the end of the current data. This means that the method assumes this memory was already allocated by the user. 
+		 * If it isn't the case then this method will cause memory corruption.\n
+		 * This method can safely append data (by copy) from current packet to itself.
+		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
+		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
 		 */
 		virtual void appendData(const uint8_t* dataToAppend, size_t dataToAppendLen);
 
 		/**
-		 * Insert new data at some index of the current data and shift the remaining old data to the end. This method works without allocating more memory,
-		 * it just copies dataToAppend at the relevant index and shifts the remaining data to the end. This means that the method assumes this memory was
-		 * already allocated by the user. If it isn't the case then this method will cause memory corruption
-		 * @param[in] atIndex The index to insert the new data to
-		 * @param[in] dataToInsert A pointer to the new data to insert
-		 * @param[in] dataToInsertLen Length in bytes of dataToInsert
+		 * @brief Insert new data before some index of the current data and shift the remaining old data to the end. 
+		 * This method works without allocating more memory, it just copies dataToAppend 
+		 * at the relevant index and shifts the remaining data to the end. 
+		 * This means that the method assumes this memory was already allocated by the user. 
+		 * If it isn't the case then this method will cause memory corruption.\n
+		 * This method can't safely insert data from current packet to itself. dataToInsert must not point to any memory from current packet.\n
+		 * Nothing is done if atIndex is less than 0 or dataToInsertLen equals 0.
+		 * @param[in] atIndex The index to insert the new data to. dataToInsert is begins on atIndex after the insertion happens.
+		 * @param[in] dataToInsert A pointer to the new data to insert.
+		 * @param[in] dataToInsertLen Length in bytes of dataToInsert.
 		 */
 		virtual void insertData(int atIndex, const uint8_t* dataToInsert, size_t dataToInsertLen);
 
 		/**
-		 * Remove certain number of bytes from current raw data buffer. All data after the removed bytes will be shifted back
-		 * @param[in] atIndex The index to start removing bytes from
-		 * @param[in] numOfBytesToRemove Number of bytes to remove
-		 * @return True if all bytes were removed successfully, or false if atIndex+numOfBytesToRemove is out-of-bounds of the raw data buffer
-		 */
-		virtual bool removeData(int atIndex, size_t numOfBytesToRemove);
-
-		/**
-		 * Re-allocate raw packet buffer meaning add size to it without losing the current packet data. This method allocates the required buffer size as instructed
-		 * by the use and then copies the raw data from the current allocated buffer to the new one. This method can become useful if the user wants to insert or
-		 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to allocate a larger buffer and get RawPacket instance to
-		 * point to it
-		 * @param[in] newBufferLength The new buffer length as required by the user. The method is responsible to allocate the memory
-		 * @return True if data was reallocated successfully, false otherwise
+		 * @brief Re-allocate raw packet buffer meaning add size to it without losing the current packet data.
+		 * This method allocates the required buffer size as instructed by the user and then copies the raw data 
+		 * from the current allocated buffer to the new one. This method can become useful if the user wants to insert or
+		 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to 
+		 * allocate a larger buffer and get RawPacket instance to point to it.\n
+		 * Frees the raw data only if SafeToDeleteDataCondition is satisfied.\n
+		 * Copies previous data only if SafeToDeleteDataCondition is satisfied.
+		 * @param[in] newBufferLength The new buffer length as required by the user.
+		 * @return true if data was reallocated successfully, false otherwise.
 		 */
 		virtual bool reallocateData(size_t newBufferLength);
-	};
 
+		/**
+		 * @brief Remove certain number of bytes from current raw data buffer.
+		 * All data after the removed bytes will be shifted back.\n
+		 * Fails if atIndex is less than 0 or end of data to remove (atIndex + numOfBytesToRemove) exceeds known length of data.
+		 * @param[in] atIndex The index to start removing bytes from.
+		 * @param[in] numOfBytesToRemove Number of bytes to remove.
+		 * @return true if all bytes were removed successfully, or false otherwise.
+		 */
+		virtual bool removeData(int atIndex, size_t numOfBytesToRemove);
+	};
 } // namespace pcpp
 
 #endif
