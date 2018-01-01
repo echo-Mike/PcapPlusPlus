@@ -2,6 +2,7 @@
 #define PCAPPP_RAW_PACKET
 
 #include <stdint.h>
+#include <utility>
 #ifdef _MSC_VER
 #include <WinSock2.h>
 #else
@@ -219,12 +220,13 @@ namespace pcpp
 	 * This class has the null-object state in which any object can be set to by call to clear member function.
 	 * Owning rules of underlying data:  
 	 * * Objects in null-state don't own anything;  
-	 * * Objects created by copy from other owns their copy of underlying data;  
+	 * * Objects created by copy from other own their copy of underlying data;  
 	 * * Move operation transfers owning state from one object to another (a.e. if object from which move was made owns it's data then object to which move was made now owns this data and vise-versa);  
 	 * * Object from which move was made is a object in null-state;  
 	 * * Underlying data is freed on object deconstruction only if object owns it;  
 	 * * appendData, insertData and removeData operations doesn't change owning state;  
 	 * * Object which data was reallocated using reallocateData owns it's underlying data.  
+	 * 
 	 */
 	class RawPacket
 	{
@@ -364,10 +366,10 @@ namespace pcpp
 		inline uint8_t* getRawData() { return m_pRawData; }
 
 		/**
-		* @brief Method to get raw data pointer.
-		* This overload is called if object is const-qualified.
-		* @return A pointer to the const-qualified raw data.
-		*/
+		 * @brief Method to get raw data pointer.
+		 * This overload is called if object is const-qualified.
+		 * @return A pointer to the const-qualified raw data.
+		 */
 		inline const uint8_t* getRawData() const { return m_pRawData; }
 
 		/**
@@ -378,7 +380,7 @@ namespace pcpp
 		inline const uint8_t* getRawDataReadOnly() const { return m_pRawData; }
 
 		/**
-		 * @brief Method to get the link layer tpye.
+		 * @brief Method to get the link layer type.
 		 * @return The type of the link layer.
 		 */
 		inline LinkLayerType getLinkLayerType() const { return m_linkLayerType; }
@@ -402,12 +404,38 @@ namespace pcpp
 		inline timeval getPacketTimeStamp() const { return m_TimeStamp; }
 
 		/**
+		 * @brief Method to reset raw data timestamp.
+		 * Works by swapping provided and current values.
+		 * @return Previous raw data timestamp.
+		 */
+		inline timeval& resetPacketTimeStamp(timeval& timestamp) { std::swap(m_TimeStamp, timestamp); return timestamp; }
+
+		/**
+		 * @brief Method to reset raw data timestamp.
+		 * Compiler calls this overload if timestamp directly returned from function call or explicitly moved
+		 */
+		inline void resetPacketTimeStamp(timeval&& timestamp) { m_TimeStamp = timestamp; }
+
+		/**
 		 * @brief Method to get an indication whether raw data was already set for this instance.
 		 * @return True if raw data was set for this instance. Raw data can be set using the non-default constructor, using setRawData(), using
 		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
 		 * default constructor or clear() was called.
 		 */
 		inline bool isPacketSet() const { return static_cast<bool>(m_RawPacketSet); }
+
+		/**
+		 * @brief Method to check if current object is in the null-state.
+		 * @return true if object NOT in the null-state, false otherwise.
+		 */
+		inline operator bool() const { return m_RawDataLen || m_FrameLength || m_pRawData || m_RawPacketSet || m_DeleteRawDataAtDestructor || m_linkLayerType != LINKTYPE_ETHERNET; }
+
+		/**
+		 * @brief Method to check if current object is in the null-state.
+		 * Basically the negation of operator bool call.
+		 * @return true if object is in the null-state, false otherwise.
+		 */
+		inline bool isInNullState() const { return !(*this); }
 
 		/**
 		 * @brief Clears all members of this instance.
@@ -429,6 +457,18 @@ namespace pcpp
 		 */
 		virtual void appendData(const uint8_t* dataToAppend, size_t dataToAppendLen);
 
+		/**
+		 * @brief Insert array of zeros before some index of the current data and shift the remaining old data to the end.
+		 * This method works without allocating more memory, it just adds array of zeros
+		 * at the relevant index and shifts the remaining data to the end.
+		 * This means that the method assumes this memory was already allocated by the user.
+		 * If it isn't the case then this method will cause memory corruption.\n
+		 * Nothing is done if atIndex is less than 0 or dataToInsertLen equals 0.
+		 * @param[in] atIndex The index to insert the new data to.
+		 * @param[in] dataToInsertLen Length in bytes of array of zeros.
+		 */
+		virtual void insertData(int atIndex, size_t dataToInsertLen);
+		
 		/**
 		 * @brief Insert new data before some index of the current data and shift the remaining old data to the end. 
 		 * This method works without allocating more memory, it just copies dataToAppend 

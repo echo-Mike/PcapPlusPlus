@@ -203,6 +203,21 @@ void RawPacket::appendData(const uint8_t* dataToAppend, size_t dataToAppendLen)
 	m_FrameLength = m_RawDataLen;
 }
 
+void RawPacket::insertData(int atIndex, size_t dataToInsertLen)
+{
+	// atIndex must be some positive value or zero and dataToInsertLen must not be zero 
+	if (atIndex < 0 || !dataToInsertLen)
+		return;
+	// Move (m_RawDataLen - atIndex) bytes from atIndex offset to atIndex + dataToInsertLen offset
+	// Memory from [atIndex : atIndex + dataToInsertLen - 1] is now free to be used
+	std::memmove(m_pRawData + atIndex + dataToInsertLen, m_pRawData + atIndex, m_RawDataLen - atIndex);
+	// Set data in [atIndex : atIndex + dataToInsertLen - 1] space to 0
+	std::memset(m_pRawData + atIndex, 0, dataToInsertLen);
+	// Increment current data length counter by dataToInsertLen amount
+	m_RawDataLen += dataToInsertLen;
+	m_FrameLength = m_RawDataLen;
+}
+
 void RawPacket::insertData(int atIndex, const uint8_t* dataToInsert, size_t dataToInsertLen)
 {
 	// atIndex must be some positive value or zero and dataToInsertLen must not be zero 

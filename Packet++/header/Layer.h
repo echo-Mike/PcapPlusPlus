@@ -100,7 +100,7 @@ namespace pcpp
 		 *
 		 * @return Returns true if the data was allocated by an external source (a packet) or false if it was allocated by the layer itself
 		 */
-		inline bool isAllocatedToPacket() { return m_Packet != NULL; }
+		inline bool isAllocatedToPacket() { return static_cast<bool>(m_Packet); }
 
 		/**
 		 * Copy the raw data of this layer to another array
