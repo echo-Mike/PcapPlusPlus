@@ -2,6 +2,11 @@ sudo: required
 language: cpp
 services:
   - docker
+  
+# safelist
+branches:
+  only:
+  - feature/c++11_feature_set
 
 matrix:
   include:
