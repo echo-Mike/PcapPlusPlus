@@ -8,9 +8,9 @@ LIB_PREFIX :=
 
 LIB_EXT := .lib
 
-G++ := g++.exe
+CXX := g++.exe
 
-GCC := gcc.exe
+CC := gcc.exe
 
 AR := ar.exe
 
@@ -19,3 +19,5 @@ RM := rm.exe
 CP := cp.exe
 
 MKDIR := mkdir.exe
+
+CXX_STANDARD := c++98

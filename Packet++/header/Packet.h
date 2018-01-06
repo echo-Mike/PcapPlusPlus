@@ -414,12 +414,10 @@ namespace pcpp
 	void Packet::resetRawPacket(RawPacketT&& rawPacket)
 	{
 		// Obtain real (not const- or volatile-qualified) type of rawPacket
-		using RealRawPacketT = std::decay_t<RawPacketT>;
-		static_assert(std::is_base_of<RawPacket, RealRawPacketT>::value, 
-			"Provided object must be derived from RawPacket or be RawPacket.");
+		using RealRawPacketT = typename std::decay<RawPacketT>::type;
+		static_assert(std::is_base_of<RawPacket, RealRawPacketT>::value, "Provided object must be derived from RawPacket or be RawPacket.");
 		// This will assert if RawPacketT is const-qualified and have been moved to this function
-		static_assert(std::is_constructible<RealRawPacketT, decltype(std::forward<RawPacketT>(rawPacket))>::value,
-			"Provided type must have copy- or move-constructor.");
+		static_assert(std::is_constructible<RealRawPacketT, decltype(std::forward<RawPacketT>(rawPacket))>::value, "Provided type must have copy- or move-constructor.");
 		// Store old raw packet in separate pointer
 		RawPacket* oldRawPacket = m_RawPacket;
 		bool oldFreRawPacket = m_FreeRawPacket;

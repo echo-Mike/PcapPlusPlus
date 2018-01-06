@@ -20,7 +20,7 @@ PCAPPP_INCLUDES += -I$(DEBUG_NEW_HOME)
 
 Obj/%.o: %.cpp
 	@echo 'Building file: $<'
-	@$(G++) $(PCAPPP_INCLUDES) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
+	@$(CXX) $(PCAPPP_INCLUDES) -std=$(CXX_STANDARD) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
 
 
 UNAME := $(shell uname)
@@ -42,7 +42,7 @@ dependents:
 
 Packet++Test: start create-directories $(OBJS_FILENAMES)
 	@cd $(DEBUG_NEW_HOME) && $(MAKE) debug_new_sources
-	@$(G++) $(COMMON_DEBUG_LIB_DIR) $(PCAPPP_LIBS_DIR) $(PCAPPP_BUILD_FLAGS) -o "./Bin/Packet++Test$(BIN_EXT)" $(OBJS_FILENAMES) $(DEBUG_NEW_OBJS_FILENAMES) $(PCAPPP_LIBS) 
+	@$(CXX) $(COMMON_DEBUG_LIB_DIR) $(PCAPPP_LIBS_DIR) $(PCAPPP_BUILD_FLAGS) -o "./Bin/Packet++Test$(BIN_EXT)" $(OBJS_FILENAMES) $(DEBUG_NEW_OBJS_FILENAMES) $(PCAPPP_LIBS) 
 	@$(PCAPPP_POST_BUILD)
 	@echo 'Finished successfully building: $(CUR_TARGET)'
 	@echo ' '

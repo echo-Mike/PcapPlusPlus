@@ -33,7 +33,7 @@ endif
 			
 Obj/%.o: src/%.cpp
 	@echo 'Building file: $<'
-	@$(G++) $(DEPS) $(INCLUDES) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
+	@$(CXX) $(DEPS) $(INCLUDES) -std=$(CXX_STANDARD) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
 
 CUR_TARGET := $(notdir $(shell pwd))
 
@@ -53,7 +53,6 @@ Packet++: start create-directories $(OBJS_FILENAMES)
 	@$(AR) -r  "Lib/$(LIB_PREFIX)Packet++$(LIB_EXT)" $(OBJS_FILENAMES)
 	@echo 'Finished successfully building: $(CUR_TARGET)'
 	@echo ' '
-
 
 clean:
 	@$(RM) -rf ./Obj/*

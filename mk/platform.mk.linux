@@ -6,9 +6,9 @@ LIB_PREFIX := lib
 
 LIB_EXT := .a
 
-G++ := g++
+CXX := g++
 
-GCC := gcc
+CC := gcc
 
 AR := ar
 
@@ -21,3 +21,5 @@ MKDIR := mkdir
 INSTALL_SCRIPT := install.sh
 
 UNINSTALL_SCRIPT := uninstall.sh
+
+CXX_STANDARD := c++98

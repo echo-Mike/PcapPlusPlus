@@ -36,8 +36,8 @@ before_build:
 - if "%compiler%"=="vs2015" configure-windows-visual-studio.bat -w C:\WpdPack -p C:\pthreads
 
 build_script:
-- if "%compiler%"=="mingw32" mingw32-make all
-- if "%compiler%"=="mingw-w64" mingw32-make all
+- if "%compiler%"=="mingw32" mingw32-make all CXX_STANDARD=c++11
+- if "%compiler%"=="mingw-w64" mingw32-make all CXX_STANDARD=c++11
 - if "%compiler%"=="vs2015" powershell -command "msbuild mk\vs2015\PcapPlusPlus.sln /p:Configuration=%config% /p:Platform=%platform%"
 - if "%compiler%"=="vs2015" powershell -command "msbuild mk\vs2015\PcapPlusPlus-Examples.sln /p:Configuration=%config% /p:Platform=%platform%"
 - if "%compiler%"=="vs2015" powershell -command "msbuild mk\vs2015\Tutorials.sln /p:Configuration=%config% /p:Platform=%platform%"

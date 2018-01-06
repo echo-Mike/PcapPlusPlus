@@ -1,8 +1,8 @@
 PcapPlusPlus
 ============
 
-[![Build Status](https://travis-ci.org/seladb/PcapPlusPlus.svg?branch=master)](https://travis-ci.org/seladb/PcapPlusPlus)
-[![Build status](https://ci.appveyor.com/api/projects/status/4u5ui21ibbevkstc?svg=true)](https://ci.appveyor.com/project/seladb/pcapplusplus)
+[![Build Status](https://travis-ci.org/echo-Mike/PcapPlusPlus.svg?branch=feature%2Fc%2B%2B11_feature_set)](https://travis-ci.org/echo-Mike/PcapPlusPlus)
+[![Build status](https://ci.appveyor.com/api/projects/status/xeft1ov96nwhmug6?svg=true)](https://ci.appveyor.com/project/echo-Mike/pcapplusplus)
 
 PcapPlusPlus is a multiplatform C++ network sniffing and packet parsing and crafting framework. PcapPlusPlus is meant to be lightweight, efficient and easy to use.
 
