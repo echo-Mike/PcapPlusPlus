@@ -6,7 +6,7 @@ services:
 # safelist
 branches:
   only:
-  - feature/build_system_update
+  - feature/c++11_feature_set
 
 matrix:
   include:
