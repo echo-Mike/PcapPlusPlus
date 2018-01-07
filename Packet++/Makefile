@@ -8,6 +8,7 @@ SOURCES := $(wildcard src/*.cpp)
 OBJS_FILENAMES := $(patsubst src/%.cpp,Obj/%.o,$(SOURCES))
 
 COMMONPP_HOME := ../Common++
+PCAPPP_HOME := ../Pcap++
 
 ifdef WIN32
 DEPS := -DWPCAP -DHAVE_REMOTE
@@ -18,10 +19,14 @@ endif
 ifdef MAC_OS_X
 DEPS := -DMAC_OS_X
 endif
+ifdef USE_DPDK
+DEPS += -DUSE_DPDK
+endif
 
 INCLUDES := -I"./src" \
 			-I"./header" \
-			-I"$(COMMONPP_HOME)/header"
+			-I"$(COMMONPP_HOME)/header" \
+			-I"$(PCAPPP_HOME)/header"
 			
 ifdef WIN32
 INCLUDES += -I$(MINGW_HOME)/include/ddk \
