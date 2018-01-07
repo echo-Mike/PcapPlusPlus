@@ -173,6 +173,7 @@ namespace pcpp
 		}
 	};
 
+	class DpdkDeviceList;
 
 	/**
 	 * @class DpdkDevice

@@ -4,8 +4,9 @@
 #include "RawPacket.h"
 #include "Layer.h"
 #ifdef USE_DPDK
-// Needed in next versions
-//#include "" 
+// When DPDK is used there is a derived class from RawPacket - MBufRawPacket
+// that must be handled differently in castBasedCopyResetRawPacket and castBasedMoveResetRawPacket member functions.
+#include "MBufRawPacket.h" 
 #endif // USE_DPDK
 
 #include <utility>
@@ -414,7 +415,7 @@ namespace pcpp
 	void Packet::resetRawPacket(RawPacketT&& rawPacket)
 	{
 		// Obtain real (not const- or volatile-qualified) type of rawPacket
-		using RealRawPacketT = typename std::decay<RawPacketT>::type;
+		using RealRawPacketT = typename std::decay<RawPacketT>::type; // std::decay_t is the c++14 feature
 		static_assert(std::is_base_of<RawPacket, RealRawPacketT>::value, "Provided object must be derived from RawPacket or be RawPacket.");
 		// This will assert if RawPacketT is const-qualified and have been moved to this function
 		static_assert(std::is_constructible<RealRawPacketT, decltype(std::forward<RawPacketT>(rawPacket))>::value, "Provided type must have copy- or move-constructor.");

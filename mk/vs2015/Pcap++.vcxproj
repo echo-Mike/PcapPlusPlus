@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Pcap++\header\DpdkDevice.h" />
     <ClInclude Include="..\..\Pcap++\header\DpdkDeviceList.h" />
+    <ClInclude Include="..\..\Pcap++\header\MBufRawPacket.h" />
     <ClInclude Include="..\..\Pcap++\header\NetworkUtils.h" />
     <ClInclude Include="..\..\Pcap++\header\PcapDevice.h" />
     <ClInclude Include="..\..\Pcap++\header\PcapFileDevice.h" />

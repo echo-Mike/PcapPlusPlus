@@ -54,6 +54,9 @@
     <ClInclude Include="..\..\Pcap++\header\WinPcapLiveDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Pcap++\header\MBufRawPacket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Pcap++\src\DpdkDevice.cpp">

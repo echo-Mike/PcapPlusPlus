@@ -12,6 +12,7 @@
 #include "rte_ethdev.h"
 #include "rte_errno.h"
 #include <cstring>
+#include <utility>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -84,8 +85,10 @@ bool MBufRawPacket::allocate(rte_mbuf* &mBuf, rte_mempool* pool)
 		return false;
 	}
 	// Call dpdk mBuf allocation function for specified pool
-	// http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ad4d1c289d8cffc831dfb77c64f52447b
-	// http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#ad4d1c289d8cffc831dfb77c64f52447b
+	// rte_pktmbuf_alloc:
+	//		Allocate a new mbuf from a mempool
+	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ad4d1c289d8cffc831dfb77c64f52447b
+	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#ad4d1c289d8cffc831dfb77c64f52447b
 	mBuf = rte_pktmbuf_alloc(pool);
 	if (mBuf == NULL)
 	{
@@ -95,7 +98,7 @@ bool MBufRawPacket::allocate(rte_mbuf* &mBuf, rte_mempool* pool)
 	return true;
 }
 
-bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t mBufSize, std::size_t newSize)
+bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t newSize)
 {
 	// We can't work with unknown object
 	if (mBuf == NULL)
@@ -111,25 +114,29 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t mBufSize, std::size_t ne
 	}
 
 	// Adjust the size of the mbuf to the new data
-	if (mBufSize < newSize)
+	if (oldSize < newSize)
 	{
 		// Append bytes to an mbuf
-		// http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ad5b0cd686ad3bcbb83416ca8395a080b
-		// http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#ad5b0cd686ad3bcbb83416ca8395a080b
-		if (rte_pktmbuf_append(mBuf, newSize - mBufSize) == NULL)
+		// rte_pktmbuf_append:
+		//		Append len bytes to an mbuf
+		//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ad5b0cd686ad3bcbb83416ca8395a080b
+		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#ad5b0cd686ad3bcbb83416ca8395a080b
+		if (rte_pktmbuf_append(mBuf, newSize - oldSize) == NULL)
 		{
-			LOG_ERROR("Couldn't append %d bytes to mbuf", newSize - mBufSize);
+			LOG_ERROR("Couldn't append %d bytes to mbuf", newSize - oldSize);
 			return false;
 		}
 	}
-	else if (mBufSize > mBufSize)
+	else if (oldSize > newSize) // May use (oldSize != newSize) - it must be faster
 	{
 		// Remove bytes at the beginning of an mbuf
-		// http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1bbd752194759ce7b419c4998f2e8651
-		// http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1bbd752194759ce7b419c4998f2e8651
-		if (rte_pktmbuf_adj(mBuf, mBufSize - newSize) == NULL)
+		// rte_pktmbuf_adj:
+		//		Remove len bytes at the beginning of an mbuf
+		//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1bbd752194759ce7b419c4998f2e8651
+		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1bbd752194759ce7b419c4998f2e8651
+		if (rte_pktmbuf_adj(mBuf, oldSize - newSize) == NULL)
 		{
-			LOG_ERROR("Couldn't remove %d bytes from mbuf", mBufSize - newSize);
+			LOG_ERROR("Couldn't remove %d bytes from mbuf", oldSize - newSize);
 			return false;
 		}
 	}
@@ -247,6 +254,7 @@ MBufRawPacket& MBufRawPacket::operator=(MBufRawPacket&& other)
 	RawPacket::operator=(std::move(other));
 	// Lave other in not-initialized state
 	other.m_MBuf = NULL;
+	return *this;
 }
 
 MBufRawPacket::~MBufRawPacket()
@@ -541,7 +549,7 @@ bool DpdkDevice::configurePort(uint8_t numOfRxQueues, uint8_t numOfTxQueues)
 	}
 
 	struct rte_eth_conf portConf;
-	memset(&portConf,0,sizeof(rte_eth_conf));
+	std::memset(&portConf,0,sizeof(rte_eth_conf));
 	portConf.rxmode.split_hdr_size = DPDK_COFIG_SPLIT_HEADER_SIZE;
 	portConf.rxmode.header_split = DPDK_COFIG_HEADER_SPLIT;
 	portConf.rxmode.hw_ip_checksum = DPDK_COFIG_HW_IP_CHECKSUM;
@@ -938,7 +946,10 @@ int DpdkDevice::dpdkCaptureThreadMain(void *ptr)
 
 		if (likely(pThis->m_OnPacketsArriveCallback != NULL))
 		{
-			MBufRawPacket rawPackets[numOfPktsReceived];
+			// THIS IS A PURE C DECLARATION THAT IS INVALID IN C++ (AND INVALID IN C STARTING WITH C11): see VLA http://en.cppreference.com/w/c/language/array
+			MBufRawPacket rawPackets[numOfPktsReceived]; // <-- WTF??? THIS IS UB IN C++ AND MUST NOT COMPILE - the size of an array is a compile-time type property
+			// Array here is created on stack and must be set to constant size. The best solution is to use RX_BURST_SIZE as an array length and allocate it 
+			// only once outside of while(){} scope (right before the start of loop)
 			for (uint32_t index = 0; index < numOfPktsReceived; ++index)
 			{
 				struct rte_mbuf* mBuf = pThis->m_mBufArray[index];
@@ -1004,7 +1015,13 @@ int DpdkDevice::sendPacketsInner(uint16_t txQueueId, void* packetStorage, packet
 	#define PACKET_TX_TRIES 1.5
 
 	int mBufArraySize = (int)(m_Config.transmitDescriptorsNumber*PACKET_TRANSMITION_THRESHOLD);
-	rte_mbuf* mBufArr[mBufArraySize];
+	// THIS IS A PURE C DECLARATION THAT IS INVALID IN C++ (AND INVALID IN C STARTING WITH C11): see VLA http://en.cppreference.com/w/c/language/array
+	rte_mbuf* mBufArr[mBufArraySize]; // <-- WTF??? THIS IS UB IN C++ AND MUST NOT COMPILE - the size of an array is a compile-time type property
+	// Array here is created on stack and must be set to constant size.
+	// The best way here is to allocate it via new and make this array part of DpdkDevice class and allocate it only once (a.e. if m_Config will not change in 
+	// DpdkDevice object lifetime) when we first time come to this function.
+	// If m_Config may change in DpdkDevice object lifetime there an cache mechanism needed to reallocate this array every time m_Config changes.
+	// Best solution here is to use the gsl::span class object
 	int packetsToSendInThisIteration = 0;
 	int numOfSendFailures = 0;
 
@@ -1074,7 +1091,7 @@ int DpdkDevice::sendPacketsInner(uint16_t txQueueId, void* packetStorage, packet
 
 
 		uint8_t* mBufData = (uint8_t*)rte_pktmbuf_mtod(newMBuf, uint8_t*);
-		if (memcpy(mBufData, rawPacket->getRawData(), rawPacket->getRawDataLen()) == NULL)
+		if (std::memcpy(mBufData, rawPacket->getRawData(), rawPacket->getRawDataLen()) == NULL)
 		{
 			LOG_ERROR("Failed to copy RawPacket data to mBuf. Skipping RawPacket");
 			packetIndex++;
