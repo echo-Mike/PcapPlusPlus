@@ -3378,7 +3378,7 @@ PCAPP_TEST(TestDpdkMbufRawPacket)
 	while (true)
 	{
 		MBufRawPacket mBufRawPacket;
-		PCAPP_ASSERT(mBufRawPacket.init(dev) == true, "Couldn't init MBufRawPacket");
+		PCAPP_ASSERT(mBufRawPacket.initialize(dev) == true, "Couldn't initialize MBufRawPacket");
 		if (!(reader.getNextPacket(mBufRawPacket)))
 			break;
 

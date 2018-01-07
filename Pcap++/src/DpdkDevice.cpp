@@ -109,7 +109,7 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t new
 
 	if (newSize > MBUF_DATA_SIZE)
 	{
-		LOG_ERROR("Can't adjust mBuf. Provided size is gereater than maximum possible size. mBuf max length: %d; requested length: %d", MBUF_DATA_SIZE, newSize);
+		LOG_ERROR("Can't adjust mBuf. Provided size is gereater than maximum possible size. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newSize);
 		return false;
 	}
 
@@ -123,7 +123,7 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t new
 		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#ad5b0cd686ad3bcbb83416ca8395a080b
 		if (rte_pktmbuf_append(mBuf, newSize - oldSize) == NULL)
 		{
-			LOG_ERROR("Couldn't append %d bytes to mbuf", newSize - oldSize);
+			LOG_ERROR("Couldn't append %d bytes to mbuf", (int)(newSize - oldSize));
 			return false;
 		}
 	}
@@ -136,7 +136,7 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t new
 		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1bbd752194759ce7b419c4998f2e8651
 		if (rte_pktmbuf_adj(mBuf, oldSize - newSize) == NULL)
 		{
-			LOG_ERROR("Couldn't remove %d bytes from mbuf", oldSize - newSize);
+			LOG_ERROR("Couldn't remove %d bytes from mbuf", (int)(oldSize - newSize));
 			return false;
 		}
 	}
@@ -277,7 +277,7 @@ bool MBufRawPacket::setRawData(const uint8_t* pRawData, int rawDataLen, timeval 
 	}
 	if (rawDataLen > MBUF_DATA_SIZE)
 	{
-		LOG_ERROR("Cannot set raw data which length is larger than mBuf max size. mBuf max length: %d; requested length: %d.", MBUF_DATA_SIZE, rawDataLen);
+		LOG_ERROR("Cannot set raw data which length is larger than mBuf max size. mBuf max length: %d; requested length: %d.", (int)MBUF_DATA_SIZE, (int)rawDataLen);
 		return false;
 	}
 	if (m_MBuf == NULL)
@@ -353,7 +353,7 @@ bool MBufRawPacket::removeData(int atIndex, size_t numOfBytesToRemove)
 	// So this is full implementation of it:
 	if (m_MBuf == NULL)
 	{
-		LOG_ERROR("MBufRawPacket not initialized. Please call the init() method");
+		LOG_ERROR("MBufRawPacket not initialized. Please call the initialize() method");
 		return false;
 	}
 	// Call base class method to handle data
@@ -381,7 +381,7 @@ bool MBufRawPacket::reallocateData(size_t newBufferLength)
 	}
 	if (newBufferLength > MBUF_DATA_SIZE)
 	{
-		LOG_ERROR("Cannot reallocate mBuf raw packet to a size larger than mBuf data. mBuf max length: %d; requested length: %d", MBUF_DATA_SIZE, (int)newBufferLength);
+		LOG_ERROR("Cannot reallocate mBuf raw packet to a size larger than mBuf data. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newBufferLength);
 		return false;
 	}
 	// no need to do any memory allocation because mbuf is already allocated
