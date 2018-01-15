@@ -4,6 +4,7 @@
 #include <memory>
 #include <cstring>
 #include <cstdint>
+#include <exception>
 
 /// @file
 
@@ -18,25 +19,21 @@ namespace pcpp
 	{
 #ifndef USE_CPP11
 
-		template < typename T >
-		struct deleter
-		{
-			virtual void operator()(T*) = 0;
-		};
-
 		template < typename T > 
-		struct default_delete :
-			public deleter<T>
+		struct default_delete
 		{
 			void operator()(T* ptr) { delete ptr; }
 		};
 
 		template < typename T >
-		struct default_delete<T[]> :
-			public deleter<T>
+		struct default_delete<T[]>
 		{
 			void operator()(T* ptr) { delete[] ptr; }
 		};
+
+		#ifndef nullptr
+			#define nullptr NULL
+		#endif
 #else
 
 		template < typename T >
@@ -44,16 +41,9 @@ namespace pcpp
 #endif
 
 		template < typename T >
-		struct allocator
+		struct default_allocator
 		{
-			virtual T* operator()(std::size_t) = 0;
-		};
-
-		template < typename T >
-		struct default_allocator :
-			public allocator<T>
-		{
-			T* operator()(std::size_t) { new T(); }
+			T* operator()() { new T(); }
 		};
 
 		template < typename T >
@@ -64,7 +54,11 @@ namespace pcpp
 		};
 	}
 
-	template < typename T >
+	template < typename T = uint8_t,
+		typename Allocator = memory::default_allocator<T[]>,
+		typename Deleter = memory::default_delete<T[]>,
+		T* (Allocator::* Allocate)(std::size_t) = &Allocator::operator(),
+		void (Deleter::* Deallocate)(T*) = &Deleter::operator() >
 	class MemoryProxy
 	{
 	public:
@@ -73,25 +67,78 @@ namespace pcpp
 		typedef const T* const_pointer;
 		typedef std::size_t size;
 		typedef int index;
+		typedef Deleter deleter;
+		typedef Allocator allocator;
 	protected:
+
+		inline bool SafeToDeleteCondition() { return m_Ownership && m_Data; }
+
+		inline bool SafeToCopyCondition() { return m_Data && m_Length > 0; }
+
+		inline bool deallocateData()
+		{
+			try
+			{
+				if (SafeToDeleteCondition())
+					(m_Deleter.*Deallocate)(m_Data);
+			}
+			catch (const std::exception& e)
+			{
+				// TODO:: add exception handler
+				return false;
+			}
+			catch (...)
+			{
+				// TODO:: add exception handler
+				return false;
+			}
+			return true;
+		}
 
 		inline void initialize() 
 		{
+			m_Allocator = allocator();
+			m_Deleter = deleter();
+			m_Data = nullptr;
 			m_Length = 0;
 			m_Ownership = false;
 		}
 
 		inline bool copyDataFrom(const MemoryProxy& other)
 		{
-			m_Length = other.m_Length;
-			m_Ownership = other.m_Ownership;
+			deallocateData();
+			m_Deleter = other.m_Deleter;
+			m_Allocator = other.m_Allocator;
+			if (other.SafeToCopyCondition())
+			{
+				m_Data = (m_Allocator.*Allocate)(other.m_Length);
+				if (this == &other)
+					std::memmove(m_Data, other.m_Data, other.m_Length);
+				else
+					std::memcpy(m_Data, other.m_Data, other.m_Length);
+				m_Ownership = true;
+				m_Length = other.m_Length;
+				return true;
+			}
+			else 
+			{
+				m_Ownership = false;
+				m_Data = nullptr;
+				m_Length = 0;
+				return false;
+			}
 		}
 
 #ifdef USE_CPP11
 
-		inline bool moveDataFrom(MemoryProxy&& other)
+		inline void moveDataFrom(MemoryProxy&& other)
 		{
-			copyDataFrom(other);
+			deallocateData();
+			m_Deleter = std::move(other.m_Deleter);
+			m_Allocator = std::move(other.m_Allocator);
+			m_Data = other.m_Data;
+			m_Ownership = other.m_Ownership;
+			m_Length = other.m_Length;
 			other.initialize();
 		}
 #endif
@@ -99,7 +146,13 @@ namespace pcpp
 
 		MemoryProxy() { initialize(); }
 
-		MemoryProxy(size length, bool ownership = true) :
+#ifdef USE_CPP11
+
+		explicit MemoryProxy(std::nullptr_t) { initialize(); }
+#endif
+
+		explicit MemoryProxy(pointer p, size length = 0, bool ownership = true) :
+			m_Allocator(), m_Deleter(), m_Data(p),
 			m_Length(length), m_Ownership(ownership) {}
 
 		MemoryProxy(const MemoryProxy& other) { copyDataFrom(other); }
@@ -125,166 +178,80 @@ namespace pcpp
 		}
 #endif
 
-		virtual ~MemoryProxy() {}
+		~MemoryProxy() { deallocateData(); }
 
 		inline size getLength() const { return m_Length; }
 
 		inline bool isOwning() const { return m_Ownership; }
 
-		virtual pointer get() const = 0;
+		inline pointer get() { return m_Data; }
 
-		virtual pointer relese() = 0;
+		inline const_pointer get() const { return m_Data; }
 
-		virtual void reset(pointer ptr) = 0;
+		inline allocator getAllocator() const { return m_Allocator; }
 
-		virtual operator bool() const = 0;
+		inline void setAllocator(allocator& alloc) const { m_Allocator = alloc; }
 
-		inline isInNullState() const { return !(this->operator bool()); }
+		inline allocator getDeleter() const { return m_Deleter; }
 
-		virtual bool reallocate(size newBufferLength) = 0;
+		inline void setDeleter(deleter& del) const { m_Deleter = del; }
 
-		virtual bool append(const_pointer dataToAppend, size dataToAppendLen) = 0;
+		pointer relese()
+		{
+			pointer old = m_Data;
+			initialize();
+			return old;
+		}
 
-		virtual bool insert(index atIndex, size dataToInsertLen) = 0;
+		bool reset(pointer ptr, size length = 0, bool ownership = true)
+		{
+			if (deallocateData())
+			{
+				m_Data = ptr;
+				m_Length = length;
+				m_Ownership = ownership;
+				return true;
+			}
+			initialize();
+			return false;
+		}
 
-		virtual bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
+		operator bool() const { return m_Data || m_Ownership || m_Length > 0; }
 
-		virtual bool remove(index atIndex, size numOfBytesToRemove) = 0;
+		inline isInNullState() const { return !(*this); }
+
+		bool reallocate(size newBufferLength) 
+		{
+			
+		}
+
+		bool append(const_pointer dataToAppend, size dataToAppendLen)
+		{
+
+		}
+
+		bool insert(index atIndex, size dataToInsertLen)
+		{
+
+		}
+
+		bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen)
+		{
+
+		}
+
+		bool remove(index atIndex, size numOfBytesToRemove)
+		{
+
+		}
 
 	protected:
+		mutable allocator m_Allocator;
+		mutable deleter m_Deleter;
+		pointer m_Data;
 		size m_Length;
 		bool m_Ownership;
 	};
-
-//#ifdef USE_CPP11
-
-	template < typename T, 
-		typename Allocator = memory::default_allocator<T[]>, 
-		typename Deleter = memory::default_delete<T[]> >
-	class CPP11MemoryProxy :
-		public MemoryProxy<T>
-	{
-	public:
-		typedef Deleter deleter;
-		typedef Allocator allocator;
-		typedef MemoryProxy<T> Base;
-	private:
-		typedef std::unique_ptr<T[], Deleter> SmartPtr;
-
-		inline void initialize()
-		{
-			Base::initialize();
-			m_Allocator = allocator();
-			m_Data = SmartPtr(nullptr);
-		}
-
-		bool copyDataFrom(const MemoryProxy& other);
-
-		bool moveDataFrom(MemoryProxy&& other);
-
-	public:
-
-		CPP11MemoryProxy() { initialize(); }
-
-		CPP11MemoryProxy(std::nullptr_t) { initialize(); }
-
-		CPP11MemoryProxy(pointer p, size length = 0, bool ownership = true);
-
-		CPP11MemoryProxy(const CPP11MemoryProxy& other);
-
-		CPP11MemoryProxy& operator=(const CPP11MemoryProxy& other);
-
-		CPP11MemoryProxy(CPP11MemoryProxy&& other);
-
-		CPP11MemoryProxy& operator=(CPP11MemoryProxy&& other);
-
-		~CPP11MemoryProxy();
-
-		pointer get() const;
-
-		pointer relese();
-
-		void reset(pointer ptr);
-
-		operator bool() const;
-
-		bool reallocate(size newBufferLength);
-
-		bool append(const_pointer dataToAppend, size dataToAppendLen);
-
-		bool insert(index atIndex, size dataToInsertLen);
-
-		bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen);
-
-		bool remove(index atIndex, size numOfBytesToRemove);
-
-	private:
-		allocator m_Allocator;
-		SmartPtr m_Data;
-	};
-
-	//typedef CPP11MemoryProxy<uint8_t> pcpp_MemoryProxy;
-//#else
-
-	template < typename T, 
-		typename Allocator = memory::default_allocator<T[]>, 
-		typename Deleter = memory::default_delete<T[]> >
-	class CPP99MemoryProxy :
-		public MemoryProxy<T>
-	{
-	public:
-		typedef Deleter deleter;
-		typedef Allocator allocator;
-		typedef MemoryProxy<T> Base;
-	private:
-
-		inline void initialize()
-		{
-			Base::initialize();
-			m_Allocator = new allocator();
-			m_Deleter = new deleter();
-			m_Data = NULL;
-		}
-
-		bool copyDataFrom(const MemoryProxy& other);
-	public:
-
-		CPP99MemoryProxy() { initialize(); }
-
-		CPP99MemoryProxy(pointer p, size = 0, bool ownership = true);
-
-		CPP99MemoryProxy(const CPP99MemoryProxy& other);
-
-		CPP99MemoryProxy& operator=(const CPP99MemoryProxy& other);
-
-		~CPP99MemoryProxy();
-
-		pointer get() const;
-
-		pointer relese();
-
-		void reset(pointer ptr);
-
-		operator bool() const;
-
-		bool reallocate(size newBufferLength);
-
-		bool append(const_pointer dataToAppend, size dataToAppendLen);
-
-		bool insert(index atIndex, size dataToInsertLen);
-
-		bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen);
-
-		bool remove(index atIndex, size numOfBytesToRemove);
-
-	private:
-		allocator m_Allocator;
-		deleter m_Deleter;
-		pointer m_Data;
-	};
-
-	//typedef CPP99MemoryProxy<uint8_t> pcpp_MemoryProxy;
-//#endif
 
 } // namespace pcpp
 
