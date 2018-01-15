@@ -6,7 +6,7 @@ services:
 # safelist
 branches:
   only:
-  - feature/c++11_feature_set
+  - feature/rawpacket_memory_rework
 
 matrix:
   include:
