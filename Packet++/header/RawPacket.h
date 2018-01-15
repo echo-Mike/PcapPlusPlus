@@ -347,6 +347,7 @@ namespace pcpp
 		/**
 		 * @brief Sets provided raw data as new data to handle. 
 		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
+		 * State of m_DeleteRawDataAtDestructor flag is not touched.\n
 		 * If provided pRawData is nullptr or rawDataLen less than 1 nothing happens with data and false is returned.
 		 * @param[in] pRawData A pointer to the new raw data
 		 * @param[in] rawDataLen The new raw data length in bytes

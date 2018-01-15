@@ -79,8 +79,24 @@ void RawPacket::copyDataFrom(const RawPacket& other, bool allocateData)
 	// Copy memory from other.
 	// This function may be called from derived classes
 	// and it is undefined behavior to use std::memcpy on same memory.
-	if (this != &other && static_cast<bool>(m_pRawData))
+	if (this != &other && static_cast<bool>(m_pRawData)) 
+	{
+		if (m_RawDataLen < other.m_RawDataLen)
+		{
+			// This is an invalid state of this object:
+			// REASON: No clear solution what to do:
+			// 1. Copy only mememory that can be accommodated in current memory size -> unclear packet content -> not a real copy
+			// 2. Copy all memory -> memory corruption
+			// 3. Force to allocate more data -> violation of allocateData function parametr description
+			// Despose of current data
+			if (SafeToDeleteDataCondition())
+				delete[] m_pRawData;
+			// Set object in null-state
+			initialize();
+			return;
+		}
 		std::memcpy(m_pRawData, other.m_pRawData, other.m_RawDataLen);
+	}
 	// Copy-assing other data members
 	m_linkLayerType = other.m_linkLayerType;
 	m_FrameLength = other.m_FrameLength;
@@ -152,38 +168,6 @@ bool RawPacket::setRawData(const uint8_t* pRawData, int rawDataLen, timeval time
 	m_RawPacketSet = true;
 	return true;
 }
-
-/*
-const uint8_t* RawPacket::getRawData()
-{
-	return m_pRawData;
-}
-
-const uint8_t* RawPacket::getRawDataReadOnly() const
-{
-	return m_pRawData;
-}
-		
-LinkLayerType RawPacket::getLinkLayerType() const
-{
-	return m_linkLayerType;
-}
-
-int RawPacket::getRawDataLen() const
-{
-	return m_RawDataLen;
-}
-
-int RawPacket::getFrameLength() const
-{
-	return m_FrameLength;
-}
-
-timeval RawPacket::getPacketTimeStamp() const
-{
-	return m_TimeStamp;
-}
-*/
 
 void RawPacket::clear()
 {
