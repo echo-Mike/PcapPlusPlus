@@ -5,7 +5,7 @@
 #include "SizeAwareMemoryProxy.h"
 #include "ContentAwareMemoryProxy.h"
 #include "OldMemoryModelMemoryProxy.h"
-#include "SafeOldMemoryModelMemoryProxy.h"
+// #include "SafeOldMemoryModelMemoryProxy.h" // Not used
 
 /// @file
 
@@ -30,7 +30,7 @@ namespace pcpp
 
 		typedef MemoryProxy<Data_t, default_allocator<Data_t[]>, MemoryProxyTags::OldMemoryModelTag> DefaultOldMemoryModelMemoryProxy;
 
-		typedef MemoryProxy<Data_t, default_allocator<Data_t[]>, MemoryProxyTags::SafeOldMemoryModelTag> DefaultSafeOldMemoryModelMemoryProxy;
+		// typedef MemoryProxy<Data_t, default_allocator<Data_t[]>, MemoryProxyTags::SafeOldMemoryModelTag> DefaultSafeOldMemoryModelMemoryProxy; // Not used
 
 	} // namespace pcpp::memory
 

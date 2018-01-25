@@ -34,8 +34,9 @@
 		// defined(__EDG__) // EDG C++ Frontend - this macro is defined by VS2015
 		#error \
 		This compiler is a target to be done for automatic C++11 detection. \
-		Please specify ENABLE_CPP11_MOVE_SEMANTICS macro by hand if you compiler version support C++11. \
-		This error does NOT mean that library can't be build on Your compiller. \
+		Please specify ENABLE_CPP11_MOVE_SEMANTICS macro by hand if you compiler version support C++11 rvalue ref v2.0. \
+		To suppress automatic C++11 detection feature define SUPPRESS_CPP11_DETECTION macro. \
+		This error does NOT mean that library can't be build on Your compiler. \
 		And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 	#endif
 	/* Compilers with unsupported C++11 detection feature */
@@ -206,6 +207,13 @@
 			#ifdef __cpp_rvalue_references
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 			#endif
+			// Next def may cause problems if override keyword is supported
+			#ifndef override
+				#define override
+			#endif
+			#ifndef nullptr
+				#define nullptr NULL
+			#endif
 			#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 		#else
 			#if defined(__clang__)
@@ -293,6 +301,13 @@
 		// We currentry have interest only in:
 		#ifndef __cpp_constexpr
 			#define constexpr const
+		#endif
+		// Next def may cause problems in unknown compilers with override keyword support
+		#ifndef override
+			#define override
+		#endif
+		#ifndef nullptr
+			#define nullptr NULL
 		#endif
 		#ifdef __cpp_rvalue_references
 			#define ENABLE_CPP11_MOVE_SEMANTICS

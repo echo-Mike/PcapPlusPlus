@@ -20,7 +20,7 @@ namespace pcpp
 	 */
 	namespace memory
 	{
-
+		/* // Is not used
 		template < typename T, typename Allocator >
 		class MemoryProxy< T, Allocator, MemoryProxyTags::SafeOldMemoryModelTag > :
 			public MemoryProxyInterface<T, Allocator, MemoryProxyTags::SafeOldMemoryModelTag >
@@ -37,7 +37,7 @@ namespace pcpp
 			size m_Length;
 			bool m_Ownership;
 		};
-
+		*/
 	} // namespace pcpp::memory
 
 } // namespace pcpp

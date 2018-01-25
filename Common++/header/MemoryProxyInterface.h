@@ -38,6 +38,7 @@ namespace pcpp
 
 			typedef std::size_t size;
 			typedef int index;
+			typedef int memory_value;
 			
 			typedef ProxyTag tag_type;
 
@@ -63,13 +64,15 @@ namespace pcpp
 
 			inline virtual void setAllocator(typename traits::allocator_type& allocator) const = 0;
 
-			virtual bool reallocate(size newBufferLength) = 0;
+			virtual bool clear() = 0;
 
-			virtual bool append(size dataToAppendLen) = 0;
+			virtual bool reallocate(size newBufferLength, memory_value initialValue = 0) = 0;
+
+			virtual bool append(size dataToAppendLen, memory_value initialValue = 0) = 0;
 
 			virtual bool append(const_pointer dataToAppend, size dataToAppendLen) = 0;
 
-			virtual bool insert(index atIndex, size dataToInsertLen) = 0;
+			virtual bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) = 0;
 
 			virtual bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
 
@@ -82,7 +85,7 @@ namespace pcpp
 			// struct SizeUnawareTag {};
 			struct ContentAwareTag {};
 			struct OldMemoryModelTag {};
-			struct SafeOldMemoryModelTag {};
+			// struct SafeOldMemoryModelTag {};
 		}
 
 		template < typename T, typename Allocator, typename ProxyTag >
