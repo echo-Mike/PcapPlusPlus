@@ -59,7 +59,7 @@ namespace pcpp
 
 			inline void setAllocator(typename traits::allocator_type& allocator) const { m_Allocator = allocator; }
 
-			inline typename traits::pointer allocate(std::size_t length = 1) const { (m_Allocator.*Allocate)(length); }
+			inline typename traits::pointer allocate(std::size_t length = 1) const { return (m_Allocator.*Allocate)(length); }
 
 			inline void deallocate(typename traits::pointer p) const { (m_Allocator.*Deallocate)(p); }
 

@@ -57,7 +57,7 @@ namespace pcpp
 
 			virtual operator bool() const = 0;
 
-			inline isInNullState() const { return !(this->operator bool()); }
+			inline bool isInNullState() const { return !(this->operator bool()); }
 
 			inline virtual typename traits::allocator_type& getAllocator() const = 0;
 

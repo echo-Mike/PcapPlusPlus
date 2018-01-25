@@ -106,7 +106,7 @@ namespace pcpp
 				// Deallocate current data
 				deallocateData();
 				// Move allocator from other
-				m_Allocator = std::move(other.m_Allocator));
+				m_Allocator = std::move(other.m_Allocator);
 				// Copy other data members
 				m_Data = other.m_Data;
 				m_Ownership = other.m_Ownership;
@@ -214,7 +214,7 @@ namespace pcpp
 				// Copy data from previous storage
 				// If new storage length is smaller than previous -> copy only data that fits new storage size
 				// else -> copy only old data
-				if (SafeToCopyDataCondition())
+				if (SafeToCopyCondition())
 					std::memcpy(newBuffer, m_Data, (newBufferLength < m_Length ? newBufferLength : m_Length) * sizeof(typename Base::value_type) );
 				// Deallocate old data
 				if (!deallocateData())
@@ -231,7 +231,7 @@ namespace pcpp
 				// New capacity is set to the actual size of memory stored 
 				m_Capacity = newBufferLength;
 				// We definitely own data now
-				m_Owning = true;
+				m_Ownership = true;
 				return true;
 			}
 

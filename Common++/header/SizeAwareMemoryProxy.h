@@ -90,7 +90,7 @@ namespace pcpp
 			inline void moveDataFrom(MemoryProxy&& other)
 			{
 				deallocateData();
-				m_Allocator = std::move(other.m_Allocator));
+				m_Allocator = std::move(other.m_Allocator);
 				m_Data = other.m_Data;
 				m_Ownership = other.m_Ownership;
 				m_Length = other.m_Length;
@@ -185,7 +185,7 @@ namespace pcpp
 				if (!newBuffer) // Expect nullptr when execption thrown on allocation
 					return false;
 				std::memset(newBuffer, 0, newBufferLength);
-				if (SafeToCopyDataCondition())
+				if (SafeToCopyCondition())
 					std::memcpy(newBuffer, m_Data, newBufferLength < m_Length ? newBufferLength : m_Length );
 				if (m_Length > 0)
 				{
@@ -199,7 +199,7 @@ namespace pcpp
 				}
 				m_Data = newBuffer;
 				m_Length = newBufferLength;
-				m_Owning = true;
+				m_Ownership = true;
 				return true;
 			}
 
@@ -259,10 +259,12 @@ namespace pcpp
 				if (atIndex + 1 > m_Length)
 					atIndex = m_Length - 1;
 
+				const typename Base::size oldLength = m_Length;
+
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 
-				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, m_Data - atIndex);
+				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, oldLength - atIndex);
 				std::memset(m_Data + atIndex, 0, dataToInsertLen);
 				return true;
 			}
@@ -303,11 +305,13 @@ namespace pcpp
 
 				if (atIndex + 1 > m_Length)
 					atIndex = m_Length - 1;
+				
+				const typename Base::size oldLength = m_Length;
 
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 
-				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, m_Data - atIndex);
+				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, oldLength - atIndex);
 				std::memcpy(m_Data + atIndex, dataToInsert, dataToInsertLen);
 				return true;
 			}
