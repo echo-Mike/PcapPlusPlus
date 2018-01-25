@@ -210,7 +210,7 @@ namespace pcpp
 	/**
 	 * Max packet size supported
 	 */
-#define PCPP_MAX_PACKET_SIZE 65536
+	#define PCPP_MAX_PACKET_SIZE 65536
 
 	/**
 	 * @class RawPacket
@@ -309,7 +309,7 @@ namespace pcpp
 		RawPacket(const RawPacket& other);
 
 		/**
-		 * @brief Assignment operator of this class.
+		 * @brief Copy assignment operator of this class.
 		 * When using this operator on an already initialized RawPacket instance,
 		 * the original raw data is freed first. Then the other instance is copied to 
 		 * this instance, the same way the copy constructor works.
@@ -427,7 +427,7 @@ namespace pcpp
 
 		/**
 		 * @brief Method to check if current object is in the null-state.
-		 * @return true if object NOT in the null-state, false otherwise.
+		 * @return true if object is NOT in the null-state, false otherwise.
 		 */
 		inline operator bool() const { return m_RawDataLen || m_FrameLength || m_pRawData || m_RawPacketSet || m_DeleteRawDataAtDestructor || m_linkLayerType != LINKTYPE_ETHERNET; }
 

@@ -4,6 +4,13 @@
 #include "CPP11.h"
 #include "PCAPPPMemory.h"
 
+#ifdef PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER
+	#define PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ virtual
+#else
+	#define PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__
+	#define PCAPPP_SUPPRESS_VIRTUAL_BASE_ALLOCATOR_ADAPTER__
+#endif
+
 /// @file
 
 /**
@@ -52,18 +59,17 @@ namespace pcpp
 				return *this;
 			}
 #endif
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ ~AllocatorAdapter() {};
 
-			virtual ~AllocatorAdapter() {};
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ inline typename traits::allocator_type& getAllocator() const { return m_Allocator; }
 
-			inline typename traits::allocator_type& getAllocator() const { return m_Allocator; }
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ inline void setAllocator(typename traits::allocator_type& allocator) const { m_Allocator = allocator; }
 
-			inline void setAllocator(typename traits::allocator_type& allocator) const { m_Allocator = allocator; }
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ inline typename traits::pointer allocate(std::size_t length = 1) const { return (m_Allocator.*Allocate)(length); }
 
-			inline typename traits::pointer allocate(std::size_t length = 1) const { return (m_Allocator.*Allocate)(length); }
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ inline void deallocate(typename traits::pointer p) const { (m_Allocator.*Deallocate)(p); }
 
-			inline void deallocate(typename traits::pointer p) const { (m_Allocator.*Deallocate)(p); }
-
-			inline void initialize() { m_Allocator = GetAllocator(); }
+			PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ inline void initialize() { m_Allocator = GetAllocator(); }
 
 		protected:
 			mutable typename traits::allocator_type m_Allocator;

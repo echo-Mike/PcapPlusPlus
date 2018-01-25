@@ -21,12 +21,12 @@ namespace pcpp
 	namespace memory
 	{
 
-		template < typename T, typename Allocator >
-		class MemoryProxy< T, Allocator, MemoryProxyTags::SizeAwareTag > :
-			public MemoryProxyInterface<T, Allocator, MemoryProxyTags::SizeAwareTag >
+		template < typename Allocator >
+		class MemoryProxy< Allocator, MemoryProxyTags::SizeAwareTag > :
+			public MemoryProxyInterface< Allocator >
 		{
 		public:
-			typedef MemoryProxyInterface<T, Allocator, MemoryProxyTags::SizeAwareTag > Base;
+			typedef MemoryProxyInterface< Allocator > Base;
 		protected:
 
 			inline bool SafeToDeleteCondition() { return m_Ownership && m_Data; }
@@ -125,8 +125,8 @@ namespace pcpp
 			explicit MemoryProxy(std::nullptr_t) { initialize(); }
 #endif
 
-			explicit MemoryProxy(pointer p, size length = 0, bool ownership = true) :
-				m_Allocator(), m_Data(p), m_Length(length), m_Ownership(ownership) {}
+			explicit MemoryProxy(const_pointer p, size length = 0, bool ownership = true) :
+				m_Data(p), m_Length(length), m_Allocator(), m_Ownership(ownership) {}
 
 			MemoryProxy(const MemoryProxy& other) { copyDataFrom(other); }
 
@@ -427,9 +427,11 @@ namespace pcpp
 			}
 
 		protected:
-			mutable Adapter m_Allocator;
+			// Don't change the order of data members. 
+			// It is optimised for 64 byte cache line access.
 			pointer m_Data;
 			size m_Length;
+			mutable Adapter m_Allocator; // Don't move this data member. By default it may have size from 1 to 16 bytes (1,8,16) depending on defines.
 			bool m_Ownership;
 		};
 

@@ -21,12 +21,12 @@ namespace pcpp
 	namespace memory
 	{
 
-		template < typename T, typename Allocator >
-		class MemoryProxy< T, Allocator, MemoryProxyTags::OldMemoryModelTag > :
-			public MemoryProxyInterface<T, Allocator, MemoryProxyTags::OldMemoryModelTag >
+		template < typename Allocator >
+		class MemoryProxy< Allocator, MemoryProxyTags::OldMemoryModelTag > :
+			public MemoryProxyInterface< Allocator >
 		{
 		public:
-			typedef MemoryProxyInterface<T, Allocator, MemoryProxyTags::OldMemoryModelTag > Base;
+			typedef MemoryProxyInterface< Allocator > Base;
 		protected:
 
 			inline void zeroFields()
@@ -79,7 +79,7 @@ namespace pcpp
 
 			MemoryProxy() { initialize(); }
 
-			explicit MemoryProxy(const_pointer p, size length, bool ownership) :
+			MemoryProxy(const_pointer p, size length, bool ownership) :
 				m_Allocator() 
 			{
 				initialize();
@@ -197,7 +197,7 @@ namespace pcpp
 
 			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) override
 			{
-				typename Base::index index = m_Length - 1;
+				typename Base::index index = (typename Base::index)m_Length - 1;
 				while (index >= atIndex)
 				{
 					m_Data[index + dataToInsertLen] = m_Data[index];
@@ -211,7 +211,7 @@ namespace pcpp
 
 			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) override
 			{
-				typename Base::index index = m_Length - 1;
+				typename Base::index index = (typename Base::index)m_Length - 1;
 				while (index >= atIndex)
 				{
 					m_Data[index + dataToInsertLen] = m_Data[index];
@@ -269,9 +269,11 @@ namespace pcpp
 			}
 
 		protected:
-			mutable Adapter m_Allocator;
+			// Don't change the order of data members. 
+			// It is optimised for 64 byte cache line access.
 			pointer m_Data;
 			size m_Length;
+			mutable Adapter m_Allocator; // Don't move this data member. By default it may have size from 1 to 16 bytes (1,8,16) depending on defines.
 			bool m_Ownership, m_DataSet;
 		};
 

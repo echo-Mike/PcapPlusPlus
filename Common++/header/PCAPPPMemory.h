@@ -20,7 +20,7 @@ namespace pcpp
 	 */
 	namespace memory
 	{
-
+#ifndef PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
 		template < typename T >
 		struct allocator
 		{
@@ -39,7 +39,7 @@ namespace pcpp
 		struct default_allocator :
 			public allocator<T>
 		{
-			typedef allocator<T> BaseAllocator;
+			typedef allocator<T> Base;
 
 			T* allocate(std::size_t) { return new T(); }
 
@@ -51,18 +51,46 @@ namespace pcpp
 		struct default_allocator<T[]> :
 			public allocator<T>
 		{
-			typedef allocator<T> BaseAllocator;
+			typedef allocator<T> Base;
 
 			T* allocate(std::size_t size) { return new T[size]; }
-
+			
 			void deallocate(pointer p) { delete[] p; }
 		};
+#else
+		template < typename T >
+		struct default_allocator
+		{
+			typedef T value_type;
+			typedef T* pointer;
+			typedef const T* const_pointer;
+			typedef T& reference;
+			typedef const T& const_reference;
 
+			T* allocate(std::size_t) { return new T(); }
+
+			void deallocate(pointer p) { delete p; }
+
+		};
+
+		template < typename T >
+		struct default_allocator<T[]>
+		{
+			typedef T value_type;
+			typedef T* pointer;
+			typedef const T* const_pointer;
+			typedef T& reference;
+			typedef const T& const_reference;
+
+			T* allocate(std::size_t size) { return new T[size]; }
+			
+			void deallocate(pointer p) { delete[] p; }
+		};
+#endif
 		template < typename Allocator >
 		struct allocator_traits
 		{
 			typedef Allocator allocator_type;
-			typedef typename Allocator::BaseAllocator base_allocator;
 			typedef typename Allocator::value_type  value_type;
 			typedef typename Allocator::pointer pointer;
 			typedef typename Allocator::const_pointer const_pointer;
