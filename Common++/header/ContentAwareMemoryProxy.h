@@ -333,7 +333,7 @@ namespace pcpp
 			 * If m_Capacity is greater or equal to newBufferLength - Immediately returns true.\n
 			 * newBufferLength set to 0 interpreted as clear operation a.e. deallocate data and call zeroFields member function.\n
 			 * In any other case firstly allocates memory for newBufferLength data entries. 
-			 * Then sets perbyte value of that memory to initialValue. After that copies old data to beginig of new memory.
+			 * Then sets per-byte value of that memory to initialValue. After that copies old data to beginig of new memory.
 			 * At the end deallocates old data and sets data member fields to their corresponding values.\n
 			 * Correctly handles the case when newBufferLength is less than m_Length -> only data that fits new memory will be copied and m_Length is changed.\n
 			 * If old data can't be deallocated sets object to a null-state.
@@ -415,6 +415,7 @@ namespace pcpp
 			 * Appending 0 bytes is always a success.
 			 * m_Length is corrected.
 			 * @return true if operation ended successfully, false otherwise.
+			 * @todo Add error msg
 			 */
 			bool append(const_pointer dataToAppend, size dataToAppendLen) override
 			{
@@ -441,6 +442,8 @@ namespace pcpp
 			/**
 			 * NOTE: Indexes in Insert and Remove operations.
 			 * 
+			 * atIndex parameter value and corresponding normal array index
+			 * Normal working range for this operations is : [-length : length-1]
 			 * # - before-the-start index; @ - pass-the-end index; 
 			 * +================+=============+=========+===========+===========+=====+==========+==========+==================+
 			 * | Normal Indexes |      #      |    0    |     1     |     2     | ... | length-2 | length-1 |        @         |
