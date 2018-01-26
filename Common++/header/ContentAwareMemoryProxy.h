@@ -394,6 +394,8 @@ namespace pcpp
 			 * @brief Append memory capable of holding dataToAppendLen data entries and set it per-byte to initialValue on allocation.
 			 * Appending 0 bytes is always a success.
 			 * m_Length is corrected.
+			 * @param[in] dataToAppendLen Size of data to be appended.
+			 * @param[in] initialValue Initial value for new memory.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
 			bool append(size dataToAppendLen, memory_value initialValue = 0) override
@@ -414,6 +416,8 @@ namespace pcpp
 			 * @brief Append memory capable of holding dataToAppendLen data entries and copy data from dataToAppend to it (concatenate).
 			 * Appending 0 bytes is always a success.
 			 * m_Length is corrected.
+			 * @param[in] dataToAppend Buffer memory to be appended to current data.
+			 * @param[in] dataToAppendLen Size of data to be appended.
 			 * @return true if operation ended successfully, false otherwise.
 			 * @todo Add error msg
 			 */
@@ -439,14 +443,17 @@ namespace pcpp
 				m_Length += dataToAppendLen;
 				return true;
 			}
+
 			/**
+			 * @page memory_indexes_in_insert_and_remove_operation Indexes in Insert and Remove operations
+			 * 
 			 * NOTE: Indexes in Insert and Remove operations.
 			 * 
-			 * atIndex parameter value and corresponding normal array index
+			 * Next table describes atIndex parameter value and corresponding normal array index.
 			 * Normal working range for this operations is : [-length : length-1]
-			 * # - before-the-start index; @ - pass-the-end index; 
+			 * \# - before-the-start index; \@ - pass-the-end index; 
 			 * +================+=============+=========+===========+===========+=====+==========+==========+==================+
-			 * | Normal Indexes |      #      |    0    |     1     |     2     | ... | length-2 | length-1 |        @         |
+			 * | Normal Indexes |     \#      |    0    |     1     |     2     | ... | length-2 | length-1 |       \@         |
 			 * +================+=============+=========+===========+===========+=====+==========+==========+==================+
 			 * | Insert Indexes | insert back | 0       | 1         | 2         | ... | length-2 | length-1 | append operation |
 			 * +----------------+-------------+---------+-----------+-----------+-----+----------+----------+------------------+
@@ -456,12 +463,13 @@ namespace pcpp
 			 * +----------------+-------------+---------+-----------+-----------+-----+----------+----------+------------------+
 			 * | Remove Back    | not handled | -length | -length+1 | -length+2 | ... | -2       | -1       | not handled      |
 			 * +----------------+-------------+---------+-----------+-----------+-----+----------+----------+------------------+
+			 * 
 			 * ASCII table generator: https://ozh.github.io/ascii-tables/
 			 */
 
 			/**
 			 * @brief Handles negative values of atIndex for insert operation.
-			 * See: "Indexes in Insert and Remove operations" note in this file.
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 */
 			bool insert_back(index atIndex, size dataToInsertLen, memory_value initialValue = 0)
 			{
@@ -486,7 +494,8 @@ namespace pcpp
 			}
 			/**
 			 * @brief Inserts memory capable of holding dataToInsertLen data entries and set it per-byte to initialValue on allocation.
-			 * Case with negative atIndex is handled correctly.
+			 * Case with negative atIndex is handled correctly.\n
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 * @param[in] atIndex Index before which insertion take place.
 			 * @param[in] dataToInsertLen Size of data to be inserted.
 			 * @param[in] initialValue Initial value for new memory.
@@ -522,7 +531,7 @@ namespace pcpp
 			}
 			/**
 			 * @brief Handles negative values of atIndex for insert operation (with data).
-			 * See: "Indexes in Insert and Remove operations" note in this file.
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 */
 			bool insert_back(index atIndex, const_pointer dataToInsert, size dataToInsertLen)
 			{
@@ -547,7 +556,8 @@ namespace pcpp
 			}
 			/**
 			 * @brief Inserts memory capable of holding dataToInsertLen data entries and copy data from dataToAppend to it.
-			 * Case with negative atIndex is handled correctly.
+			 * Case with negative atIndex is handled correctly.\n
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 * @param[in] atIndex Index before which insertion take place.
 			 * @param[in] dataToInsert Buffer memory to be inserted to current data.
 			 * @param[in] dataToInsertLen Size of data to be inserted.
@@ -589,7 +599,7 @@ namespace pcpp
 			}
 			/**
 			 * @brief Handles negative values of atIndex for remove operation.
-			 * See: "Indexes in Insert and Remove operations" note in this file.
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 */
 			bool remove_back(index atIndex, size numOfBytesToRemove)
 			{
@@ -617,7 +627,8 @@ namespace pcpp
 			/**
 			 * @brief Removes memory capable of holding numOfBytesToRemove data entries starting from atIndex.
 			 * Actualy makes no reallocations just shrinks m_Length value (tail bytes are handled correctly).\n
-			 * Case with negative atIndex is handled correctly.
+			 * Case with negative atIndex is handled correctly.\n
+			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 * @param[in] atIndex Index from which removal take place.
 			 * @param[in] numOfBytesToRemove Size of data to be removed.
 			 * @return true if operation finished successfully, false otherwise.

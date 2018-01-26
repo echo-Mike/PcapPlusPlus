@@ -6,6 +6,10 @@
 
 #include "CPP11.h"
 
+#ifdef PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
+	#define PCAPPP_SUPPRESS_VIRTUAL_BASE_ALLOCATOR__
+#endif // PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
+
 /// @file
 
 /**
@@ -20,7 +24,6 @@ namespace pcpp
 	 */
 	namespace memory
 	{
-#ifndef PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
 		template < typename T >
 		struct allocator
 		{
@@ -29,15 +32,22 @@ namespace pcpp
 			typedef const T* const_pointer;
 			typedef T& reference;
 			typedef const T& const_reference;
+#ifdef PCAPPP_SUPPRESS_VIRTUAL_BASE_ALLOCATOR__
+
+			T* allocate(std::size_t) { return nullptr; }
+
+			void deallocate(pointer) {}
+#else
 
 			virtual T* allocate(std::size_t) = 0;
 
 			virtual void deallocate(pointer) = 0;
+#endif // PCAPPP_SUPPRESS_VIRTUAL_BASE_ALLOCATOR__
 		};
 
 		template < typename T >
-		struct default_allocator :
-			public allocator<T>
+		struct default_allocator
+			: public allocator<T>
 		{
 			typedef allocator<T> Base;
 
@@ -54,39 +64,10 @@ namespace pcpp
 			typedef allocator<T> Base;
 
 			T* allocate(std::size_t size) { return new T[size]; }
-			
+
 			void deallocate(pointer p) { delete[] p; }
 		};
-#else
-		template < typename T >
-		struct default_allocator
-		{
-			typedef T value_type;
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef T& reference;
-			typedef const T& const_reference;
 
-			T* allocate(std::size_t) { return new T(); }
-
-			void deallocate(pointer p) { delete p; }
-
-		};
-
-		template < typename T >
-		struct default_allocator<T[]>
-		{
-			typedef T value_type;
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef T& reference;
-			typedef const T& const_reference;
-
-			T* allocate(std::size_t size) { return new T[size]; }
-			
-			void deallocate(pointer p) { delete[] p; }
-		};
-#endif
 		template < typename Allocator >
 		struct allocator_traits
 		{
