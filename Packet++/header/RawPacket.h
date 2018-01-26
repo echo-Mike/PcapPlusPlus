@@ -226,7 +226,7 @@ namespace pcpp
 	 * * Underlying data is freed on object deconstruction only if object owns it;  
 	 * * appendData, insertData and removeData operations doesn't change owning state;  
 	 * * Object which data was reallocated using reallocateData owns it's underlying data.  
-	 * 
+	 *   
 	 */
 	class RawPacket
 	{

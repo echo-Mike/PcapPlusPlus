@@ -30,7 +30,7 @@ namespace pcpp
 		 * * m_RawPacketSet -> m_DataSet  
 		 * * m_DeleteRawDataAtDestructor -> m_Ownership  
 		 *   
-		 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
+		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
 		template < typename Allocator >
 		class MemoryProxy< Allocator, MemoryProxyTags::OldMemoryModelTag > :

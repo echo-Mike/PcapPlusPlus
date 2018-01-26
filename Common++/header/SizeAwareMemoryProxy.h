@@ -25,7 +25,7 @@ namespace pcpp
 		 * This specialisation held only one counter for internal data length.\n
 		 * m_Length - represents the length of known data in underlying storage and the size of underlying storage.\n
 		 * This is the safe implementation of old memory handling algorithm. But logic is not similar and therefore the test values.
-		 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
+		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
 		template < typename Allocator >
 		class MemoryProxy< Allocator, MemoryProxyTags::SizeAwareTag > :

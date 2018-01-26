@@ -26,7 +26,7 @@ namespace pcpp
 		 * m_Length - represents the length of known data in underlying storage.\n
 		 * m_Capacity - represents the real length of memory in underlying storage.\n
 		 * This is the safest specialisation to handle complex data manipulation.
-		 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
+		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
 		template < typename Allocator >
 		class MemoryProxy< Allocator, MemoryProxyTags::ContentAwareTag > :
