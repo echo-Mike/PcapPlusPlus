@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "PCAPPPMemory.h"
+
 #define MAX_ADDR_STRING_LEN 40 //xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
 
 /// @file
@@ -26,18 +28,16 @@ namespace pcpp
 	 */
 	class IPAddress
 	{
+	public:
+		typedef PCAPPP_UNIQUE_PTR(IPAddress) Ptr_t;
+		typedef PCAPPP_UNIQUE_PTR(char[]) StrUPtr_t;
 	protected:
+		mutable StrUPtr_t m_AddressAsString;
 		bool m_IsValid;
-		char m_AddressAsString[MAX_ADDR_STRING_LEN];
 
 		// protected c'tor
-		IPAddress() : m_IsValid(false) {}
+		IPAddress() : m_AddressAsString(), m_IsValid(false) {}
 	public:
-#if __cplusplus > 199711L
-		typedef std::unique_ptr<IPAddress> Ptr_t; 
-#else
-		typedef std::auto_ptr<IPAddress> Ptr_t; 
-#endif
 
 		/**
 		 * An enum representing the address type: IPv4 or IPv6
@@ -65,7 +65,10 @@ namespace pcpp
 		 * Returns a std::string representation of the address
 		 * @return A string representation of the address
 		 */
-		std::string toString() const { return std::string(m_AddressAsString); }
+		std::string toString() const
+		{
+			return std::string(m_AddressAsString ? m_AddressAsString.get() : "");
+		}
 
 		/**
 		 * Get an indication if the address is valid. An address can be invalid if it was constructed from illegal input, for example:

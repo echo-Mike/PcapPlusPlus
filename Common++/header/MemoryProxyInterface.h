@@ -226,6 +226,7 @@ namespace pcpp
 			struct ContentAwareTag {};
 			struct OldMemoryModelTag {};
 			// struct SafeOldMemoryModelTag {};
+			struct DpdkTag {};
 		}
 
 		/**

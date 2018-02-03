@@ -25,6 +25,261 @@ namespace pcpp
 	namespace memory
 	{
 		/**
+		 * @brief Helper structure that wraps up a call to delete expression.
+		 * @tparam T The base type of value to be deallocated via delete.
+		 */
+		template < typename T >
+		struct default_delete
+		{
+			/**
+			 * Type of pointer to value type.
+			 */
+			typedef T* pointer;
+			/**
+			 * @brief Calls delete expression on provided pointer.
+			 * Does nothing if provided pointer is same as result of expression: pointer().
+			 * @param ptr Pointer to object to be deleted.
+			 */
+			void operator()(pointer ptr) const
+			{
+				if (ptr != pointer()) 
+				{
+					delete ptr;
+				}
+			}
+		};
+
+		/**
+		 * @brief Helper structure that wraps up a call to delete[] expression.
+		 * This specialisation is provided for deallocation of arrays of object with type T.
+		 * @tparam T The base type of value to be deallocated via delete[].
+		 */
+		template < typename T >
+		struct default_delete<T[]>
+		{
+			/**
+			 * Type of pointer to value type.
+			 */
+			typedef T* pointer;
+			/**
+			 * @brief Calls delete[] expression on provided pointer.
+			 * Does nothing if provided pointer is same as result of expression: pointer().
+			 * @param ptr Pointer to object to be deleted.
+			 */
+			void operator()(pointer ptr) const
+			{
+				if (ptr != pointer())
+				{
+					delete[] ptr;
+				}
+			}
+		};
+
+		/**
+		* \namespace Implementation
+		* \brief Special namespace that wraps up an implementation details of some classes from pcpp::memory namespace.
+		*/
+		namespace Implementation
+		{
+			/**
+			 * @brief Special tag for template dispatching with two specialisations.
+			 * Represents true outcome.
+			 */
+			struct TrueTag {};
+			/**
+			 * @brief Special tag for template dispatching with two specialisations.
+			 * Represents false outcome.
+			 */
+			struct FalseTag {};
+
+			/**
+			 * Implementation of next classes are copied from:
+			 * http://en.cppreference.com/w/cpp/types/remove_pointer
+			 */
+			/**
+			 * @brief Standard type traits remove_pointer trait replacement for C++98.
+			 * Contains type "type" if provided T is not a pointer.
+			 */
+			template< class T > struct remove_pointer { typedef T type; };
+			/**
+			 * @brief Standard type traits remove_pointer trait replacement for C++98.
+			 * Contains type "type" if provided type is simple pointer.
+			 */
+			template< class T > struct remove_pointer<T*> { typedef T type; };
+			/**
+			 * @brief Standard type traits remove_pointer trait replacement for C++98.
+			 * Contains type "type" if provided type is a pointer to some const-qualified type.
+			 */
+			template< class T > struct remove_pointer<T* const> { typedef T type; };
+			/**
+			 * @brief Standard type traits remove_pointer trait replacement for C++98.
+			 * Contains type "type" if provided type is a pointer to some volatile-qualified type.
+			 */
+			template< class T > struct remove_pointer<T* volatile> { typedef T type; };
+			/**
+			 * @brief Standard type traits remove_pointer trait replacement for C++98.
+			 * Contains type "type" if provided type is a pointer to some const-volatile qualified type.
+			 */
+			template< class T > struct remove_pointer<T* const volatile> { typedef T type; };
+
+			/**
+			 * @brief Helper template structure that wraps up two values.
+			 * This is a main template that actually have nothing to do with the compression of provided values.
+			 * It is a simple dummy class that must never be reached by template resolution.
+			 * In case if it is reaced it can't be constructed and sizeof this class is explicitly some huge value.
+			 * This main template is a fallback for incorrect usage of this class.\n
+			 * PRINCIPLE:\n
+			 * The compression magic happens in a specialisations.
+			 * The basic principle is that deriving from empty (no value members only function members) base class is costless, 
+			 * but storing same object as a value member costs one byte plus padding and alignment.
+			 * This types of objects are commonly a function objects.
+			 */
+			template < typename T1, typename T2, typename TagType >
+			class CompressedPair
+			{ private: T2 dummy[1000]; CompressedPair() {} ~CompressedPair() {} };
+			/**
+			 * @brief Specialisation of ComplessedPair for two non-empty types.
+			 * This template actually have nothing to do with the compression of provided types.
+			 * It is simply stores them sequentially one after another.
+			 * This template is a fallback for all provided non-empty types.
+			 * This technique has a more general approach with variadic templates or variadic macros. 
+			 * But the clearer way - variadic templates is not part of C++98 standard,
+			 * so we decided to use template tag dispatching with explicit/partial specialisation for dispatcher in cases when it is needed.
+			 * For this template the requirement is applied to T1 and T2 - they must be copy constructible.
+			 * @tparam T1 The type of first value to store.
+			 * @tparam T2 The type of second value to store.
+			 */
+			template < typename T1, typename T2>
+			class CompressedPair<T1, T2, FalseTag>
+			{
+			private:
+				T1 m_Val1;
+				T2 m_Val2;
+			public:
+				/**
+				 * @brief Main constructor of this calss.
+				 * Simply calls copy constructors of members with corresponding parameters.\n
+				 * The T1 and T2 must meet copy-constructible requrement.
+				 * @param val1 The value to be provide to the copy constructor of first stored value.
+				 * @param val2 The value to be provide to the copy constructor of secnd stored value.
+				 */
+				CompressedPair(const T1& val1, const T2& val2) :
+					m_Val1(val1), m_Val2(val2) {}
+				/**
+				 * @brief Method to access the first stored value.
+				 * @return Reference to the first stored value.
+				 */
+				T1& get_first() { return (m_Val1); } // () prevents compiler from certain type of RVO
+				/**
+				 * @brief Method to access the first stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified first stored value.
+				 */
+				const T1& get_first() const { return (m_Val1); }
+				/**
+				 * @brief Method to access the second stored value.
+				 * @return Reference to the second stored value.
+				 */
+				T2& get_second() { return (m_Val2); }
+				/**
+				 * @brief Method to access the second stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified second stored value.
+				 */
+				const T2& get_second() const { return (m_Val2); }
+			};
+			/**
+			 * @brief Specialisation of ComplessedPair for any empty type as it's first argument and some type as second.
+			 * The compression magic is happening here.
+			 * See the compression principle in CompressedPair main template description.
+			 * For this template the requirement is applied to T2 - it must be copy constructible.
+			 * @tparam T1 The type to be derived from.
+			 * @tparam T2 The type to be stored.
+			 */
+			template < typename T1, typename T2 >
+			class CompressedPair<T1, T2, TrueTag> :
+				private T1 // private -> Don't add any names to namespace of this class
+			{
+			private:
+				/**
+				 * Type alias for base class.
+				 */
+				typedef T1 Base;
+
+				T2 m_Val2;
+			public:
+				/**
+				 * @brief Main constructor of this calss.
+				 * By defult empty objects have great default constructors.
+				 * The signature of this function must be the same as for other specialisation, 
+				 * except base class must be provided by value to not fill the stack (sizeof Base == 1 Byte, sizeof Base& == 4/8 Byte).
+				 * @param val2 The value to be provide to the copy constructor of stored value.
+				 */
+				CompressedPair(const Base, const T2& val2) :
+					Base(), m_Val2(val2) {}
+				/**
+				 * @brief Method to access the compressed base value.
+				 * @return Reference to the first stored type.
+				 */
+				Base& get_first() { return (*this); }
+				/**
+				 * @brief Method to access the compressed base value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the first stored type.
+				 */
+				const Base& get_first() const { return (*this); }
+				/**
+				 * @brief Method to access the actually stored value.
+				 * @return Reference to the second stored value.
+				 */
+				T2& get_second() { return (m_Val2); }
+				/**
+				 * @brief Method to access the actually stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified second stored value.
+				 */
+				const T2& get_second() const { return (m_Val2); }
+			};
+
+			/**
+			 * @brief Special structure that helps to dispatch CompressedPair class depending on template arguments.
+			 * This is a main template. It dispatches all not-known types to a CompressedPair<T1, T2, FalseTag>.
+			 * If you need to add any custom deleters just add a specialisation of this template.
+			 * As an example take a look provided specialisations.
+			 * @tparam T1 The type to be passed to CompressedPair template as T1 template argument.
+			 * @tparam T2 The type to be passed to CompressedPair template as T2 template argument.
+			 */
+			template < typename T1, typename T2 >
+			struct CompressedPairDispatcher
+			{
+				typedef CompressedPair<T1, T2, FalseTag> pair_type;
+			};
+			/**
+			 * @brief Specialisation that dispatches any default_delete<T> type to CompressedPair<default_delete<T>, T2, TrueFlag>
+			 * This is an example of dispatching specialisation.
+			 * This specialisation don't dispatches default_delete<T[]>,
+			 * @tparam T2 Some type to be passed to default_delete template.
+			 */
+			template < typename T2 >
+			struct CompressedPairDispatcher< default_delete< typename remove_pointer<T2>::type >, T2 >
+			{
+				typedef CompressedPair<default_delete< typename remove_pointer<T2>::type >, T2, TrueTag> pair_type;
+			};
+			/**
+			 * @brief Specialisation that dispatches any default_delete<T[]> type to CompressedPair<default_delete<T[]>, T2, TrueFlag>
+			 * This is an example of dispatching specialisation.
+			 * This specialisation don't dispatches default_delete<T>,
+			 * @tparam T2 Some type to be passed to default_delete template.
+			 */
+			template < typename T2 >
+			struct CompressedPairDispatcher< default_delete< typename remove_pointer<T2>::type[] >, T2 >
+			{
+				typedef CompressedPair<default_delete< typename remove_pointer<T2>::type[] >, T2, TrueTag> pair_type;
+			};
+
+		} // namespace pcpp::memory::Implementation
+
+		/**
 		 * @brief The base interface class for all allocators.
 		 * Defines the basic types used by allocators and their users.\n
 		 * Defines the interface which all allocators must implement.\n
@@ -206,6 +461,226 @@ namespace pcpp
 			return allocator;
 		}
 #endif
+
+#undef ENABLE_CPP11_MOVE_SEMANTICS //REMOVE
+
+/**
+ * Special macro that can select between two functional-macro definitions based on count of arguments
+ */
+#define PCAPPP_GET_MACRO_2(_1,_2,NAME,...) NAME
+/**
+ * Next section represents a custom implementstion of std::unique_ptr for this library.
+ * The whole implementation is a corrected for C++98 copy from MSVC 16.0 (Microsoft Visual Studio 2015) standard library implementation.
+ * About next 'ifndef': Basicaly every compiler that have move semantics support have it's own implementation of std::unique_ptr.
+ * So we just provide a macro definition that swaps our inplementation with standard one when it is possible.
+ */
+#ifndef ENABLE_CPP11_MOVE_SEMANTICS
+		/**
+		 * @brief Base class for unique_ptr implementation.
+		 * @tparam T The type of values to be stored.
+		 * @tparam Deleter The function object or lvalue reference to function or to function object, to be called from the destructor
+		 */
+		template < typename T, typename Deleter >
+		class unique_ptr_base
+		{
+		public:
+			/**
+			 * Type of pointer to stored value.
+			 */
+			typedef T* pointer;
+			/**
+			 * Type of stored value.
+			 */
+			typedef T element_type;
+			/**
+			 * Type of deleter.
+			 */
+			typedef Deleter deleter_type;
+
+			/**
+			 * @brief Default constructor.
+			 * Constructs a unique_ptr_base that owns nothing. 
+			 * Value-initializes the stored pointer and the stored deleter. 
+			 * Requires that Deleter is DefaultConstructible.
+			 */
+			unique_ptr_base() : m_Pair(Deleter(), pointer()) {}
+
+// In case of unsupported std::nullptr_t nullptr will be a macro def (from CPP11.h)
+#ifndef nullptr
+			/**
+			 * @brief Special case constructor for nullptr.
+			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
+			 */
+			unique_ptr_base(std::nullptr_t) : m_Pair(Deleter(), pointer()) {}
+#endif
+			/**
+			 * @brief Main constructor.
+			 * Constructs a unique_ptr_base which owns p, initializing the stored pointer with p 
+			 * and value-initializing the stored deleter. 
+			 * Requires that Deleter is DefaultConstructible.
+			 * @param p Pointer to memory to be owned.
+			 */
+			explicit unique_ptr_base(pointer p) : m_Pair(Deleter(), p) {}
+
+			/**
+			 * @brief Method to access the stored deleter object.
+			 * @return Reference to the deleter object.
+			 */
+			deleter_type& get_deleter()	{ return (m_Pair.get_first()); }
+			/**
+			 * @brief Method to access the stored deleter object.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Reference to the deleter object.
+			 */
+			const deleter_type& get_deleter() const { return (m_Pair.get_first()); }
+
+			/**
+			 * @brief Method to access the stored pointer.
+			 * @return Reference to the pointer.
+			 */
+			pointer& get_pointer() { return (m_Pair.get_second()); }
+			/**
+			 * @brief Method to access the stored pointer.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Reference to the pointer.
+			 */
+			const pointer& get_pointer() const { return (m_Pair.get_second()); }
+
+			/**
+			 * Pair that stores deleter and pointer compressed if it is possible.
+			 */
+			typename Implementation::CompressedPairDispatcher<Deleter, pointer>::pair_type m_Pair;
+		private:
+			/**
+			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * unique_ptr_base is not copyable
+			 */
+			unique_ptr_base(const unique_ptr_base&) {}
+			/**
+			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * unique_ptr_base is not copyable
+			 */
+			unique_ptr_base& operator=(const unique_ptr_base& a) { return *this; }
+		};
+
+		template < typename T, typename Deleter = default_delete<T> >
+		class unique_ptr :
+			public unique_ptr_base<T, Deleter>
+		{
+		public:
+			typedef unique_ptr_base<T, Deleter> Base;
+			typedef typename _Mybase::pointer pointer;
+			typedef T element_type;
+			typedef Deleter deleter_type;
+
+			using Base::get_deleter;
+
+			unique_ptr() : Base() {}
+#ifndef nullptr
+
+			unique_ptr(std::nullptr_t) : Base(nullptr) {}
+#endif
+
+			explicit unique_ptr(pointer p) : Base(p) {}
+
+			~unique_ptr()
+			{
+				if (get() != pointer())
+					this->get_deleter()(get());
+			}
+
+			element_type& operator*() const { return (*get()); }
+
+			pointer operator->() const { return (get()); }
+			
+			pointer get() const { return (this->get_pointer()); }
+
+			explicit operator bool() const { return (get() != pointer()); }
+
+			pointer release() 
+			{	
+				pointer old = get();
+				this->get_pointer() = pointer();
+				return (old);
+			}
+
+			void reset(pointer ptr = pointer())
+			{	
+				pointer old = get();
+				this->get_pointer() = ptr;
+				if (old != pointer())
+					this->get_deleter()(old);
+			}
+
+		private:
+			unique_ptr(const unique_ptr&) {}
+			unique_ptr& operator=(const unique_ptr& a) { return *this; }
+		};
+
+		template < typename T, typename Deleter >
+		class unique_ptr<T[], Deleter> :
+			public unique_ptr_base<T, Deleter>
+		{
+		public:
+			typedef unique_ptr_base<T, Deleter> Base;
+			typedef typename _Mybase::pointer pointer;
+			typedef T element_type;
+			typedef Deleter deleter_type;
+
+			using Base::get_deleter;
+
+			unique_ptr() : Base() {}
+#ifndef nullptr
+
+			unique_ptr(std::nullptr_t) : Base(nullptr) {}
+#endif
+
+			explicit unique_ptr(pointer p) : Base(p) {}
+
+			~unique_ptr()
+			{
+				if (get() != pointer())
+					this->get_deleter()(get());
+			}
+
+			element_type& operator[](size_t index) const { return (get()[index]); }
+
+			pointer get() const { return (this->get_pointer()); }
+
+			explicit operator bool() const { return (get() != pointer()); }
+
+			pointer release()
+			{
+				pointer old = get();
+				this->get_pointer() = pointer();
+				return (old);
+			}
+
+			void reset(pointer ptr = pointer())
+			{
+				pointer old = get();
+				this->get_pointer() = ptr;
+				if (old != pointer())
+					this->get_deleter()(old);
+			}
+
+		private:
+			unique_ptr(const unique_ptr&) {}
+			unique_ptr& operator=(const unique_ptr& a) { return *this; }
+		};
+
+#define PCAPPP_UPTR_TYPE_ONLY(Type_) pcpp::memory::unique_ptr<Type_>
+#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) pcpp::memory::unique_ptr<Type_, Deleter_>
+#define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
+#define PCAPPP_DEFAULT_DELETER(Type_) pcpp::memory::default_delete<Type_>
+#else
+
+#define PCAPPP_UPTR_TYPE_ONLY(Type_) std::unique_ptr<Type_>
+#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) std::unique_ptr<Type_, Deleter_>
+#define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
+#define PCAPPP_DEFAULT_DELETER(Type_) std::default_delete<Type_>
+
+#endif // !ENABLE_CPP11_MOVE_SEMANTICS
 
 	} // namespace pcpp::memory
 
