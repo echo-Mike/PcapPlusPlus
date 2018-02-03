@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "CPP11.h"
 #include "PCAPPPMemory.h"
 
 #define MAX_ADDR_STRING_LEN 40 //xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
@@ -29,7 +30,13 @@ namespace pcpp
 	class IPAddress
 	{
 	public:
-		typedef PCAPPP_UNIQUE_PTR(IPAddress) Ptr_t;
+		/**
+		 * Smart pointer to IPAddress class (may handle derived object)
+		 */
+		typedef PCAPPP_UNIQUE_OR_AUTO_PTR(IPAddress) Ptr_t;
+		/**
+		 * Smart pointer that handles memory for string representation
+		 */
 		typedef PCAPPP_UNIQUE_PTR(char[]) StrUPtr_t;
 	protected:
 		mutable StrUPtr_t m_AddressAsString;
@@ -53,7 +60,7 @@ namespace pcpp
 			IPv6AddressType
 		};
 
-		virtual ~IPAddress();
+		virtual ~IPAddress() {}
 
 		/**
 		 * Gets the address type: IPv4 or IPv6
@@ -65,17 +72,14 @@ namespace pcpp
 		 * Returns a std::string representation of the address
 		 * @return A string representation of the address
 		 */
-		std::string toString() const
-		{
-			return std::string(m_AddressAsString ? m_AddressAsString.get() : "");
-		}
+		virtual std::string toString() const { return std::string(m_AddressAsString ? m_AddressAsString.get() : ""); }
 
 		/**
 		 * Get an indication if the address is valid. An address can be invalid if it was constructed from illegal input, for example:
 		 * An IPv4 address that was constructed form the string "999.999.999.999"
 		 * @return True if the address is valid, false otherwise
 		 */
-		bool isValid() { return m_IsValid; }
+		bool isValid() const { return m_IsValid; }
 
 		/**
 		 * Constructs an IP address of type IPv4 or IPv6 from a string (char*) representation
@@ -103,7 +107,11 @@ namespace pcpp
 	{
 	private:
 		in_addr* m_pInAddr;
-		void init(char* addressAsString);
+		void initialize(char* addressAsString);
+		void copyDataFrom(const IPv4Address& other);
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+		void moveDataFrom(IPv4Address&& other);
+#endif
 	public:
 		/**
 		 * A constructor that creates an instance of the class out of 4-byte integer value
@@ -132,17 +140,45 @@ namespace pcpp
 		 */
 		IPv4Address(in_addr* inAddr);
 
-		~IPv4Address();
-
 		/**
 		 * A copy constructor for this class
 		 */
 		IPv4Address(const IPv4Address& other);
 
 		/**
+		 * Overload of the copy assignment operator
+		 */
+		IPv4Address& operator=(const IPv4Address& other);
+
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+		/**
+		 * A move constructor for this class.
+		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 */
+		IPv4Address(IPv4Address&& other);
+
+		/**
+		 * Overload of the move assignment operator
+		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 */
+		IPv4Address& operator=(IPv4Address&& other);
+#endif
+
+		~IPv4Address();
+
+		/**
+		 * Returns a std::string representation of the address.
+		 * This method is the only one (apart from copy constructor) that triggers 
+		 * the allocation of memory for string representation.
+		 * If adress is not valid the zero length string will be returned.
+		 * @return A string representation of the address.
+		 */
+		std::string toString() const override;
+
+		/**
 		 * @return IPv4AddressType
 		 */
-		AddressType getType() const { return IPv4AddressType; }
+		AddressType getType() const override { return IPv4AddressType; }
 
 		/**
 		 * Converts the IPv4 address into a 4B integer
@@ -160,18 +196,19 @@ namespace pcpp
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		bool operator==(const IPv4Address& other) const { return toInt() == other.toInt(); }
+		bool operator==(const IPv4Address& other) const { return isValid() && other.isValid() && !std::memcmp(m_pInAddr, other.m_pInAddr, sizeof(uint32_t)); }
+
+		/**
+		 * Overload of the comparison operator
+		 * @return true if 2 addresses are equal. False otherwise
+		 */
+		bool operator==(const uint32_t addr) const { return isValid() && !std::memcmp(m_pInAddr, &addr, sizeof(uint32_t)); }
 
 		/**
 		 * Overload of the non-equal operator
 		 * @return true if 2 addresses are not equal. False otherwise
 		 */
-		bool operator!=(const IPv4Address& other) const { return toInt() != other.toInt(); }
-
-		/**
-		 * Overload of the assignment operator
-		 */
-		IPv4Address& operator=(const IPv4Address& other);
+		bool operator!=(const IPv4Address& other) const { return !operator==(other); }
 
 		/**
 		 * Checks whether the address matches a subnet.
@@ -200,9 +237,12 @@ namespace pcpp
 	{
 	private:
 		in6_addr* m_pInAddr;
-		void init(char* addressAsString);
+		void initialize(char* addressAsString);
+		void copyDataFrom(const IPv6Address& other);
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+		void moveDataFrom(IPv6Address&& other);
+#endif
 	public:
-		~IPv6Address();
 
 		/**
 		 * A constructor that creates an instance of the class out of a 16-Byte long byte array.
@@ -231,9 +271,39 @@ namespace pcpp
 		IPv6Address(const IPv6Address& other);
 
 		/**
+		 * Overload of the assignment operator
+		 */
+		IPv6Address& operator=(const IPv6Address& other);
+
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+		/**
+		 * A move constructor for this class
+		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 */
+		IPv6Address(IPv6Address&& other);
+
+		/**
+		 * Overload of the move assignment operator
+		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 */
+		IPv6Address& operator=(IPv6Address&& other);
+#endif
+
+		~IPv6Address();
+
+		/**
+		 * Returns a std::string representation of the address.
+		 * This method is the only one (apart from copy constructor) that triggers 
+		 * the allocation of memory for string representation.
+		 * If adress is not valid the zero length string will be returned.
+		 * @return A string representation of the address.
+		 */
+		std::string toString() const override;
+
+		/**
 		 * @return IPv6AddressType
 		 */
-		AddressType getType() const { return IPv6AddressType; }
+		AddressType getType() const override { return IPv6AddressType; }
 
 		/**
 		 * Returns a in6_addr struct pointer representing the IPv6 address
@@ -246,7 +316,7 @@ namespace pcpp
 		 * @param[in] arr A pointer to where array will be allocated
 		 * @param[out] length Returns the length in bytes of the array that was allocated
 		 */
-		void copyTo(uint8_t** arr, size_t& length);
+		void copyTo(uint8_t** arr, size_t& length) const;
 
 		/**
 		 * Gets a pointer to an already allocated byte array and copies the address value to it.
@@ -259,18 +329,13 @@ namespace pcpp
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		bool operator==(const IPv6Address& other);
+		bool operator==(const IPv6Address& other) const { return isValid() && other.isValid() && (std::memcmp(m_pInAddr, other.m_pInAddr, sizeof(in6_addr)) == 0); }
 
 		/**
 		 * Overload of the non-equal operator
 		 * @return true if 2 addresses are not equal. False otherwise
 		 */
-		bool operator!=(const IPv6Address& other);
-
-		/**
-		 * Overload of the assignment operator
-		 */
-		IPv6Address& operator=(const IPv6Address& other);
+		bool operator!=(const IPv6Address& other) const { return !operator==(other); }
 
 		/**
 		 * A static value representing a zero value of IPv6 address, meaning address of value

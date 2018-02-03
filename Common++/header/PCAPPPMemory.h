@@ -462,8 +462,6 @@ namespace pcpp
 		}
 #endif
 
-#undef ENABLE_CPP11_MOVE_SEMANTICS //REMOVE
-
 /**
  * Special macro that can select between two functional-macro definitions based on count of arguments
  */
@@ -819,40 +817,69 @@ namespace pcpp
 			unique_ptr& operator=(const unique_ptr& a) { return *this; }
 		};
 /**
-* Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
-*/
+ * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
+ */
 #define PCAPPP_UPTR_TYPE_ONLY(Type_) pcpp::memory::unique_ptr<Type_>
 /**
-* Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
-*/
+ * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
+ */
 #define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) pcpp::memory::unique_ptr<Type_, Deleter_>
 /**
-* Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
-* If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
-*/
+ * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
+ * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
+ */
 #define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
-* Macro that handles the instantiation of currently used default_delete implementation.
-*/
+ * Macro that handles the instantiation of currently used default_delete implementation.
+ */
 #define PCAPPP_DEFAULT_DELETER(Type_) pcpp::memory::default_delete<Type_>
+/**
+ * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
+ * In some cases we need to choose between unique_ptr and auto_ptr.
+ * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
+ */
+#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) std::auto_ptr<Type_>
+/**
+ * If move semantics is supported return std::move(Value_), otherwise return (Value_)
+ */
+#define PCAPPP_MOVE(Value_) (Value_)
+/**
+ * If move semantics is supported return std::forward(Value_), otherwise return (Value_)
+ */
+#define PCAPPP_FORWARD(Value_) (Value_)
 #else
 /**
-* Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
-*/
+ * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
+ */
 #define PCAPPP_UPTR_TYPE_ONLY(Type_) std::unique_ptr<Type_>
 /**
-* Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
-*/
+ * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
+ */
 #define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) std::unique_ptr<Type_, Deleter_>
 /**
-* Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
-* If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
-*/
+ * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
+ * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
+ */
 #define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
-* Macro that handles the instantiation of currently used default_delete implementation.
-*/
+ * Macro that handles the instantiation of currently used default_delete implementation.
+ */
 #define PCAPPP_DEFAULT_DELETER(Type_) std::default_delete<Type_>
+/**
+ * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
+ * In some cases we need to choose between unique_ptr and auto_ptr.
+ * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
+ */
+#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) std::unique_ptr<Type_>
+#include <utility>
+ /**
+ * If move semantics is supported return std::move((Value_)), otherwise return (Value_)
+ */
+#define PCAPPP_MOVE(Value_) std::move((Value_))
+ /**
+ * If move semantics is supported return std::forward((Value_)), otherwise return (Value_)
+ */
+#define PCAPPP_FORWARD(Value_) std::forward((Value_))
 #endif // !ENABLE_CPP11_MOVE_SEMANTICS
 
 	} // namespace pcpp::memory
