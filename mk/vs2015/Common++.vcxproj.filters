@@ -72,6 +72,9 @@
     <ClInclude Include="..\..\Common++\header\TypeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Common++\header\MoveSemantics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common++\src\IpAddress.cpp">

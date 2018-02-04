@@ -198,6 +198,7 @@ xcopy "$(PcapPlusPlusHome)\Common++\header\*" "$(PcapPlusPlusHome)\Dist\header" 
     <ClInclude Include="..\..\Common++\header\MemoryImplementation.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxyInterface.h" />
+    <ClInclude Include="..\..\Common++\header\MoveSemantics.h" />
     <ClInclude Include="..\..\Common++\header\OldMemoryModelMemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\MemoryUtils.h" />
     <ClInclude Include="..\..\Common++\header\PlatformSpecificUtils.h" />
