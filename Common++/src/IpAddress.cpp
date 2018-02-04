@@ -1,14 +1,10 @@
 #define LOG_MODULE CommonLogModuleIpUtils
 
+#include <cstring>
+
 #include "Logger.h"
 #include "IpAddress.h"
 #include "IpUtils.h"
-#include <cstring>
-#ifdef WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
-
 
 namespace pcpp
 {
@@ -25,19 +21,19 @@ IPAddress::Ptr_t IPAddress::fromString(char* addressAsString)
 	in6_addr ip6Addr;
     if (inet_pton(AF_INET, addressAsString, &ip4Addr) != 0)
     {
-    	return IPAddress::Ptr_t(new IPv4Address(addressAsString));
+    	return PCAPPP_MOVE_OR_RVO(IPAddress::Ptr_t(new IPv4Address(addressAsString)));
     }
     else if (inet_pton(AF_INET6, addressAsString, &ip6Addr) != 0)
     {
-    	return IPAddress::Ptr_t(new IPv6Address(addressAsString));
+    	return PCAPPP_MOVE_OR_RVO(IPAddress::Ptr_t(new IPv6Address(addressAsString)));
     }
 
-    return IPAddress::Ptr_t();
+    return PCAPPP_MOVE_OR_RVO(IPAddress::Ptr_t());
 }
 
 IPAddress::Ptr_t IPAddress::fromString(std::string addressAsString)
 {
-	return fromString((char*)addressAsString.c_str());
+	return PCAPPP_MOVE_OR_RVO(fromString((char*)addressAsString.c_str()));
 }
 
 /**
@@ -107,7 +103,7 @@ IPv4Address& IPv4Address::operator=(const IPv4Address& other)
 
 void IPv4Address::copyDataFrom(const IPv4Address& other)
 {
-	if (m_pInAddr == nullptr)
+	if (m_pInAddr == PCAPPP_NULLPTR)
 		m_pInAddr = new in_addr();
 	// Copy address structure
 	std::memcpy(m_pInAddr, other.m_pInAddr, sizeof(in_addr));
@@ -120,7 +116,8 @@ void IPv4Address::copyDataFrom(const IPv4Address& other)
 		std::strncpy(m_AddressAsString.get(), other.m_AddressAsString.get(), MAX_ADDR_STRING_LEN);
 	} else {
 		// Explicitly free our last string representation
-		delete[] m_AddressAsString.release();
+		if (m_AddressAsString)
+			delete[] m_AddressAsString.release();
 	}
 	// We now have same validity status as other
 	m_IsValid = other.m_IsValid;
@@ -129,7 +126,7 @@ void IPv4Address::copyDataFrom(const IPv4Address& other)
 #ifdef ENABLE_CPP11_MOVE_SEMANTICS
 
 IPv4Address::IPv4Address(IPv4Address&& other) :
-	m_pInAddr(nullptr)
+	m_pInAddr(PCAPPP_NULLPTR)
 {
 	moveDataFrom(PCAPPP_MOVE(other));
 }
@@ -147,13 +144,13 @@ void IPv4Address::moveDataFrom(IPv4Address&& other)
 {
 	if (m_pInAddr)
 		delete m_pInAddr;
-	if (other.m_pInAddr) 
+	if (other.m_pInAddr != PCAPPP_NULLPTR)
 	{
 		// Copy data memberso of other to current object
 		m_pInAddr = other.m_pInAddr;
 		m_IsValid = other.m_IsValid;
 		// Reset pointer of other
-		other.m_pInAddr = nullptr;
+		other.m_pInAddr = PCAPPP_NULLPTR;
 	} else {
 		m_pInAddr = new in_addr();
 		// Int this case other is not a valid object
@@ -161,16 +158,60 @@ void IPv4Address::moveDataFrom(IPv4Address&& other)
 	}
 	// If other have string representation then obtain owning of it
 	if (other.m_AddressAsString) {
-		m_AddressAsString.reset(other.m_AddressAsString.release());
-	} else { // Deleting a nullptr is not a problem
-		delete[] m_AddressAsString.release();
+		m_AddressAsString = PCAPPP_MOVE(other.m_AddressAsString);
+	} else {
+		if (m_AddressAsString)
+			delete[] m_AddressAsString.release();
+	}
+}
+
+#else
+
+IPv4Address::IPv4Address(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy) :
+	m_pInAddr(PCAPPP_NULLPTR)
+{
+	moveDataFrom(PCAPPP_MOVE(proxy.ref));
+}
+
+IPv4Address& IPv4Address::operator=(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy)
+{
+	// Handle self assignment case
+	if (this == &proxy.ref)
+		return *this;
+	moveDataFrom(PCAPPP_MOVE(proxy.ref));
+	return *this;
+}
+
+void IPv4Address::moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy)
+{
+	if (m_pInAddr)
+		delete m_pInAddr;
+	if (proxy.ref.m_pInAddr != PCAPPP_NULLPTR)
+	{
+		// Copy data memberso of other to current object
+		m_pInAddr = proxy.ref.m_pInAddr;
+		m_IsValid = proxy.ref.m_IsValid;
+		// Reset pointer of other
+		proxy.ref.m_pInAddr = PCAPPP_NULLPTR;
+	} else {
+		m_pInAddr = new in_addr();
+		// Int this case other is not a valid object
+		m_IsValid = false;
+	}
+	// If other have string representation then obtain owning of it
+	if (proxy.ref.m_AddressAsString) {
+		m_AddressAsString = PCAPPP_MOVE(proxy.ref.m_AddressAsString);
+	} else {
+		if (m_AddressAsString) 
+			delete[] m_AddressAsString.release();
 	}
 }
 #endif
 
 IPv4Address::~IPv4Address()
-{	// Deleting a nullptr is not a problem
-	delete m_pInAddr;
+{
+	if (m_pInAddr != PCAPPP_NULLPTR)
+		delete m_pInAddr;
 }
 
 std::string IPv4Address::toString() const
@@ -193,7 +234,7 @@ std::string IPv4Address::toString() const
 uint32_t IPv4Address::toInt() const
 {
 	uint32_t result = 0;
-	if (m_pInAddr != nullptr) {
+	if (m_pInAddr != PCAPPP_NULLPTR) {
 		std::memcpy(&result, m_pInAddr, sizeof(uint32_t));
 	}
 	return result;
@@ -269,7 +310,7 @@ IPv6Address& IPv6Address::operator=(const IPv6Address& other)
 
 void IPv6Address::copyDataFrom(const IPv6Address& other)
 {
-	if (m_pInAddr == nullptr)
+	if (m_pInAddr == PCAPPP_NULLPTR)
 		m_pInAddr = new in6_addr();
 	// Copy address structure
 	std::memcpy(m_pInAddr, other.m_pInAddr, sizeof(in6_addr));
@@ -282,15 +323,17 @@ void IPv6Address::copyDataFrom(const IPv6Address& other)
 		std::strncpy(m_AddressAsString.get(), other.m_AddressAsString.get(), MAX_ADDR_STRING_LEN);
 	} else {
 		// Explicitly free our last string representation
-		delete[] m_AddressAsString.release();
+		if (m_AddressAsString)
+			delete[] m_AddressAsString.release();
 	}
 	// We now have same validity status as other
 	m_IsValid = other.m_IsValid;
 }
 
 #ifdef ENABLE_CPP11_MOVE_SEMANTICS
+
 IPv6Address::IPv6Address(IPv6Address&& other) :
-	m_pInAddr(nullptr)
+	m_pInAddr(PCAPPP_NULLPTR)
 {
 	moveDataFrom(PCAPPP_MOVE(other));
 }
@@ -308,13 +351,13 @@ void IPv6Address::moveDataFrom(IPv6Address&& other)
 {
 	if (m_pInAddr)
 		delete m_pInAddr;
-	if (other.m_pInAddr) 
+	if (other.m_pInAddr != PCAPPP_NULLPTR)
 	{
 		// Copy data memberso of other to current object
 		m_pInAddr = other.m_pInAddr;
 		m_IsValid = other.m_IsValid;
 		// Reset pointer of other
-		other.m_pInAddr = nullptr;
+		other.m_pInAddr = PCAPPP_NULLPTR;
 	} else {
 		m_pInAddr = new in6_addr();
 		// Int this case other is not a valid object
@@ -322,16 +365,60 @@ void IPv6Address::moveDataFrom(IPv6Address&& other)
 	}
 	// If other have string representation then obtain owning of it
 	if (other.m_AddressAsString) {
-		m_AddressAsString.reset(other.m_AddressAsString.release());
-	} else { // Deleting a nullptr is not a problem
-		delete[] m_AddressAsString.release();
+		m_AddressAsString = PCAPPP_MOVE(other.m_AddressAsString);
+	} else {
+		if (m_AddressAsString)
+			delete[] m_AddressAsString.release();
+	}
+}
+
+#else
+
+IPv6Address::IPv6Address(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy) :
+	m_pInAddr(PCAPPP_NULLPTR)
+{
+	moveDataFrom(PCAPPP_MOVE(proxy.ref));
+}
+
+IPv6Address& IPv6Address::operator=(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy)
+{
+	// Handle self assignment case
+	if (this == &proxy.ref) 
+		return *this;
+	moveDataFrom(PCAPPP_MOVE(proxy.ref));
+	return *this;
+}
+
+void IPv6Address::moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy)
+{
+	if (m_pInAddr)
+		delete m_pInAddr;
+	if (proxy.ref.m_pInAddr != PCAPPP_NULLPTR)
+	{
+		// Copy data memberso of other to current object
+		m_pInAddr = proxy.ref.m_pInAddr;
+		m_IsValid = proxy.ref.m_IsValid;
+		// Reset pointer of other
+		proxy.ref.m_pInAddr = PCAPPP_NULLPTR;
+	} else {
+		m_pInAddr = new in6_addr();
+		// Int this case other is not a valid object
+		m_IsValid = false;
+	}
+	// If other have string representation then obtain owning of it
+	if (proxy.ref.m_AddressAsString) {
+		m_AddressAsString = PCAPPP_MOVE(proxy.ref.m_AddressAsString);
+	} else {
+		if (m_AddressAsString)
+			delete[] m_AddressAsString.release();
 	}
 }
 #endif
 
 IPv6Address::~IPv6Address()
-{	// Deleting a nullptr is not a problem
-	delete m_pInAddr;
+{
+	if (m_pInAddr != PCAPPP_NULLPTR)
+		delete m_pInAddr;
 }
 
 std::string IPv6Address::toString() const
