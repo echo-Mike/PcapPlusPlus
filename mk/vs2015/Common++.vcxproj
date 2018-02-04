@@ -195,15 +195,17 @@ xcopy "$(PcapPlusPlusHome)\Common++\header\*" "$(PcapPlusPlusHome)\Dist\header" 
     <ClInclude Include="..\..\Common++\header\Logger.h" />
     <ClInclude Include="..\..\Common++\header\LRUList.h" />
     <ClInclude Include="..\..\Common++\header\MacAddress.h" />
+    <ClInclude Include="..\..\Common++\header\MemoryImplementation.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxyInterface.h" />
     <ClInclude Include="..\..\Common++\header\OldMemoryModelMemoryProxy.h" />
-    <ClInclude Include="..\..\Common++\header\PCAPPPMemory.h" />
+    <ClInclude Include="..\..\Common++\header\MemoryUtils.h" />
     <ClInclude Include="..\..\Common++\header\PlatformSpecificUtils.h" />
     <ClInclude Include="..\..\Common++\header\PointerVector.h" />
-    <ClInclude Include="..\..\Common++\header\SafeOldMemoryModelMemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\SizeAwareMemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\SystemUtils.h" />
+    <ClInclude Include="..\..\Common++\header\TypeUtils.h" />
+    <ClInclude Include="..\..\Common++\header\Unique_Ptr.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common++\src\IpAddress.cpp" />

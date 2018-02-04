@@ -1,0 +1,223 @@
+#ifndef PCAPPP_MEMORY_IMPLEMENTATION
+#define PCAPPP_MEMORY_IMPLEMENTATION
+
+#include <memory>
+#include <cstdlib>
+
+#include "CPP11.h"
+#include "TypeUtils.h"
+#include "MemoryUtils.h"
+
+/// @file
+
+/**
+ * \namespace pcpp
+ * \brief The main namespace for the PcapPlusPlus lib
+ */
+namespace pcpp
+{
+	/**
+	 * \namespace memory
+	 * \brief Namespace that contains memory manipulation features
+	 */
+	namespace memory
+	{
+		/**
+		 * \namespace Implementation
+		 * \brief Special namespace that wraps up an implementation details of some classes from pcpp::memory namespace.
+		 */
+		namespace Implementation
+		{
+
+			/**
+			 * @brief Helper template structure that wraps up two values.
+			 * This is a main template that actually have nothing to do with the compression of provided values.
+			 * It is a simple dummy class that must never be reached by template resolution.
+			 * In case if it is reaced it can't be constructed and sizeof this class is explicitly some huge value.
+			 * This main template is a fallback for incorrect usage of this class.\n
+			 * PRINCIPLE:\n
+			 * The compression magic happens in a specialisations.
+			 * The basic principle is that deriving from empty (no value members only function members) base class is costless, 
+			 * but storing same object as a value member costs one byte plus padding and alignment.
+			 * This types of objects are commonly a function objects.
+			 */
+			template < typename T1, typename T2, typename TagType >
+			class CompressedPair
+			{ private: T2 dummy[1000]; CompressedPair() {} ~CompressedPair() {} };
+
+			/**
+			 * @brief Specialisation of ComplessedPair for two non-empty types.
+			 * This template actually have nothing to do with the compression of provided types.
+			 * It is simply stores them sequentially one after another.
+			 * This template is a fallback for all provided non-empty types.
+			 * This technique has a more general approach with variadic templates or variadic macros. 
+			 * But the clearer way - variadic templates is not part of C++98 standard,
+			 * so we decided to use template tag dispatching with explicit/partial specialisation for dispatcher in cases when it is needed.
+			 * For this template the requirement is applied to T1 and T2 - they must be copy constructible.
+			 * @tparam T1 The type of first value to store.
+			 * @tparam T2 The type of second value to store.
+			 */
+			template < typename T1, typename T2>
+			class CompressedPair<T1, T2, type_traits::FalseType>
+			{
+			private:
+				T1 m_Val1;
+				T2 m_Val2;
+			public:
+				/**
+				 * @brief Main constructor of this calss.
+				 * Simply calls copy constructors of members with corresponding parameters.\n
+				 * The T1 and T2 must meet copy-constructible requrement.
+				 * @param val1 The value to be provide to the copy constructor of first stored value.
+				 * @param val2 The value to be provide to the copy constructor of secnd stored value.
+				 */
+				CompressedPair(const T1& val1, const T2& val2) :
+					m_Val1(val1), m_Val2(val2) {}
+				/**
+				 * @brief Method to access the first stored value.
+				 * @return Reference to the first stored value.
+				 */
+				T1& get_first() { return (m_Val1); } // () prevents compiler from certain type of RVO
+				/**
+				 * @brief Method to access the first stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified first stored value.
+				 */
+				const T1& get_first() const { return (m_Val1); }
+				/**
+				 * @brief Method to access the second stored value.
+				 * @return Reference to the second stored value.
+				 */
+				T2& get_second() { return (m_Val2); }
+				/**
+				 * @brief Method to access the second stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified second stored value.
+				 */
+				const T2& get_second() const { return (m_Val2); }
+			};
+
+			/**
+			 * @brief Specialisation of ComplessedPair for any empty type as it's first argument and some type as second.
+			 * The compression magic is happening here.
+			 * See the compression principle in CompressedPair main template description.
+			 * For this template the requirement is applied to T2 - it must be copy constructible.
+			 * @tparam T1 The type to be derived from.
+			 * @tparam T2 The type to be stored.
+			 */
+			template < typename T1, typename T2 >
+			class CompressedPair<T1, T2, type_traits::TrueType> :
+				private T1 // private -> Don't add any names to namespace of this class
+			{
+			private:
+				/**
+				 * Type alias for base class.
+				 */
+				typedef T1 Base;
+
+				T2 m_Val2;
+			public:
+				/**
+				 * @brief Main constructor of this calss.
+				 * By defult empty objects have great default constructors.
+				 * The signature of this function must be the same as for other specialisation, 
+				 * except base class must be provided by value to not fill the stack (sizeof Base == 1 Byte, sizeof Base& == 4/8 Byte).
+				 * @param val2 The value to be provide to the copy constructor of stored value.
+				 */
+				CompressedPair(const Base, const T2& val2) :
+					Base(), m_Val2(val2) {}
+				/**
+				 * @brief Method to access the compressed base value.
+				 * @return Reference to the first stored type.
+				 */
+				Base& get_first() { return (*this); }
+				/**
+				 * @brief Method to access the compressed base value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the first stored type.
+				 */
+				const Base& get_first() const { return (*this); }
+				/**
+				 * @brief Method to access the actually stored value.
+				 * @return Reference to the second stored value.
+				 */
+				T2& get_second() { return (m_Val2); }
+				/**
+				 * @brief Method to access the actually stored value.
+				 * This overload is selected by compiler if object is const-qualified.
+				 * @return Reference to the const-qualified second stored value.
+				 */
+				const T2& get_second() const { return (m_Val2); }
+			};
+
+			/**
+			 * @brief Special structure that helps to dispatch CompressedPair class depending on template arguments.
+			 * This is a main template. It dispatches all not-known types to a CompressedPair<T1, T2, FalseTag>.
+			 * If you need to add any custom deleters just add a specialisation of this template.
+			 * As an example take a look provided specialisations.
+			 * @tparam T1 The type to be passed to CompressedPair template as T1 template argument.
+			 * @tparam T2 The type to be passed to CompressedPair template as T2 template argument.
+			 */
+			template < typename T1, typename T2 >
+			struct CompressedPairDispatcher
+			{
+				typedef CompressedPair<T1, T2, type_traits::FalseType> pair_type;
+			};
+
+			/**
+			 * @brief Specialisation that dispatches any default_delete<T> type to CompressedPair<default_delete<T>, T2, TrueFlag>
+			 * This is an example of dispatching specialisation.
+			 * This specialisation don't dispatches default_delete<T[]>,
+			 * @tparam T2 Some type to be passed to default_delete template.
+			 */
+			template < typename T2 >
+			struct CompressedPairDispatcher< default_delete< typename type_traits::remove_pointer<T2>::type >, T2 >
+			{
+				typedef CompressedPair<default_delete< typename type_traits::remove_pointer<T2>::type >, T2, type_traits::TrueType> pair_type;
+			};
+
+			/**
+			 * @brief Specialisation that dispatches any default_delete<T[]> type to CompressedPair<default_delete<T[]>, T2, TrueFlag>
+			 * This is an example of dispatching specialisation.
+			 * This specialisation don't dispatches default_delete<T>,
+			 * @tparam T2 Some type to be passed to default_delete template.
+			 */
+			template < typename T2 >
+			struct CompressedPairDispatcher< default_delete< typename type_traits::remove_pointer<T2>::type[] >, T2 >
+			{
+				typedef CompressedPair<default_delete< typename type_traits::remove_pointer<T2>::type[] >, T2, type_traits::TrueType> pair_type;
+			};
+
+#ifndef NO_TEMPLATE_FUNCTION_DEF_ARGS
+			/**
+			 * @brief Creates a static object of provided type and returns reference to it.
+			 * @tparam Allocator The allocator type to be created.
+			 * @tparam traits Defines a set of requirements for Allocator type (Default: pcpp::memory::allocator_traits<Allocator>).
+			 */
+			template < typename Allocator, typename traits = allocator_traits<Allocator> >
+			typename traits::allocator_type& staticAllocator()
+			{
+				static typename traits::allocator_type allocator;
+				return allocator;
+			}
+#else
+			/**
+			 * @brief Creates a static object of provided type and returns reference to it.
+			 * This implementation is created for compilers where default function template arguments are not supported.
+			 * @tparam Allocator The allocator type to be created.
+			 */
+			template < typename Allocator >
+			Allocator& staticAllocator()
+			{
+				static Allocator allocator;
+				return allocator;
+			}
+#endif
+
+		} // namespace pcpp::memory::Implementation
+
+	} // namespace pcpp::memory
+
+} // namespace pcpp
+
+#endif /* PCAPPP_MEMORY_IMPLEMENTATION */

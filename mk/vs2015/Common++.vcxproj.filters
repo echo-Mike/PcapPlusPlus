@@ -57,13 +57,19 @@
     <ClInclude Include="..\..\Common++\header\OldMemoryModelMemoryProxy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Common++\header\PCAPPPMemory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Common++\header\SafeOldMemoryModelMemoryProxy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Common++\header\SizeAwareMemoryProxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\Unique_Ptr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\MemoryUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\MemoryImplementation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\TypeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

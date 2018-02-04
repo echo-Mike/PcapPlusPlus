@@ -97,7 +97,7 @@ namespace pcpp
 		 */
 		static Ptr_t fromString(std::string addressAsString);
 	};
-
+	const auto a = sizeof(IPAddress);
 	/**
 	 * @class IPv4Address
 	 * Represents an IPv4 address (of type XXX.XXX.XXX.XXX). An instance of this class can be constructed from string,
@@ -226,7 +226,6 @@ namespace pcpp
 		 */
 		static IPv4Address Zero;
 	};
-
 
 	/**
 	 * @class IPv6Address

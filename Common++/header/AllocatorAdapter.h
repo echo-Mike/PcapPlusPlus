@@ -2,7 +2,8 @@
 #define PCAPPP_ALLOCATORADAPTER
 
 #include "CPP11.h"
-#include "PCAPPPMemory.h"
+#include "MemoryUtils.h"
+#include "MemoryImplementation.h"
 
 #ifdef PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER
 	#define PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER__ virtual
