@@ -38,7 +38,7 @@ namespace pcpp
 		 */ 
 		template < typename Allocator,
 		typename traits = allocator_traits<Allocator>,
-		typename traits::allocator_type& (*GetAllocator)() = &staticAllocator<Allocator>,
+		typename traits::allocator_type& (*GetAllocator)() = &::pcpp::memory::Implementation::staticAllocator<Allocator>,
 		typename traits::allocator_type::pointer (traits::allocator_type::* Allocate)(std::size_t) = &traits::allocator_type::allocate,
 		void (traits::allocator_type::* Deallocate)(typename traits::pointer) = &traits::allocator_type::deallocate >
 		struct AllocatorAdapter

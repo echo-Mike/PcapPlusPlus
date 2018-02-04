@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <exception>
 
+#include "CPP11.h"
 #include "MemoryProxyInterface.h"
 
 /// @file
@@ -49,7 +50,7 @@ namespace pcpp
 			inline void zeroFields()
 			{
 				// Set all fields to their initial values
-				m_Data = nullptr;
+				m_Data = PCAPPP_NULLPTR;
 				m_Length = 0;
 				m_Ownership = true;
 				m_DataSet = false;
@@ -75,7 +76,7 @@ namespace pcpp
 			 */
 			bool setData(const_pointer p, size length)
 			{
-				if (m_Data != nullptr && m_Ownership)
+				if (m_Data != PCAPPP_NULLPTR && m_Ownership)
 					m_Allocator.deallocate(m_Data);
 				m_Data = (typename Base::pointer)p;
 				m_Length = length;
@@ -158,7 +159,7 @@ namespace pcpp
 				// Handle self assignment case
 				if (this == &other)
 					return *this;
-				if (m_Data != nullptr)
+				if (m_Data != PCAPPP_NULLPTR)
 					m_Allocator.deallocate(m_Data);
 				m_DataSet = false;
 				copyDataFrom(other);
@@ -179,35 +180,35 @@ namespace pcpp
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
 			 */
-			inline size getLength() const override { return m_Length; }
+			inline size getLength() const PCAPPP_OVERRIDE { return m_Length; }
 			/**
 			 * @brief Returns owning status of underlying data.
 			 * @return true if object owns it's underlying data, false otherwise.
 			 */
-			inline bool isOwning() const override { return m_Ownership; }
+			inline bool isOwning() const PCAPPP_OVERRIDE { return m_Ownership; }
 			/**
 			 * @brief Returns pointer to the begining of underlying data.
 			 * @return Pointer to the begining of underlying data.
 			 */
-			inline pointer get() override { return m_Data; }
+			inline pointer get() PCAPPP_OVERRIDE { return m_Data; }
 			/**
 			 * @brief Returns pointer to the begining of const qualified underlying data.
 			 * This overload is called in object is const qualified.
 			 * @return Pointer to the begining of const qualified underlying data.
 			 */
-			inline const_pointer get() const override { return m_Data; }
+			inline const_pointer get() const PCAPPP_OVERRIDE { return m_Data; }
 			/**
 			 * @brief The ownership release method.
 			 * This method was not presented in original RawPacket class code.
 			 * @todo Add meaning to this method.
 			 * @return Always returns nullptr.
 			 */
-			pointer relese() override
+			pointer relese() PCAPPP_OVERRIDE
 			{	// This function logic does not presented in original code
 				/*typename Base::pointer old = m_Data;
 				initialize();
 				return old;*/
-				return nullptr;
+				return PCAPPP_NULLPTR;
 			}
 			/**
 			 * @brief Underlying data reset method.
@@ -218,7 +219,7 @@ namespace pcpp
 			 * @todo Add meaning to this method.
 			 * @return Always returns false.
 			 */
-			bool reset(pointer ptr, size length = 0, bool ownership = true) override
+			bool reset(pointer ptr, size length = 0, bool ownership = true) PCAPPP_OVERRIDE
 			{	// This function logic does not presented in original code
 				/*
 				if (deallocateData())
@@ -265,7 +266,7 @@ namespace pcpp
 			 * @param[in] initialValue Perbyte initial value of new memory on allocation.
 			 * @return true if operation ended successfully, false otherwise (you may expect that object is in null-state).
 			 */
-			bool reallocate(size newBufferLength, memory_value initialValue = 0) override
+			bool reallocate(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				if (newBufferLength == m_Length)
 					return true;
@@ -297,11 +298,11 @@ namespace pcpp
 			 * @todo set timestamp to a default value as well.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
-			bool clear() override
+			bool clear() PCAPPP_OVERRIDE
 			{
-				if (m_Data != nullptr)
+				if (m_Data != PCAPPP_NULLPTR)
 					m_Allocator.deallocate(m_Data);
-				m_Data = nullptr;
+				m_Data = PCAPPP_NULLPTR;
 				m_Length = 0;
 				m_DataSet = false;
 				return true;
@@ -317,7 +318,7 @@ namespace pcpp
 			 * @param[in] initialValue Initial value for new memory.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
-			bool append(size dataToAppendLen, memory_value initialValue = 0) override
+			bool append(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				std::memset(m_Data + m_Length, initialValue, dataToAppendLen * sizeof(typename Base::value_type));
 				m_Length += dataToAppendLen;
@@ -334,7 +335,7 @@ namespace pcpp
 			 * @param[in] dataToAppendLen Size of data to be appended.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
-			bool append(const_pointer dataToAppend, size dataToAppendLen) override
+			bool append(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE
 			{
 				std::memcpy(m_Data + m_Length, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
 				m_Length += dataToAppendLen;
@@ -352,7 +353,7 @@ namespace pcpp
 			 * @param[in] initialValue Initial value for new memory.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) override
+			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				typename Base::index index = (typename Base::index)m_Length - 1;
 				while (index >= atIndex)
@@ -377,7 +378,7 @@ namespace pcpp
 			 * @param[in] dataToInsertLen Size of data to be inserted.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) override
+			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE
 			{
 				typename Base::index index = (typename Base::index)m_Length - 1;
 				while (index >= atIndex)
@@ -399,7 +400,7 @@ namespace pcpp
 			 * @param[in] numOfBytesToRemove Size of data to be removed.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool remove(index atIndex, size numOfBytesToRemove) override
+			bool remove(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE
 			{
 
 				if ((atIndex + (typename Base::index)numOfBytesToRemove) > m_Length)

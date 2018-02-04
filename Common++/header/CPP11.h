@@ -89,47 +89,44 @@
 				// CLANG
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 				#if (__clang_VERSION__ < 30100)
-					#ifndef constexpr
-						#define constexpr const
-					#endif
+					#define PCAPPP_CONSTEXPR const
+				#else
+					#define PCAPPP_CONSTEXPR constexpr
 				#endif
 				#if (__clang_VERSION__ < 30000)
-					#ifndef noexcept
-						#define noexcept
-					#endif
+					#define PCAPPP_NOEXCEPT
+				#else
+					#define PCAPPP_NOEXCEPT noexcept
 				#endif
 				#if (__clang_VERSION__ < 20900)
-					#ifndef override
-						#define override
-					#endif
-					#ifndef final
-						#define final
-					#endif
-					#ifndef nullptr
-						#define nullptr NULL
-					#endif
+					#define PCAPPP_FINAL
+					#define PCAPPP_OVERRIDE
+					#define PCAPPP_NULLPTR NULL
 					#define NO_TEMPLATE_FUNCTION_DEF_ARGS
+				#else
+					#define PCAPPP_FINAL final
+					#define PCAPPP_OVERRIDE override
+					#define PCAPPP_HAVE_NULLPTR_T
+					#define PCAPPP_NULLPTR nullptr
 				#endif
 			#elif defined(__GNUC__) && !(defined(__INTEL_COMPILER) || defined(__ICC) || defined(__clang__))
 				// GCC
 				#if (__GNUC_VERSION__ < 40700)
-					#ifndef override
-						#define override
-					#endif
-					#ifndef final
-						#define final
-					#endif
+					#define PCAPPP_FINAL
+					#define PCAPPP_OVERRIDE
+				#else
+					#define PCAPPP_FINAL final
+					#define PCAPPP_OVERRIDE override
 				#endif
 				#if (__GNUC_VERSION__ < 40600)
-					#ifndef nullptr
-						#define nullptr NULL
-					#endif
-					#ifndef noexcept
-						#define noexcept
-					#endif
-					#ifndef constexpr
-						#define constexpr const
-					#endif
+					#define PCAPPP_NOEXCEPT
+					#define PCAPPP_NULLPTR NULL
+					#define PCAPPP_CONSTEXPR const
+				#else
+					#define PCAPPP_NOEXCEPT noexcept
+					#define PCAPPP_HAVE_NULLPTR_T
+					#define PCAPPP_NULLPTR nullptr
+					#define PCAPPP_CONSTEXPR constexpr
 				#endif
 				#if (__GNUC_VERSION__ < 40300)
 					#define NO_TEMPLATE_FUNCTION_DEF_ARGS
@@ -143,55 +140,50 @@
 			// Visual Studio
 			// See : https://en.wikipedia.org/wiki/Microsoft_Visual_C++
 			// See : https://msdn.microsoft.com/en-us/library/hh567368.aspx#featurelist
-			#if (_MSC_VER < 1900)
-				#ifndef constexpr
-					#define constexpr const
-				#endif
-				#ifndef noexcept
-					#define noexcept
-				#endif
+			#if (_MSC_VER < 1900)				
+				#define PCAPPP_NOEXCEPT
+				#define PCAPPP_CONSTEXPR const
+			#else
+				#define PCAPPP_CONSTEXPR constexpr
+				#define PCAPPP_NOEXCEPT noexcept
 			#endif
 			#if (_MSC_VER < 1800)
 				#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 			#endif
 			#if (_MSC_VER < 1600)
-				#ifndef nullptr
-					#define nullptr NULL
-				#endif
+				#define PCAPPP_NULLPTR NULL
 			#else
+				#define PCAPPP_HAVE_NULLPTR_T
+				#define PCAPPP_NULLPTR nullptr
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 			#endif
 			#if (_MSC_VER < 1400)
-				#ifndef override
-					#define override
-				#endif
-				#ifndef final
-					#define final
-				#endif
+				#define PCAPPP_FINAL
+				#define PCAPPP_OVERRIDE
+			#else
+				#define PCAPPP_FINAL final
+				#define PCAPPP_OVERRIDE override
 			#endif
 		#elif defined(__INTEL_COMPILER) || defined(__ICC)
 			// ICC
-			#if (__ICC_VERSION__ < 1400)
-				#ifndef constexpr
-					#define constexpr const
-				#endif
-				#ifndef noexcept
-					#define noexcept
-				#endif
-				#ifndef override
-					#define override
-				#endif
-				#ifndef final
-					#define final
-				#endif
+			#if (__ICC_VERSION__ < 1400)				
+				#define PCAPPP_CONSTEXPR const
+				#define PCAPPP_NOEXCEPT
+				#define PCAPPP_FINAL
+				#define PCAPPP_OVERRIDE
 			#else
+				#define PCAPPP_CONSTEXPR constexpr
+				#define PCAPPP_NOEXCEPT noexcept
+				#define PCAPPP_FINAL final
+				#define PCAPPP_OVERRIDE override
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 			#endif
 			#if (__ICC_VERSION__ < 1210)
-				#ifndef nullptr
-					#define nullptr NULL
-				#endif
+				#define PCAPPP_NULLPTR NULL
 				#define NO_TEMPLATE_FUNCTION_DEF_ARGS
+			#else
+				#define PCAPPP_HAVE_NULLPTR_T
+				#define PCAPPP_NULLPTR nullptr
 			#endif
 		#else
 			#error PCAPPP::C++11_Detection Unknown compiler type.
@@ -202,65 +194,61 @@
 			// There may be CLANG or GCC
 			// TODO: Add information sources about CLANG and GCC C++11 compatibility on Apple platforms
 			#ifndef __cpp_constexpr
-				#define constexpr const
+				#define PCAPPP_CONSTEXPR const
+			#else
+				#define PCAPPP_CONSTEXPR constexpr
 			#endif
 			#ifdef __cpp_rvalue_references
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 			#endif
-			// Next def may cause problems if override keyword is supported
-			#ifndef override
-				#define override
-			#endif
-			#ifndef nullptr
-				#define nullptr NULL
-			#endif
+			#define PCAPPP_NOEXCEPT
+			#define PCAPPP_FINAL
+			#define PCAPPP_OVERRIDE
+			#define PCAPPP_NULLPTR NULL
 			#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 		#else
 			#if defined(__clang__)
 				// CLANG
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 				#if (__clang_VERSION__ < 30100)
-					#ifndef constexpr
-						#define constexpr const
-					#endif
+					#define PCAPPP_CONSTEXPR const
+				#else
+					#define PCAPPP_CONSTEXPR constexpr
 				#endif
 				#if (__clang_VERSION__ < 30000)
-					#ifndef noexcept
-						#define noexcept
-					#endif
+					#define PCAPPP_NOEXCEPT
+				#else
+					#define PCAPPP_NOEXCEPT noexcept
 				#endif
 				#if (__clang_VERSION__ < 20900)
-					#ifndef override
-						#define override
-					#endif
-					#ifndef final
-						#define final
-					#endif
-					#ifndef nullptr
-						#define nullptr NULL
-					#endif
+					#define PCAPPP_FINAL
+					#define PCAPPP_OVERRIDE
+					#define PCAPPP_NULLPTR NULL
 					#define NO_TEMPLATE_FUNCTION_DEF_ARGS
+				#else
+					#define PCAPPP_FINAL final
+					#define PCAPPP_OVERRIDE override
+					#define PCAPPP_HAVE_NULLPTR_T
+					#define PCAPPP_NULLPTR nullptr
 				#endif
 			#elif defined(__GNUC__) && !(defined(__INTEL_COMPILER) || defined(__ICC) || defined(__clang__))
 				// GCC
 				#if (__GNUC_VERSION__ < 40700)
-					#ifndef override
-						#define override
-					#endif
-					#ifndef final
-						#define final
-					#endif
+					#define PCAPPP_FINAL
+					#define PCAPPP_OVERRIDE
+				#else
+					#define PCAPPP_FINAL final
+					#define PCAPPP_OVERRIDE override
 				#endif
 				#if (__GNUC_VERSION__ < 40600)
-					#ifndef nullptr
-						#define nullptr NULL
-					#endif
-					#ifndef noexcept
-						#define noexcept
-					#endif
-					#ifndef constexpr
-						#define constexpr const
-					#endif
+					#define PCAPPP_NOEXCEPT
+					#define PCAPPP_NULLPTR NULL
+					#define PCAPPP_CONSTEXPR const
+				#else
+					#define PCAPPP_NOEXCEPT noexcept
+					#define PCAPPP_HAVE_NULLPTR_T
+					#define PCAPPP_NULLPTR nullptr
+					#define PCAPPP_CONSTEXPR constexpr
 				#endif
 				#if (__GNUC_VERSION__ < 40300)
 					#define NO_TEMPLATE_FUNCTION_DEF_ARGS
@@ -269,27 +257,24 @@
 				#endif
 			#elif defined(__INTEL_COMPILER) || defined(__ICC)
 				// ICC
-				#if (__ICC_VERSION__ < 1400)
-					#ifndef constexpr
-						#define constexpr const
-					#endif
-					#ifndef noexcept
-						#define noexcept
-					#endif
-					#ifndef override
-						#define override
-					#endif
-					#ifndef final
-						#define final
-					#endif
+				#if (__ICC_VERSION__ < 1400)				
+					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_NOEXCEPT
+					#define PCAPPP_FINAL
+					#define PCAPPP_OVERRIDE
 				#else
+					#define PCAPPP_CONSTEXPR constexpr
+					#define PCAPPP_NOEXCEPT noexcept
+					#define PCAPPP_FINAL final
+					#define PCAPPP_OVERRIDE override
 					#define ENABLE_CPP11_MOVE_SEMANTICS
 				#endif
 				#if (__ICC_VERSION__ < 1210)
-					#ifndef nullptr
-						#define nullptr NULL
-					#endif
+					#define PCAPPP_NULLPTR NULL
 					#define NO_TEMPLATE_FUNCTION_DEF_ARGS
+				#else
+					#define PCAPPP_HAVE_NULLPTR_T
+					#define PCAPPP_NULLPTR nullptr
 				#endif
 			#else
 				#error PCAPPP::C++11_Detection Unknown compiler type.
@@ -300,22 +285,34 @@
 		// See : http://en.cppreference.com/w/cpp/experimental/feature_test
 		// We currentry have interest only in:
 		#ifndef __cpp_constexpr
-			#define constexpr const
-		#endif
-		// Next def may cause problems in unknown compilers with override keyword support
-		#ifndef override
-			#define override
-		#endif
-		#ifndef nullptr
-			#define nullptr NULL
+			#define PCAPPP_CONSTEXPR const
+		#else
+			#define PCAPPP_CONSTEXPR constexpr
 		#endif
 		#ifdef __cpp_rvalue_references
 			#define ENABLE_CPP11_MOVE_SEMANTICS
 		#endif
+		#define PCAPPP_NOEXCEPT
+		#define PCAPPP_FINAL
+		#define PCAPPP_OVERRIDE
+		#define PCAPPP_NULLPTR NULL
 		#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 	#endif
 	/* Detection */
-
+#else
+#ifndef __cpp_constexpr
+	#define PCAPPP_CONSTEXPR const
+#else
+	#define PCAPPP_CONSTEXPR constexpr
+#endif
+#ifdef __cpp_rvalue_references
+	#define ENABLE_CPP11_MOVE_SEMANTICS
+#endif
+#define PCAPPP_NOEXCEPT
+#define PCAPPP_FINAL
+#define PCAPPP_OVERRIDE
+#define PCAPPP_NULLPTR NULL
+#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 #endif /* SUPPRESS_CPP11_DETECTION */
 
 #endif /* PCAPPP_CPP11DETECTION */

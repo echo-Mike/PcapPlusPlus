@@ -4,9 +4,15 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include "CPP11.h"
-#include "PCAPPPMemory.h"
+#include "MemoryUtils.h"
+#include "MoveSemantics.h"
+#include "Unique_Ptr.h"
 
 #define MAX_ADDR_STRING_LEN 40 //xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
 
@@ -33,7 +39,7 @@ namespace pcpp
 		/**
 		 * Smart pointer to IPAddress class (may handle derived object)
 		 */
-		typedef PCAPPP_UNIQUE_OR_AUTO_PTR(IPAddress) Ptr_t;
+		typedef PCAPPP_UNIQUE_PTR(IPAddress) Ptr_t;
 		/**
 		 * Smart pointer that handles memory for string representation
 		 */
@@ -111,6 +117,8 @@ namespace pcpp
 		void copyDataFrom(const IPv4Address& other);
 #ifdef ENABLE_CPP11_MOVE_SEMANTICS
 		void moveDataFrom(IPv4Address&& other);
+#else
+		void moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
 #endif
 	public:
 		/**
@@ -153,15 +161,29 @@ namespace pcpp
 #ifdef ENABLE_CPP11_MOVE_SEMANTICS
 		/**
 		 * A move constructor for this class.
-		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
 		 */
 		IPv4Address(IPv4Address&& other);
 
 		/**
 		 * Overload of the move assignment operator
-		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
 		 */
 		IPv4Address& operator=(IPv4Address&& other);
+#else
+		/**
+		 * A move constructor for this class.
+		 * This is the move constructor which is based on library implementation of C++11 move semantics.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
+		 */
+		IPv4Address(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
+
+		/**
+		 * Overload of the move assignment operator
+		 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
+		 */
+		IPv4Address& operator=(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
 #endif
 
 		~IPv4Address();
@@ -173,12 +195,12 @@ namespace pcpp
 		 * If adress is not valid the zero length string will be returned.
 		 * @return A string representation of the address.
 		 */
-		std::string toString() const override;
+		std::string toString() const PCAPPP_OVERRIDE;
 
 		/**
 		 * @return IPv4AddressType
 		 */
-		AddressType getType() const override { return IPv4AddressType; }
+		AddressType getType() const PCAPPP_OVERRIDE { return IPv4AddressType; }
 
 		/**
 		 * Converts the IPv4 address into a 4B integer
@@ -240,6 +262,8 @@ namespace pcpp
 		void copyDataFrom(const IPv6Address& other);
 #ifdef ENABLE_CPP11_MOVE_SEMANTICS
 		void moveDataFrom(IPv6Address&& other);
+#else
+		void moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
 #endif
 	public:
 
@@ -286,6 +310,20 @@ namespace pcpp
 		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
 		 */
 		IPv6Address& operator=(IPv6Address&& other);
+#else
+		/**
+		 * A move constructor for this class.
+		 * This is the move constructor which is based on library implementation of C++11 move semantics.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
+		 */
+		IPv6Address(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
+
+		/**
+		 * Overload of the move assignment operator
+		 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
+		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
+		 */
+		IPv6Address& operator=(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
 #endif
 
 		~IPv6Address();
@@ -297,12 +335,12 @@ namespace pcpp
 		 * If adress is not valid the zero length string will be returned.
 		 * @return A string representation of the address.
 		 */
-		std::string toString() const override;
+		std::string toString() const PCAPPP_OVERRIDE;
 
 		/**
 		 * @return IPv6AddressType
 		 */
-		AddressType getType() const override { return IPv6AddressType; }
+		AddressType getType() const PCAPPP_OVERRIDE { return IPv6AddressType; }
 
 		/**
 		 * Returns a in6_addr struct pointer representing the IPv6 address

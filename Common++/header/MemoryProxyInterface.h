@@ -5,7 +5,8 @@
 #include <exception>
 
 #include "CPP11.h"
-#include "PCAPPPMemory.h"
+#include "MemoryUtils.h"
+#include "Unique_Ptr.h"
 #include "AllocatorAdapter.h"
 
 /// @file
@@ -227,7 +228,7 @@ namespace pcpp
 			struct OldMemoryModelTag {};
 			// struct SafeOldMemoryModelTag {};
 			struct DpdkTag {};
-		}
+		} // namespace pcpp::memory::MemoryProxyTags
 
 		/**
 		 * @class MemoryProxy

@@ -1,10 +1,12 @@
-#ifndef PCAPPP_UNIQUE_PTR
-#define PCAPPP_UNIQUE_PTR
+#ifndef PCAPPP_UNIQUE_PTR_H
+#define PCAPPP_UNIQUE_PTR_H
+
 #include <memory>
 
 #include "CPP11.h"
 #include "MemoryUtils.h"
 #include "MemoryImplementation.h"
+#include "MoveSemantics.h"
 
 /// @file
 
@@ -62,8 +64,7 @@ namespace pcpp
 			 */
 			unique_ptr_base() : m_Pair(Deleter(), pointer()) {}
 
-// In case of unsupported std::nullptr_t nullptr will be a macro def (from CPP11.h)
-#ifndef nullptr
+#ifdef PCAPPP_HAVE_NULLPTR_T
 			/**
 			 * @brief Special case constructor for nullptr.
 			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
@@ -78,6 +79,44 @@ namespace pcpp
 			 * @param p Pointer to memory to be owned.
 			 */
 			explicit unique_ptr_base(pointer p) : m_Pair(Deleter(), p) {}
+
+			/**
+			 * @brief Move constructor.
+			 * This is the move constructor which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr_base(unique_ptr_base&& other) move constructor.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr_base instance.
+			 */
+			unique_ptr_base(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy) :
+				m_Pair(proxy.ref.m_Pair.get_first(), proxy.ref.m_Pair.get_second())
+			{
+				// Nullify provided object
+				proxy.ref.m_Pair.get_first() = Deleter();
+				proxy.ref.m_Pair.get_second() = pointer();
+			}
+
+			/**
+			 * @brief Move assignment operator.
+			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr_base& operator=(unique_ptr_base&& other) move assignment operator.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr_base instance.
+			 * @return Reference to this object.
+			 */
+			unique_ptr_base& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy)
+			{
+				// Handle self assignment case
+				if (this == &proxy.ref)
+					return *this;
+				// This member may optimised with move semantics but this case is to hard to handle in client side.
+				// So we don't make any assumptions and just copy it.
+				// For zero-size object this operation is costless.
+				m_Pair.get_first() = proxy.ref.m_Pair.get_first();
+				// Second is definetly a pointer
+				m_Pair.get_second() = proxy.ref.m_Pair.get_second();
+				// Nullify provided object
+				proxy.ref.m_Pair.get_first() = Deleter();
+				proxy.ref.m_Pair.get_second() = pointer();
+				return *this;
+			}
 
 			/**
 			 * @brief Method to access the stored deleter object.
@@ -124,7 +163,6 @@ namespace pcpp
 		 * @brief Library implementation of std::unique_ptr.
 		 * Read more: http://en.cppreference.com/w/cpp/memory/unique_ptr \n
 		 * Does not have the swap function, some constructors and assignment operators.
-		 * This class CAN NOT be returned in C++98.
 		 * @tparam T The type of values to be stored.
 		 * @tparam Deleter The function object or lvalue reference to function or to function object, to be called from the destructor.
 		 */
@@ -165,13 +203,12 @@ namespace pcpp
 			 */
 			unique_ptr() : Base() {}
 
-// In case of unsupported std::nullptr_t nullptr will be a macro def (from CPP11.h)
-#ifndef nullptr
+#ifdef PCAPPP_HAVE_NULLPTR_T
 			/**
 			 * @brief Special case constructor for nullptr.
 			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
 			 */
-			unique_ptr(std::nullptr_t) : Base(nullptr) {}
+			unique_ptr(std::nullptr_t) : Base(PCAPPP_NULLPTR) {}
 #endif
 			/**
 			 * @brief Main constructor.
@@ -181,6 +218,31 @@ namespace pcpp
 			 * @param p Pointer to memory to be owned.
 			 */
 			explicit unique_ptr(pointer p) : Base(p) {}
+
+			/**
+			 * @brief Move constructor.
+			 * This is the move constructor which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 */
+			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
+				Base(PCAPPP_MOVE(dynamic_cast<Base&>(proxy.ref))) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
+			
+			/**
+			 * @brief Move assignment operator.
+			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @return Reference to this object.
+			 */
+			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
+			{
+				if (this == &proxy.ref)
+					return *this;
+				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
+				Base::operator=(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) ));
+				return *this;
+			}
 
 			/**
 			 * @brief Destructor.
@@ -197,21 +259,25 @@ namespace pcpp
 			 * @return Reference to stored object.
 			 */
 			element_type& operator*() const { return (*get()); }
+
 			/**
 			 * @brief Method that provides access to stored object by pointer.
 			 * @return Pointer to stored object.
 			 */
 			pointer operator->() const { return (get()); }
+
 			/**
 			 * @brief Returns a pointer to the managed object or nullptr if no object is owned.
 			 * @return Pointer to the managed object or nullptr if no object is owned.
 			 */
 			pointer get() const { return (this->get_pointer()); }
+
 			/**
 			 * @brief Checks whether *this owns an object, i.e. whether get() != nullptr.
 			 * @return true if *this owns an object, false otherwise.
 			 */
 			explicit operator bool() const { return (get() != pointer()); }
+
 			/**
 			 * @brief Releases the ownership of the managed object if any. get() returns nullptr after the call.
 			 * @return Pointer to the managed object or nullptr if there was no managed object, i.e. the value which would be returned by get() before the call.
@@ -222,6 +288,7 @@ namespace pcpp
 				this->get_pointer() = pointer();
 				return (old);
 			}
+
 			/**
 			 * @brief Replaces the managed object.
 			 * Given current_ptr, the pointer that was managed by *this, performs the following actions, in this order:\n
@@ -253,7 +320,6 @@ namespace pcpp
 		 * @brief Specialisation of unique_ptr for arrays.
 		 * Read more: http://en.cppreference.com/w/cpp/memory/unique_ptr
 		 * Does not have the swap function, some constructors and assignment operators.
-		 * This class CAN NOT be returned in C++98.
 		 * @tparam T The type of values to be stored.
 		 * @tparam Deleter The function object or lvalue reference to function or to function object, to be called from the destructor.
 		 */
@@ -294,13 +360,12 @@ namespace pcpp
 			 */
 			unique_ptr() : Base() {}
 
-// In case of unsupported std::nullptr_t nullptr will be a macro def (from CPP11.h)
-#ifndef nullptr
+#ifdef PCAPPP_HAVE_NULLPTR_T
 			/**
 			 * @brief Special case constructor for nullptr.
 			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
 			 */
-			unique_ptr(std::nullptr_t) : Base(nullptr) {}
+			unique_ptr(std::nullptr_t) : Base(PCAPPP_NULLPTR) {}
 #endif
 			/**
 			 * @brief Main constructor.
@@ -312,6 +377,31 @@ namespace pcpp
 			explicit unique_ptr(pointer p) : Base(p) {}
 
 			/**
+			 * @brief Move constructor.
+			 * This is the move constructor which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 */
+			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
+				Base(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) )) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
+
+			/**
+			 * @brief Move assignment operator.
+			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
+			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
+			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @return Reference to this object.
+			 */
+			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
+			{
+				if (this == &proxy.ref)
+					return *this;
+				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
+				Base::operator=(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) ));
+				return *this;
+			}
+
+			/**
 			 * @brief Destructor.
 			 * Deallocates memeory via calling the provided deleter with internal pointer as an argument.
 			 */
@@ -320,6 +410,7 @@ namespace pcpp
 				if (get() != pointer())
 					this->get_deleter()(get());
 			}
+
 			/**
 			 * @brief Provides access to elements of an array managed by a unique_ptr.
 			 * The parameter index shall be less than the number of elements in the array; otherwise, the behavior is undefined.
@@ -327,16 +418,19 @@ namespace pcpp
 			 * @return The element at index index, i.e. get()[i].
 			 */
 			element_type& operator[](size_t index) const { return (get()[index]); }
+
 			/**
 			 * @brief Returns a pointer to the managed object or nullptr if no object is owned.
 			 * @return Pointer to the managed object or nullptr if no object is owned.
 			 */
 			pointer get() const { return (this->get_pointer()); }
+
 			/**
 			 * @brief Checks whether *this owns an object, i.e. whether get() != nullptr.
 			 * @return true if *this owns an object, false otherwise.
 			 */
 			explicit operator bool() const { return (get() != pointer()); }
+
 			/**
 			 * @brief Replaces the managed object.
 			 * Given current_ptr, the pointer that was managed by *this, performs the following actions, in this order:\n
@@ -350,6 +444,7 @@ namespace pcpp
 				this->get_pointer() = pointer();
 				return (old);
 			}
+
 			/**
 			 * @brief Replaces the managed object.
 			 * Given current_ptr, the pointer that was managed by *this, performs the following actions, in this order:\n
@@ -380,11 +475,11 @@ namespace pcpp
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
  */
-#define PCAPPP_UPTR_TYPE_ONLY(Type_) pcpp::memory::unique_ptr<Type_>
+#define PCAPPP_UPTR_TYPE_ONLY(Type_) ::pcpp::memory::unique_ptr<Type_>
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
  */
-#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) pcpp::memory::unique_ptr<Type_, Deleter_>
+#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::pcpp::memory::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
  * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
@@ -393,32 +488,23 @@ namespace pcpp
 /**
  * Macro that handles the instantiation of currently used default_delete implementation.
  */
-#define PCAPPP_DEFAULT_DELETER(Type_) pcpp::memory::default_delete<Type_>
+#define PCAPPP_DEFAULT_DELETER(Type_) ::pcpp::memory::default_delete<Type_>
 /**
  * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
  * In some cases we need to choose between unique_ptr and auto_ptr.
  * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
  */
-#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) std::auto_ptr<Type_>
-/**
- * If move semantics is supported return std::move(Value_), otherwise return (Value_)
- */
-#define PCAPPP_MOVE(Value_) (Value_)
-/**
- * If move semantics is supported return std::forward(Value_), otherwise return (Value_)
- */
-#define PCAPPP_FORWARD(Value_) (Value_)
-
+#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::auto_ptr<Type_>
 #else
 
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
  */
-#define PCAPPP_UPTR_TYPE_ONLY(Type_) std::unique_ptr<Type_>
+#define PCAPPP_UPTR_TYPE_ONLY(Type_) ::std::unique_ptr<Type_>
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
  */
-#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) std::unique_ptr<Type_, Deleter_>
+#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::std::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
  * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
@@ -427,27 +513,18 @@ namespace pcpp
 /**
  * Macro that handles the instantiation of currently used default_delete implementation.
  */
-#define PCAPPP_DEFAULT_DELETER(Type_) std::default_delete<Type_>
+#define PCAPPP_DEFAULT_DELETER(Type_) ::std::default_delete<Type_>
 /**
  * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
  * In some cases we need to choose between unique_ptr and auto_ptr.
  * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
  */
-#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) std::unique_ptr<Type_>
+#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::unique_ptr<Type_>
 
-#include <utility>
- /**
- * If move semantics is supported return std::move((Value_)), otherwise return (Value_)
- */
-#define PCAPPP_MOVE(Value_) std::move((Value_))
- /**
- * If move semantics is supported return std::forward((Value_)), otherwise return (Value_)
- */
-#define PCAPPP_FORWARD(Value_) std::forward((Value_))
 #endif // !ENABLE_CPP11_MOVE_SEMANTICS
 
 	} // namespace pcpp::memory
 
 } // namespace pcpp
 
-#endif /* PCAPPP_UNIQUE_PTR */
+#endif /* PCAPPP_UNIQUE_PTR_H */

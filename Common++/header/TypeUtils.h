@@ -58,6 +58,27 @@ namespace pcpp
 		 */
 		template< class T > struct remove_pointer<T* const volatile> { typedef T type; };
 
+		/**
+		 * Implementation of next classes are copied from:
+		 * http://en.cppreference.com/w/cpp/types/remove_reference
+		 */
+		/**
+		 * @brief Standard type traits remove_reference trait replacement for C++98.
+		 * Contains type "type" if provided T is not a reference.
+		 */
+		template< class T > struct remove_reference { typedef T type; };
+		/**
+		 * @brief Standard type traits remove_reference trait replacement for C++98.
+		 * Contains type "type" if provided T is a reference.
+		 */
+		template< class T > struct remove_reference<T&> { typedef T type; };
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+		/**
+		 * @brief Standard type traits remove_reference trait replacement for C++98.
+		 * Contains type "type" if provided T is a rvalue reference.
+		 */
+		template< class T > struct remove_reference<T&&> { typedef T type; };
+#endif
 	} // namespace pcpp::type_traits
 
 } // namespace pcpp

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <exception>
 
+#include "CPP11.h"
 #include "MemoryProxyInterface.h"
 
 /// @file
@@ -79,7 +80,7 @@ namespace pcpp
 			inline void zeroFields() 
 			{
 				// Set all fields to their initial values
-				m_Data = nullptr;
+				m_Data = PCAPPP_NULLPTR;
 				m_Length = 0;
 				m_Capacity = 0;
 				m_Ownership = false;
@@ -117,7 +118,7 @@ namespace pcpp
 					// It is allocator's responsibility to handle memory allocation exceptions
 					m_Data = m_Allocator.allocate(other.m_Capacity);
 					// Check if new buffer was allocated
-					if (!m_Data) {// Expect nullptr/NULL returned when execption thrown on allocation
+					if (m_Data == PCAPPP_NULLPTR) {// Expect nullptr/NULL returned when execption thrown on allocation
 						zeroFields();
 						return false;
 					};
@@ -165,8 +166,7 @@ namespace pcpp
 			 * Sets object to a null-state by internally calling initialize method.
 			 */
 			MemoryProxy() { initialize(); }
-// In case of unsupported std::nullptr_t nullptr will be a macro def (from CPP11.h)
-#ifndef nullptr
+#ifdef PCAPPP_HAVE_NULLPTR_T
 			/**
 			 * @brief Special case constructor for nullptr.
 			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.

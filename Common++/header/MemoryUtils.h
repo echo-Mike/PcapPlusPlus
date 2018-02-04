@@ -161,7 +161,13 @@ namespace pcpp
 			 * Internally applies "delete" expression to provided pointer.
 			 * @param[in] p Pointer to a memory previously allocated by this allocator.
 			 */
-			void deallocate(pointer p) { delete p; }
+			void deallocate(pointer p)
+			{
+				if (p != typename Base::pointer())
+				{
+					delete p;
+				}
+			}
 		};
 		/**
 		 * @brief The partial specialisation of default allocator template for dynamic arrays of objects.
@@ -192,7 +198,13 @@ namespace pcpp
 			 * Internally applies "delete[]" expression to provided pointer.
 			 * @param[in] p Pointer to a memory previously allocated by this allocator.
 			 */
-			void deallocate(pointer p) { delete[] p; }
+			void deallocate(pointer p)
+			{
+				if (p != typename Base::pointer())
+				{
+					delete[] p;
+				}
+			}
 		};
 
 		/**
