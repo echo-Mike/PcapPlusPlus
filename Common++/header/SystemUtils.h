@@ -263,26 +263,26 @@ namespace pcpp
 		{
 			if (argc == 0)
 			{
-				m_AppName = "";
+				m_AppName.clear();
 				return;
 			}
 
 			m_AppName = argv[0];
 
 			// remove Linux/Unix path
-			while (m_AppName.find("/") != std::string::npos)
+			while (m_AppName.find('/') != std::string::npos)
 			{
-				m_AppName = m_AppName.substr(m_AppName.find("/")+1);
+				m_AppName = m_AppName.substr(m_AppName.find('/')+1);
 			}
 
 			// remove Windows path
-			while (m_AppName.find("\\") != std::string::npos)
+			while (m_AppName.find('\\') != std::string::npos)
 			{
-				m_AppName = m_AppName.substr(m_AppName.find("\\")+1);
+				m_AppName = m_AppName.substr(m_AppName.find('\\')+1);
 			}
 
 			// remove file extension
-			m_AppName = m_AppName.substr(0, m_AppName.find("."));
+			m_AppName = m_AppName.substr(0, m_AppName.find('.'));
 		}
 
 		/**

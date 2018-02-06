@@ -575,7 +575,7 @@ std::string Packet::printToString(bool timeAsLocalTime)
 	std::vector<std::string> stringList;
 	std::string result;
 	printToStringList(stringList, timeAsLocalTime);
-	for (std::vector<std::string>::iterator iter = stringList.begin(); iter != stringList.end(); iter++)
+	for (std::vector<std::string>::iterator iter = stringList.begin(); iter != stringList.end(); ++iter)
 	{
 		result += *iter + "\n";
 	}

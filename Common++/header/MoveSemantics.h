@@ -3,7 +3,6 @@
 
 #include "CPP11.h"
 #include "TypeUtils.h"
-#include <iostream>
 
 /// @file
 

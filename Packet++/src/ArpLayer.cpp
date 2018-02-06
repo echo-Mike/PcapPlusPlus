@@ -18,7 +18,7 @@ ArpLayer::ArpLayer(ArpOpcode opCode, const MacAddress& senderMacAddr, const MacA
 {
 	m_DataLen = sizeof(arphdr);
 	m_Data = new uint8_t[m_DataLen];
-	memset(m_Data, 0, sizeof(m_DataLen));
+	memset(m_Data, 0, m_DataLen);
 	m_Protocol = ARP;
 
 	arphdr* arpHeader = getArpHeader();

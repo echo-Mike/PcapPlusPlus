@@ -1,8 +1,6 @@
 #ifndef PCAPPP_UNIQUE_PTR_H
 #define PCAPPP_UNIQUE_PTR_H
 
-#include <memory>
-
 #include "CPP11.h"
 #include "MemoryUtils.h"
 #include "MemoryImplementation.h"
@@ -496,6 +494,8 @@ namespace pcpp
  */
 #define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::auto_ptr<Type_>
 #else
+
+#include <memory>
 
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
