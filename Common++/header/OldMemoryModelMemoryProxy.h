@@ -265,7 +265,7 @@ namespace pcpp
 					return false;
 				}
 
-				typename Base::pointer newBuffer = m_Allocator.allocate(newBufferLength);
+				typename Base::pointer newBuffer = new typename Base::value_type[newBufferLength];
 				std::memset(newBuffer, initialValue, newBufferLength * sizeof(typename Base::value_type));
 				std::memcpy(newBuffer, m_Data, m_Length * sizeof(typename Base::value_type));
 				if (m_Ownership)
