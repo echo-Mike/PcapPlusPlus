@@ -149,7 +149,7 @@ namespace pcpp
 				 * This overload is selected by compiler if object is const-qualified.
 				 * @return Copy of stored pointer.
 				 */
-				inline const typename traits::pointer get_pointer() const { return (m_Pair.get_second()); }
+				inline typename traits::pointer get_pointer() const { return (m_Pair.get_second()); }
 			protected:
 				allocator_pointer_pair_t m_Pair;    //<! Pair of allocator and pointer.
 			};
