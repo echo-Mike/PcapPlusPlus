@@ -188,6 +188,8 @@ xcopy "$(PcapPlusPlusHome)\Common++\header\*" "$(PcapPlusPlusHome)\Dist\header" 
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Common++\header\AllocatorAdapter.h" />
+    <ClInclude Include="..\..\Common++\header\AllocatorPointerPair.h" />
+    <ClInclude Include="..\..\Common++\header\CompressedPair.h" />
     <ClInclude Include="..\..\Common++\header\ContentAwareMemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\CPP11.h" />
     <ClInclude Include="..\..\Common++\header\IpAddress.h" />
@@ -195,7 +197,6 @@ xcopy "$(PcapPlusPlusHome)\Common++\header\*" "$(PcapPlusPlusHome)\Dist\header" 
     <ClInclude Include="..\..\Common++\header\Logger.h" />
     <ClInclude Include="..\..\Common++\header\LRUList.h" />
     <ClInclude Include="..\..\Common++\header\MacAddress.h" />
-    <ClInclude Include="..\..\Common++\header\MemoryImplementation.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxy.h" />
     <ClInclude Include="..\..\Common++\header\MemoryProxyInterface.h" />
     <ClInclude Include="..\..\Common++\header\MoveSemantics.h" />

@@ -66,13 +66,16 @@
     <ClInclude Include="..\..\Common++\header\MemoryUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Common++\header\MemoryImplementation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Common++\header\TypeUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Common++\header\MoveSemantics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\CompressedPair.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common++\header\AllocatorPointerPair.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
