@@ -1,7 +1,7 @@
 #ifndef PCAPPP_OLDMEMORYMODELMEMORYPROXY
 #define PCAPPP_OLDMEMORYMODELMEMORYPROXY
 
-#include <cstdint>
+#include <cstdlib>
 #include <exception>
 
 #include "CPP11.h"
@@ -22,8 +22,8 @@ namespace pcpp
 	namespace memory
 	{
 		/**
-		 * @brief Old memory handling model memory proxy class specialisation. 
-		 * This specialisation represents the way memory was handled in old implementation of RawPacket.\n
+		 * @brief Old memory handling model memory proxy class specialization. 
+		 * This specialization represents the way memory was handled in old implementation of RawPacket.\n
 		 * Old memory handling algorithm was carefully transferred to the new framework and slightly tweaked to accept custom allocators from users.\n
 		 * The field correspondence of this class and original RawPacket implementation:  
 		 * * m_pRawData -> m_Data  
@@ -33,28 +33,16 @@ namespace pcpp
 		 *   
 		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
-		template < typename Allocator >
-		class MemoryProxy< Allocator, MemoryProxyTags::OldMemoryModelTag > :
-			public MemoryProxyInterface< Allocator >
+		template < typename MemoryT >
+		class OldMemoryModelMemoryProxy :
+			public MemoryProxyInterface< MemoryT >
 		{
 		public:
 			/**
 			 * Base type of this class.
 			 */
-			typedef MemoryProxyInterface< Allocator > Base;
+			typedef MemoryProxyInterface< MemoryT > Base;
 		protected:
-			/**
-			 * @brief Setups object to a null-state.
-			 * Basically zeroes all fields, no data is touched.
-			 */
-			inline void zeroFields()
-			{
-				// Set all fields to their initial values
-				m_Data = PCAPPP_NULLPTR;
-				m_Length = 0;
-				m_Ownership = true;
-				m_DataSet = false;
-			}
 			/**
 			 * @brief Setups object to special null-state.
 			 * Basically zeroes all fields, no data is touched.\n
@@ -62,8 +50,11 @@ namespace pcpp
 			 */
 			inline void initialize()
 			{
-				m_Allocator.initialize();
-				zeroFields();
+				// Set all fields to their initial values
+				m_Data = PCAPPP_NULLPTR;
+				m_Length = 0;
+				m_Ownership = true;
+				m_DataSet = false;
 			}
 			/**
 			 * @brief Sets provided data as new data to handle. 
@@ -77,7 +68,7 @@ namespace pcpp
 			bool setData(const_pointer p, size length)
 			{
 				if (m_Data != PCAPPP_NULLPTR && m_Ownership)
-					m_Allocator.deallocate(m_Data);
+					delete[] m_Data;
 				m_Data = (typename Base::pointer)p;
 				m_Length = length;
 				m_DataSet = true;
@@ -89,7 +80,7 @@ namespace pcpp
 			 * @param[in] allocateData If true new memory for data is allocated otherwise old memory is used.
 			 * @return true if copy operation ended successfully, false otherwise.
 			 */
-			inline bool copyDataFrom(const MemoryProxy& other, bool allocateData = true)
+			inline bool copyDataFrom(const OldMemoryModelMemoryProxy& other, bool allocateData = true)
 			{
 				if (!other.m_DataSet)
 					return false;
@@ -97,11 +88,11 @@ namespace pcpp
 				if (allocateData)
 				{
 					m_Ownership = true;
-					m_Data = m_Allocator.allocate(other.m_Length);
+					m_Data = new typename Base::value_type[other.m_Length];
 					// This check does not performed in original code
 					/* Put / before /* to uncomment (//*)
 					if (!m_Data) {
-						// Expect nullptr/NULL returned when execption thrown on allocation
+						// Expect nullptr/NULL returned when exception thrown on allocation
 						clear();
 						return false;
 					}
@@ -117,20 +108,19 @@ namespace pcpp
 			 * @brief Default constructor.
 			 * Sets object to a null-state by internally calling initialize method.
 			 */
-			MemoryProxy() { initialize(); }
+			OldMemoryModelMemoryProxy() { initialize(); }
 			/**
 			 * @brief General object constructor.
 			 * This function is a copy of old RawPacket::RawPacket general object constructor.
 			 * Original description:\n
 			 * A constructor that receives a pointer to the raw data (allocated elsewhere). This constructor is usually used when packet
 			 * is captured using a packet capturing engine (like libPcap. WinPcap, PF_RING, etc.). The capturing engine allocates the raw data
-			 * memory and give the user a pointer to it + a timestamp it has arrived to the device
-			 * @param[in] p Pointer to memoty to take handle of.
+			 * memory and give the user a pointer to it + a time-stamp it has arrived to the device
+			 * @param[in] p Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 */
-			MemoryProxy(const_pointer p, size length, bool ownership) :
-				m_Allocator() 
+			OldMemoryModelMemoryProxy(const_pointer p, size length, bool ownership)
 			{
 				initialize();
 				m_Ownership = ownership;
@@ -144,7 +134,7 @@ namespace pcpp
 			 * the other instance are freed, the other won't be affected
 			 * @param[in] other The instance to make copy of.
 			 */
-			MemoryProxy(const MemoryProxy& other) { copyDataFrom(other); }
+			OldMemoryModelMemoryProxy(const OldMemoryModelMemoryProxy& other) { copyDataFrom(other); }
 			/**
 			 * @brief Copy constructor.
 			 * This function is a copy of old RawPacket::RawPacket class copy assignment operator.
@@ -154,13 +144,13 @@ namespace pcpp
 			 * @todo free raw data only if deleteRawDataAtDestructor was set to 'true'
 			 * @param[in] other The instance to make copy of.
 			 */
-			MemoryProxy& operator=(const MemoryProxy& other)
+			OldMemoryModelMemoryProxy& operator=(const OldMemoryModelMemoryProxy& other)
 			{
 				// Handle self assignment case
 				if (this == &other)
 					return *this;
 				if (m_Data != PCAPPP_NULLPTR)
-					m_Allocator.deallocate(m_Data);
+					delete[] m_Data;
 				m_DataSet = false;
 				copyDataFrom(other);
 				return *this;
@@ -171,11 +161,18 @@ namespace pcpp
 			 * Original description:\n
 			 * A destructor for this class. Frees the raw data if deleteRawDataAtDestructor was set to 'true'
 			 */
-			~MemoryProxy() 
+			~OldMemoryModelMemoryProxy()
 			{ 
 				if (m_Ownership)
-					m_Allocator.deallocate(m_Data);
+					delete[] m_Data;
 			}
+
+			/**
+			 * @brief Exposes object interface thru pointer to Base class. 
+			 * @return this casted to pointer to Base class.
+			 */
+			inline Base* expose() { return this; }
+
 			/**
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
@@ -187,14 +184,14 @@ namespace pcpp
 			 */
 			inline bool isOwning() const PCAPPP_OVERRIDE { return m_Ownership; }
 			/**
-			 * @brief Returns pointer to the begining of underlying data.
-			 * @return Pointer to the begining of underlying data.
+			 * @brief Returns pointer to the beginning of underlying data.
+			 * @return Pointer to the beginning of underlying data.
 			 */
 			inline pointer get() PCAPPP_OVERRIDE { return m_Data; }
 			/**
-			 * @brief Returns pointer to the begining of const qualified underlying data.
-			 * This overload is called in object is const qualified.
-			 * @return Pointer to the begining of const qualified underlying data.
+			 * @brief Returns pointer to the beginning of const-qualified underlying data.
+			 * This overload is called in object is const-qualified.
+			 * @return Pointer to the beginning of const-qualified underlying data.
 			 */
 			inline const_pointer get() const PCAPPP_OVERRIDE { return m_Data; }
 			/**
@@ -213,7 +210,7 @@ namespace pcpp
 			/**
 			 * @brief Underlying data reset method.
 			 * This method was not presented in original RawPacket class code.
-			 * @param[in] ptr Pointer to memoty to take handle of.
+			 * @param[in] ptr Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 * @todo Add meaning to this method.
@@ -245,16 +242,6 @@ namespace pcpp
 				return false;
 			}
 			/**
-			 * @brief Represents the read access facility to the underlying allocator object.
-			 * @return Reference to underlying allocator object.
-			 */
-			inline typename Adapter::allocator_traits::allocator_type& getAllocator() const { return m_Allocator.getAllocator(); }
-			/**
-			 * @brief Represents the write access facility to the underlying allocator object.
-			 * @param[in] allocator Reference to the new allocator object to be used.
-			 */
-			inline void setAllocator(typename Adapter::allocator_traits::allocator_type& allocator) const { return m_Allocator.setAllocator(allocator); }
-			/**
 			 * @brief Reallocates underlying data.
 			 * This function is a copy of old RawPacket::reallocateData method.
 			 * Original description:\n
@@ -263,7 +250,7 @@ namespace pcpp
 			 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to allocate a larger buffer and get RawPacket instance to
 			 * point to it.
 			 * @param[in] newBufferLength New size of data.
-			 * @param[in] initialValue Perbyte initial value of new memory on allocation.
+			 * @param[in] initialValue Per-byte initial value of new memory on allocation.
 			 * @return true if operation ended successfully, false otherwise (you may expect that object is in null-state).
 			 */
 			bool reallocate(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE
@@ -282,7 +269,7 @@ namespace pcpp
 				std::memset(newBuffer, initialValue, newBufferLength * sizeof(typename Base::value_type));
 				std::memcpy(newBuffer, m_Data, m_Length * sizeof(typename Base::value_type));
 				if (m_Ownership)
-					m_Allocator.deallocate(m_Data);
+					delete[] m_Data;
 
 				m_Ownership = true;
 				m_Data = newBuffer;
@@ -295,13 +282,13 @@ namespace pcpp
 			 * Clears all members of this instance, meaning setting raw data to NULL, raw data length to 0, etc. Currently raw data is always freed,
 			 * even if deleteRawDataAtDestructor was set to 'false'.
 			 * @todo deleteRawDataAtDestructor was set to 'true', don't free the raw data.
-			 * @todo set timestamp to a default value as well.
+			 * @todo set time-stamp to a default value as well.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
 			bool clear() PCAPPP_OVERRIDE
 			{
 				if (m_Data != PCAPPP_NULLPTR)
-					m_Allocator.deallocate(m_Data);
+					delete[] m_Data;
 				m_Data = PCAPPP_NULLPTR;
 				m_Length = 0;
 				m_DataSet = false;
@@ -421,11 +408,8 @@ namespace pcpp
 				return true;
 			}
 		protected:
-			// Don't change the order of data members. 
-			// It is optimised for 64 byte cache line access.
 			pointer m_Data;
 			size m_Length;
-			mutable Adapter m_Allocator; // Don't move this data member. By default it may have size from 1 to 16 bytes (1,8,16) depending on defines.
 			bool m_Ownership, m_DataSet;
 		};
 
