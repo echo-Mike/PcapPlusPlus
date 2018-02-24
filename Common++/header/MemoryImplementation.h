@@ -7,6 +7,7 @@
 #include "CPP11.h"
 #include "TypeUtils.h"
 #include "MemoryUtils.h"
+#include "MoveSemantics.h"
 
 /// @file
 
@@ -72,6 +73,7 @@ namespace pcpp
 				 * Type of the second pair member.
 				 */
 				typedef T2 second_t;
+
 				/**
 				 * @brief Main constructor of this class.
 				 * Simply calls copy constructors of members with corresponding parameters.\n
@@ -81,6 +83,34 @@ namespace pcpp
 				 */
 				CompressedPair(const T1& val1, const T2& val2) :
 					m_Val1(val1), m_Val2(val2) {}
+
+				CompressedPair(const CompressedPair& other) :
+					m_Val1(other.m_Val1), m_Val2(other.m_Val2) {}
+
+				CompressedPair& operator=(const CompressedPair& other)
+				{
+					// Handle self assignment case
+					if (this == &other)
+						return *this;
+					m_Val1 = other.m_Val1;
+					m_Val2 = other.m_Val2;
+					return *this;
+				}
+
+				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
+					m_Val1(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1)),
+					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
+
+				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
+				{
+					// Handle self assignment case
+					if (this == &PCAPPP_MOVE_OTHER)
+						return *this;
+					m_Val1 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1);
+					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
+					return *this;
+				}
+
 				/**
 				 * @brief Method to access the first stored value.
 				 * @return Reference to the first stored value.
@@ -133,6 +163,7 @@ namespace pcpp
 				 * Type of the second pair member.
 				 */
 				typedef T2 second_t;
+
 				/**
 				 * @brief Main constructor of this class.
 				 * By default empty objects have great default constructors.
@@ -142,6 +173,31 @@ namespace pcpp
 				 */
 				CompressedPair(const Base, const T2& val2) :
 					Base(), m_Val2(val2) {}
+
+				CompressedPair(const CompressedPair& other) :
+					m_Val2(other.m_Val2) {}
+
+				CompressedPair& operator=(const CompressedPair& other)
+				{
+					// Handle self assignment case
+					if (this == &other)
+						return *this;
+					m_Val2 = other.m_Val2;
+					return *this;
+				}
+
+				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
+					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
+
+				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
+				{
+					// Handle self assignment case
+					if (this == &PCAPPP_MOVE_OTHER)
+						return *this;
+					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
+					return *this;
+				}
+
 				/**
 				 * @brief Method to access the compressed base value.
 				 * @return Reference to the first stored type.
@@ -170,7 +226,7 @@ namespace pcpp
 			 * @brief Special structure that helps to dispatch CompressedPair class depending on template arguments.
 			 * This is a main template. It dispatches all not-known types to a CompressedPair<T1, T2, FalseTag>.
 			 * If you need to add any custom deleters just add a specialization of this template.
-			 * As an example take a look provided specializations.
+			 * As an example take a look at provided specializations.
 			 * @tparam T1 The type to be passed to CompressedPair template as T1 template argument.
 			 * @tparam T2 The type to be passed to CompressedPair template as T2 template argument.
 			 */
