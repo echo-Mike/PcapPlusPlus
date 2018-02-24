@@ -117,7 +117,7 @@ namespace pcpp
 
 		template< class T >
 		struct remove_cv {
-			typedef typename std::remove_volatile<typename std::remove_const<T>::type>::type type;
+			typedef typename remove_volatile<typename remove_const<T>::type>::type type;
 		};
 
 		/**
@@ -180,6 +180,24 @@ namespace pcpp
 		} // namespace pcpp::type_traits::detail
 		
 		template< class T > struct is_pointer : detail::is_pointer_helper<typename remove_cv<T>::type> {};
+
+		/**
+		 * Implementations of next classes were copied from:
+		 * http://en.cppreference.com/w/cpp/types/is_class
+		 */
+
+		namespace detail
+		{
+			template <class T> char class_test(int T::*);
+			struct class_two { char c[2]; };
+			template <class T> class_two class_test(...);
+		} // namespace pcpp::type_traits::detail
+		
+		template <class T>
+		struct is_class : integral_constant<bool, sizeof(detail::class_test<T>(0)) == 1 > {};
+
+		template <class T>
+		struct is_empty : integral_constant<bool, is_class<T>::value && sizeof(T) == sizeof(true_type) > {};
 
 		/**
 		 * Implementations of next classes were copied from:
