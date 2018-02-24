@@ -1,12 +1,10 @@
-#ifndef PCAPPP_MEMORY_IMPLEMENTATION
-#define PCAPPP_MEMORY_IMPLEMENTATION
+#ifndef PCAPPP_COMPRESSED_PAIR
+#define PCAPPP_COMPRESSED_PAIR
 
-#include <memory>
 #include <cstdlib>
 
 #include "CPP11.h"
 #include "TypeUtils.h"
-#include "MemoryUtils.h"
 #include "MoveSemantics.h"
 
 /// @file
@@ -261,4 +259,4 @@ namespace pcpp
 
 } // namespace pcpp
 
-#endif /* PCAPPP_MEMORY_IMPLEMENTATION */
+#endif /* PCAPPP_COMPRESSED_PAIR */
