@@ -104,13 +104,9 @@ namespace pcpp
  */
 #define PCAPPP_MOVE_OTHER proxy.ref
 /**
- * Generates declaration of move-constructor with correct move-reference type.
+ * Generates declaration of function parameter to be used by PCAPPP_MOVE_OTHER.
  */
-#define PCAPPP_MOVE_CONSTRUCTOR(Type_name) Type_name(PCAPPP_MOVE_TYPE(Type_name) proxy)
-/**
- * Generates declaration of move-assignment operator with correct move-reference type.
- */
-#define PCAPPP_MOVE_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_MOVE_TYPE(Type_name) proxy)
+#define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) proxy
 
 #else
 
@@ -138,14 +134,19 @@ namespace pcpp
  */
 #define PCAPPP_MOVE_OTHER other
 /**
+ * Generates declaration of function parameter to be used by PCAPPP_MOVE_OTHER.
+ */
+#define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER
+
+#endif
+
+/**
  * Generates declaration of move-constructor with correct move-reference type.
  */
-#define PCAPPP_MOVE_CONSTRUCTOR(Type_name) Type_name(PCAPPP_MOVE_TYPE(Type_name) other)
+#define PCAPPP_MOVE_CONSTRUCTOR(Type_name) Type_name(PCAPPP_MOVE_PARAMETER(Type_name))
 /**
  * Generates declaration of move-assignment operator with correct move-reference type.
  */
-#define PCAPPP_MOVE_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_MOVE_TYPE(Type_name) other)
-
-#endif
+#define PCAPPP_MOVE_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_MOVE_PARAMETER(Type_name))
 
 #endif /* PCAPPP_MOVE_SEMANTICS */
