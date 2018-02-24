@@ -77,7 +77,8 @@ namespace pcpp
 			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
 			 * @param[in:out] other The instance to move from.
 			 */
-			AllocatorAdapter(AllocatorAdapter&& other) : Base(std::move(other)) {}
+			AllocatorAdapter(AllocatorAdapter&& other) : 
+				Base(std::move(other)) {}
 			/**
 			 * @brief Move assignment operator.
 			 * Don't allows self assignment.\n
@@ -91,6 +92,28 @@ namespace pcpp
 				if (this == &other)
 					return *this;
 				Base::operator=(std::move(other));
+				return *this;
+			}
+#else
+			/**
+			 * @brief Move constructor.
+			 * Will move the allocator from other.\n
+			 * @param[in:out] other The instance to move from.
+			 */
+			PCAPPP_MOVE_CONSTRUCTOR(AllocatorAdapter) : 
+				Base(PCAPPP_MOVE(dynamic_cast<Base&>(PCAPPP_MOVE_OTHER)) {}
+			/**
+			 * @brief Move assignment operator.
+			 * Don't allows self assignment.\n
+			 * Will move the allocator from other.\n
+			 * @param[in:out] other The instance to move from.
+			 */
+			PCAPPP_MOVE_ASSIGNMENT(AllocatorAdapter) :
+			{
+				// Handle self assignment case
+				if (this == &PCAPPP_MOVE_OTHER)
+					return *this;
+				Base::operator=(PCAPPP_MOVE(dynamic_cast<Base&>(PCAPPP_MOVE_OTHER));
 				return *this;
 			}
 #endif
@@ -118,26 +141,6 @@ namespace pcpp
 			 */
 			inline void deallocate(typename traits::pointer p) { (getAllocator().*Deallocate)(p); }
 		};
-
-		/**
-		 * \namespace Implementation
-		 * \brief Special namespace that wraps up an implementation details of some classes from pcpp::memory namespace.
-		 */
-		namespace Implementation
-		{
-			/**
-			 * @brief Specialization that dispatches any default_delete<T[]> type to CompressedPair<default_delete<T[]>, T2, TrueFlag>
-			 * This is an example of dispatching specialization.
-			 * This specialization don't dispatches default_delete<T>,
-			 * @tparam T2 Some type to be passed to default_delete template.
-			 */
-			template < typename T1, typename T2 >
-			struct CompressedPairDispatcher< AllocatorAdapter< T1 >, T2 >
-			{
-				typedef CompressedPair<AllocatorAdapter< T1 >, T2, type_traits::true_type> pair_type;
-			};
-
-		} // namespace pcpp::memory::Implementation
 
 	} // namespace pcpp::memory
 
