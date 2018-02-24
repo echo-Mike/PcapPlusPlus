@@ -6,7 +6,7 @@
 
 #include "CPP11.h"
 #include "MemoryUtils.h"
-#include "Unique_Ptr.h"
+#include "MoveSemantics.h"
 #include "AllocatorAdapter.h"
 
 /// @file
@@ -27,37 +27,31 @@ namespace pcpp
 		 * @class MemoryProxyInterface
 		 * @brief This class defines an interface for objects that are capable of managing some amount of memory. 
 		 * Common known name for this objects is "Memory resource".
-		 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
-		 * @tparam[in] traits Defines a set of requirements for Allocator type (Default: pcpp::memory::allocator_traits<Allocator>)
 		 */ 
-		template < typename Allocator, typename traits = allocator_traits<Allocator> >
+		template < typename T >
 		class MemoryProxyInterface 
 		{
 		public:
 			/**
 			 * Defines underlying memory type.
 			 */
-			typedef typename traits::value_type value_type;
+			typedef T value_type;
 			/**
 			 * Defines type of pointer to underlying memory type.
 			 */
-			typedef typename traits::pointer pointer;
+			typedef T* pointer;
 			/**
 			 * Defines type of constant pointer to underlying memory type.
 			 */
-			typedef typename traits::const_pointer const_pointer;
+			typedef const T* const_pointer;
 			/**
 			 * Defines type of reference to element of underlying memory type.
 			 */
-			typedef typename traits::reference reference;
+			typedef T& reference;
 			/**
 			 * Defines type of constant reference to element of underlying memory type.
 			 */
-			typedef typename traits::const_reference const_reference;
-			/**
-			 * Defines type of widely used allocator adapter for derived classes.
-			 */
-			typedef AllocatorAdapter<Allocator> Adapter;
+			typedef const T& const_reference;
 
 			/**
 			 * Defines type of variables that represents size values.
@@ -134,19 +128,7 @@ namespace pcpp
 			 * @return Opposite of the result of operator bool call.
 			 */
 			inline bool isInNullState() const { return !(this->operator bool()); }
-			/**
-			 * @brief Represents the read access facility to the underlying allocator object.
-			 * Derived class must overload this function to add read access to it's underlying allocator object.
-			 * @return Mostly common: Reference to underlying allocator object.
-			 */
-			inline virtual typename traits::allocator_type& getAllocator() const = 0;
-			/**
-			 * @brief Represents the write access facility to the used underlying allocator object.
-			 * Derived class must overload this function to add write access to it's underlying allocator object.
-			 * @param[in] allocator Reference to the new allocator object to be used.
-			 */
-			inline virtual void setAllocator(typename traits::allocator_type& allocator) const = 0;
-
+			
 			/* Underlying data modification API */
 
 			/**
@@ -215,7 +197,7 @@ namespace pcpp
 			 */
 			virtual bool remove(index atIndex, size numOfBytesToRemove) = 0;
 		};
-
+		
 		/**
 		 * \namespace MemoryProxyTags
 		 * \brief Wrapper namespace over the predefined set of tags used in MemoryProxy template class tag dispatch.
@@ -241,7 +223,131 @@ namespace pcpp
 		 * @tparam[in] ProxyTag Tag that defines which class will be created.
 		 */ 
 		template < typename Allocator, typename ProxyTag >
-		class MemoryProxy { private: MemoryProxy() {} ~MemoryProxy() {} };
+		class MemoryProxy { private: char dummy[1234];  MemoryProxy() {} ~MemoryProxy() {} };
+
+		/**
+		 * @class AllocatorPointerPair
+		 * @brief This is a helper class that is manages compressed pair of allocator and pointer. 
+		 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
+		 * @tparam[in] traits Defines a set of requirements for Allocator type (Default: pcpp::memory::allocator_traits<Allocator>)
+		 */ 
+		template < typename Allocator, typename traits = allocator_traits<Allocator> >
+		struct AllocatorPointerPair
+		{
+			/**
+			 * Defines type of widely used allocator adapter for derived classes.
+			 */
+			typedef AllocatorAdapter<Allocator> Adapter;
+			/**
+			 * Defines type of pointer to memory.
+			 */
+			typedef typename traits::pointer pointer;
+			/**
+			 * Defines type of pair that stores allocator and pointer compressed if it is possible.
+			 */
+			typedef typename pcpp::memory::Implementation::CompressedPairDispatcher< Adapter, typename traits::pointer >::pair_type allocator_pointer_pair_t;
+
+			/**
+			 * @brief Default constructor.
+			 * Value-initializes the stored pointer and the stored allocator. 
+			 * Requires that Allocator is DefaultConstructible.
+			 */
+			AllocatorPointerPair() : m_Pair(Adapter(), pointer()) {}
+
+#ifdef PCAPPP_HAVE_NULLPTR_T
+			/**
+			 * @brief Special case constructor for nullptr.
+			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
+			 */
+			AllocatorPointerPair(std::nullptr_t) : m_Pair(Adapter(), pointer()) {}
+#endif
+			/**
+			 * @brief Main constructor.
+			 * Constructs a MemoryProxyAllocatorHelper initializing the stored pointer with p 
+			 * and value-initializing the stored allocator. 
+			 * Requires that Allocator is DefaultConstructible.
+			 * @param p Pointer to memory.
+			 */
+			explicit AllocatorPointerPair(pointer p) : m_Pair(Adapter(), p) {}
+
+			/**
+			 * @brief Copy constructor.
+			 * @param other Instance to be copied.
+			 */
+			AllocatorPointerPair(const AllocatorPointerPair& other) :
+				m_Pair(other.m_Pair) {}
+
+			/**
+			 * @brief Copy assignment operator.
+			 * @param other Instance to be copied.
+			 * @return Reference to this object.
+			 */
+			AllocatorPointerPair& operator=(const AllocatorPointerPair& other)
+			{
+				// Handle self assignment case
+				if (this == &other)
+					return *this;
+				m_Pair = other.m_Pair;
+				return *this;
+			}
+
+			/**
+			 * @brief Move constructor.
+			 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
+			 * @param other Instance to be moved from.
+			 */
+			PCAPPP_MOVE_CONSTRUCTOR(AllocatorPointerPair) :
+				m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
+			{
+				// Nullify provided object
+				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Adapter();
+				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+			}
+
+			/**
+			 * @brief Move assignment operator.
+			 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
+			 * @param other Instance to be moved from.
+			 * @return Reference to this object.
+			 */
+			PCAPPP_MOVE_ASSIGNMENT(AllocatorPointerPair)
+			{
+				// Handle self assignment case
+				if (this == &PCAPPP_MOVE_OTHER)
+					return *this;
+				m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair);
+				// Nullify provided object
+				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Adapter();
+				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+				return *this;
+			}
+
+			/**
+			 * @brief Method to access the stored allocator object.
+			 * @return Reference to the allocator object.
+			 */
+			inline Adapter& get_allocator() { return (m_Pair.get_first()); }
+			/**
+			 * @brief Method to access the stored allocator object.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Reference to the allocator object.
+			 */
+			inline const Adapter& get_allocator() const { return (m_Pair.get_first()); }
+
+			/**
+			 * @brief Method to access the stored pointer.
+			 * @return Reference to the pointer.
+			 */
+			inline typename traits::pointer& get_pointer() { return (m_Pair.get_second()); }
+			/**
+			 * @brief Method to access the stored pointer.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Reference to the pointer.
+			 */
+			inline const typename traits::pointer& get_pointer() const { return (m_Pair.get_second()); }
+
+			allocator_pointer_pair_t m_Pair;    //<! Pair of allocator and pointer.
+		};
 
 	} // namespace pcpp::memory
 
