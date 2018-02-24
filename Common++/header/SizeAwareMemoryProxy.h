@@ -1,11 +1,13 @@
 #ifndef PCAPPP_SIZEAWAREMEMORYPROXY
 #define PCAPPP_SIZEAWAREMEMORYPROXY
 
-#include <cstdint>
+#include <cstdlib>
 #include <exception>
 
 #include "CPP11.h"
+#include "MemoryUtils.h"
 #include "MemoryProxyInterface.h"
+#include "AllocatorPointerPair.h"
 
 /// @file
 
@@ -22,32 +24,47 @@ namespace pcpp
 	namespace memory
 	{
 		/**
-		 * @brief Size aware memory proxy class specialisation. 
-		 * This specialisation held only one counter for internal data length.\n
+		 * @brief Size aware memory proxy class specialization. 
+		 * This specialization held only one counter for internal data length.\n
 		 * m_Length - represents the length of known data in underlying storage and the size of underlying storage.\n
 		 * This is the safe implementation of old memory handling algorithm. But logic is not similar and therefore the test values.
 		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
-		template < typename Allocator >
-		class MemoryProxy< Allocator, MemoryProxyTags::SizeAwareTag > :
-			public MemoryProxyInterface< Allocator >
+		template < typename Allocator, typename traits = allocator_traits<Allocator> >
+		class SizeAwareMemoryProxy :
+			public MemoryProxyInterface< typename traits::value_type >
 		{
 		public:
 			/**
 			 * Base type of this class.
 			 */
-			typedef MemoryProxyInterface< Allocator > Base;
+			typedef MemoryProxyInterface< typename traits::value_type > Base;
+			/**
+			 * Represents compressed pair of allocator adapter and data pointer.
+			 */
+			typedef Implementation::AllocatorPointerPair<Allocator> allocator_pointer_pair_t;
 		protected:
+			/**
+			 * @brief Represents the read-write access facility to the underlying data pointer.
+			 * @return Reference to underlying data pointer.
+			 */
+			inline typename allocator_pointer_pair_t::pointer& getPointer() { return m_Pair.get_pointer(); }
+			/**
+			 * @brief Represents the read access facility to the underlying data pointer.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Copy of underlying data pointer.
+			 */
+			inline typename allocator_pointer_pair_t::pointer getPointer() const { return m_Pair.get_pointer(); }
 			/**
 			 * @brief Checks the condition in which underlying data may be safely deallocated.
 			 * @return true if condition is satisfied, false otherwise.
 			 */
-			inline bool SafeToDeleteCondition() { return m_Ownership && m_Data; }
+			inline bool SafeToDeleteCondition() { return m_Ownership && getPointer(); }
 			/**
 			 * @brief Checks the condition in which underlying data may be safely copied to another object.
 			 * @return true if condition is satisfied, false otherwise.
 			 */
-			inline bool SafeToCopyCondition() { return m_Data && m_Length > 0; }
+			inline bool SafeToCopyCondition() { return getPointer() && m_Length > 0; }
 			/**
 			 * @brief Data deallocation routine.
 			 * @return true if deallocation ended without exceptions, false otherwise.
@@ -58,9 +75,9 @@ namespace pcpp
 				try
 				{
 					if (SafeToDeleteCondition())
-						m_Allocator.deallocate(m_Data);
+						getAllocator().deallocate(getPointer());
 				}
-				catch (const std::exception& e)
+				catch (const std::exception&)
 				{
 					// TODO:: add exception handler
 					return false;
@@ -73,25 +90,16 @@ namespace pcpp
 				return true;
 			}
 			/**
-			 * @brief Setups object to a null-state.
-			 * Basically zeroes all fields, no data is touched.
-			 */
-			inline void zeroFields()
-			{
-				// Set all fields to their initial values
-				m_Data = PCAPPP_NULLPTR;
-				m_Length = 0;
-				m_Ownership = false;
-			}
-			/**
 			 * @brief Setups object to special null-state.
 			 * Basically zeroes all fields, no data is touched.\n
 			 * initialize method of allocator object is called.
 			 */
 			inline void initialize()
 			{
-				m_Allocator.initialize();
-				zeroFields();
+				// Set all fields to their initial values
+				getPointer() = PCAPPP_NULLPTR;
+				m_Length = 0;
+				m_Ownership = false;
 			}
 			/**
 			 * @brief Makes current object a copy of the other.
@@ -103,25 +111,23 @@ namespace pcpp
 			 * @param[in] other Object to make copy of.
 			 * @return true if successful copy of other was made, false otherwise.
 			 */
-			inline bool copyDataFrom(const MemoryProxy& other)
+			inline bool copyDataFrom(const SizeAwareMemoryProxy& other)
 			{
 				// Deallocate current data
 				deallocateData();
-				// Copy allocator of other object
-				m_Allocator = other.m_Allocator;
 				// Check that copying of data is safe
 				if (other.SafeToCopyCondition())
 				{
 					// Allocate new data
 					// It is allocator's responsibility to handle memory allocation exceptions
-					m_Data = m_Allocator.allocate(other.m_Length);
+					getPointer() = getAllocator().allocate(other.m_Length);
 					// Check if new buffer was allocated
 					if (m_Data == PCAPPP_NULLPTR) {// Expect nullptr/NULL returned when execption thrown on allocation
 						zeroFields();
 						return false;
 					}
 					// Copy whole data to this object memory
-					std::memcpy(m_Data, other.m_Data, other.m_Length * sizeof(typename Base::value_type));
+					std::memcpy(getPointer(), other.getPointer(), other.m_Length * sizeof(typename Base::value_type));
 					// We definitely own data now
 					m_Ownership = true;
 					// Copy length value
@@ -130,44 +136,42 @@ namespace pcpp
 				}
 				else // Other object must be in some null-state
 				{	// Put our object in proper null-state
-					zeroFields();
+					initialize();
 					return false;
 				}
 			}
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+
 			/**
 			 * @brief Moves data from other.
 			 * Underlying data is deallocated first. Then other allocator object is moved.
 			 * Next all other data members are copied. In the end initialize member function is called on other.\n
-			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
 			 * @param[in:out] other Object to move from.
 			 */
-			inline void moveDataFrom(MemoryProxy&& other)
+			inline void moveDataFrom(SizeAwareMemoryProxy& other)
 			{
 				// Deallocate current data
 				deallocateData();
-				// Move allocator from other
-				m_Allocator = std::move(other.m_Allocator);
+				// Move stored pair
+				m_Pair = PCAPPP_MOVE(other.m_Pair);
 				// Copy other data members
-				m_Data = other.m_Data;
 				m_Ownership = other.m_Ownership;
 				m_Length = other.m_Length;
 				// Set other object to null-state
 				other.initialize();
 			}
-#endif
+
 		public:
 			/**
 			 * @brief Default constructor.
 			 * Sets object to a null-state by internally calling initialize method.
 			 */
-			MemoryProxy() { initialize(); }
+			SizeAwareMemoryProxy() { initialize(); }
 #ifdef PCAPPP_HAVE_NULLPTR_T
 			/**
 			 * @brief Special case constructor for nullptr.
 			 * On platforms where nullptr keyword is supported this constructor overrides next one if nullptr is explicitly provided.
 			 */
-			explicit MemoryProxy(std::nullptr_t) { initialize(); }
+			explicit SizeAwareMemoryProxy(std::nullptr_t) { initialize(); }
 #endif
 			/**
 			 * @brief General object constructor.
@@ -176,8 +180,8 @@ namespace pcpp
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 */
-			explicit MemoryProxy(const_pointer p, size length = 0, bool ownership = true) :
-				m_Data(p), m_Length(length), m_Allocator(), m_Ownership(ownership) {}
+			explicit SizeAwareMemoryProxy(const_pointer p, size length = 0, bool ownership = true, Allocator alloc = Allocator()) :
+				m_Pair(alloc, p), m_Length(length), m_Ownership(ownership) {}
 			/**
 			 * @brief Copy constructor.
 			 * Object is set to a null-state first. Then other allocator object is copied.
@@ -187,7 +191,7 @@ namespace pcpp
 			 * If allocator can't allocate new memory object will be set in null-state.
 			 * @param[in] other The instance to make copy of.
 			 */
-			MemoryProxy(const MemoryProxy& other)
+			SizeAwareMemoryProxy(const SizeAwareMemoryProxy& other)
 			{
 				initialize();
 				copyDataFrom(other);
@@ -202,7 +206,7 @@ namespace pcpp
 			 * If allocator can't allocate new memory object will be set in null-state.
 			 * @param[in] other The instance to make copy of.
 			 */
-			MemoryProxy& operator=(const MemoryProxy& other)
+			SizeAwareMemoryProxy& operator=(const SizeAwareMemoryProxy& other)
 			{
 				// Handle self assignment case
 				if (this == &other)
@@ -210,41 +214,44 @@ namespace pcpp
 				copyDataFrom(other);
 				return *this;
 			}
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
 			/**
 			 * @brief Move constructor.
 			 * Object is set to a null-state first. Then other allocator object is moved.
 			 * Next all other data members are copied. In the end the initialize member function is called on other.\n
-			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
 			 * @param[in:out] other The instance to move from.
 			 */
-			MemoryProxy(MemoryProxy&& other)
+			PCAPPP_MOVE_CONSTRUCTOR(SizeAwareMemoryProxy)
 			{
 				initialize();
-				moveDataFrom(std::move(other));
+				moveDataFrom(PCAPPP_MOVE_OTHER);
 			}
 			/**
 			 * @brief Move assignment operator.
 			 * Don't allows self assignment.\n
 			 * Underlying data is deallocated first. Then other allocator object is moved.
 			 * Next all other data members are copied. In the end the initialize member function is called on other.\n
-			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
 			 * @param[in:out] other The instance to move from.
 			 */
-			MemoryProxy& operator=(MemoryProxy&& other)
+			PCAPPP_MOVE_ASSIGNMENT(SizeAwareMemoryProxy)
 			{
 				// Handle self assignment case
-				if (this == &other)
+				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
-				moveDataFrom(std::move(other));
+				moveDataFrom(PCAPPP_MOVE_OTHER);
 				return *this;
 			}
-#endif
 			/**
 			 * @brief Destructor.
 			 * Deallocates underlying data if SafeToDeleteCondition is satisfied.
 			 */
-			~MemoryProxy() { deallocateData(); }
+			~SizeAwareMemoryProxy() { deallocateData(); }
+
+			/**
+			 * @brief Exposes object interface thru pointer to Base class. 
+			 * @return this casted to pointer to Base class.
+			 */
+			inline Base* expose() { return this; }
+
 			/**
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
@@ -256,26 +263,26 @@ namespace pcpp
 			 */
 			inline bool isOwning() const PCAPPP_OVERRIDE { return m_Ownership; }
 			/**
-			 * @brief Returns pointer to the begining of underlying data.
-			 * @return Pointer to the begining of underlying data.
+			 * @brief Returns pointer to the beginning of underlying data.
+			 * @return Pointer to the beginning of underlying data.
 			 */
-			inline pointer get() PCAPPP_OVERRIDE { return m_Data; }
+			inline pointer get() PCAPPP_OVERRIDE { return m_Pair.get_pointer(); }
 			/**
-			 * @brief Returns pointer to the begining of const qualified underlying data.
-			 * This overload is called in object is const qualified.
-			 * @return Pointer to the begining of const qualified underlying data.
+			 * @brief Returns pointer to the beginning of const-qualified underlying data.
+			 * This overload is called in object is const-qualified.
+			 * @return Pointer to the beginning of const-qualified underlying data.
 			 */
-			inline const_pointer get() const PCAPPP_OVERRIDE { return m_Data; }
+			inline const_pointer get() const PCAPPP_OVERRIDE { return m_Pair.get_pointer(); }
 			/**
 			 * @brief The ownership release method.
 			 * Firstly saves current data pointer in temporary pointer.
 			 * Next internally calls initialize method.
 			 * Then returns saved pointer.
-			 * @return Pointer to the begining of underlying data.
+			 * @return Pointer to the beginning of underlying data.
 			 */
 			pointer relese() PCAPPP_OVERRIDE
 			{
-				typename Base::pointer old = m_Data;
+				typename Base::pointer old = getPointer();
 				initialize();
 				return old;
 			}
@@ -284,7 +291,7 @@ namespace pcpp
 			 * Firstly implicitly deallocates current data.
 			 * Then if deallocation is successful set provided values as fields values of this object.
 			 * Else sets object in null-state.
-			 * @param[in] ptr Pointer to memoty to take handle of.
+			 * @param[in] ptr Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 * @return true if new data was successfully accepted, false otherwise (object is in null-state in that case).
@@ -293,7 +300,7 @@ namespace pcpp
 			{
 				if (deallocateData())
 				{
-					m_Data = ptr;
+					getPointer() = ptr;
 					m_Length = length;
 					m_Ownership = ownership;
 					return true;
@@ -305,17 +312,18 @@ namespace pcpp
 			 * @brief Method to check if current object is in the null-state.
 			 * @return true if object is NOT in the null-state, false otherwise.
 			 */
-			operator bool() const { return m_Data || m_Ownership || m_Length > 0; }
+			operator bool() const { return getPointer() || m_Ownership || m_Length > 0; }
 			/**
 			 * @brief Represents the read access facility to the underlying allocator object.
 			 * @return Reference to underlying allocator object.
 			 */
-			inline typename Adapter::allocator_traits::allocator_type& getAllocator() const { return m_Allocator.getAllocator(); }
+			inline typename allocator_pointer_pair_t::Adapter& getAllocator() { return m_Pair.get_allocator(); }
 			/**
-			 * @brief Represents the write access facility to the underlying allocator object.
-			 * @param[in] allocator Reference to the new allocator object to be used.
+			 * @brief Represents the read access facility to the underlying allocator object.
+			 * This overload is selected by compiler if object is const-qualified.
+			 * @return Reference to const-qualified underlying allocator object.
 			 */
-			inline void setAllocator(typename Adapter::allocator_traits::allocator_type& allocator) const { return m_Allocator.setAllocator(allocator); }
+			inline const typename allocator_pointer_pair_t::Adapter& getAllocator() const { return m_Pair.get_allocator(); }
 			/**
 			 * @brief Reallocates underlying data.
 			 * If m_Length is equal to newBufferLength - Immediately returns true.\n
@@ -327,7 +335,7 @@ namespace pcpp
 			 * Will perform a deallocation attempt only if m_Length is greater than zero.\n
 			 * If old data can't be deallocated sets object to a null-state.
 			 * @param[in] newBufferLength New size of data.
-			 * @param[in] initialValue Perbyte initial value of new memory on allocation.
+			 * @param[in] initialValue Per-byte initial value of new memory on allocation.
 			 * @return true if operation ended successfully, false otherwise (you may expect that object is in null-state).
 			 */
 			bool reallocate(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE
@@ -339,12 +347,12 @@ namespace pcpp
 				if (!newBufferLength)
 				{
 					deallocateData();
-					zeroFields();
+					initialize();
 					return true;
 				}
 				// Allocate new buffer of requested 
 				// It is allocator's responsibility to handle memory allocation exceptions
-				typename Base::pointer newBuffer = m_Allocator.allocate(newBufferLength);
+				typename Base::pointer newBuffer = getAllocator().allocate(newBufferLength);
 				if (!newBuffer) // Expect nullptr/NULL returned when execption thrown on allocation
 					return false;
 				// Clear new buffer
@@ -353,20 +361,20 @@ namespace pcpp
 				// If new storage length is smaller than previous -> copy only data that fits new storage size
 				// else -> copy whole old data
 				if (SafeToCopyCondition())
-					std::memcpy(newBuffer, m_Data, (newBufferLength < m_Length ? newBufferLength : m_Length) * sizeof(typename Base::value_type));
+					std::memcpy(newBuffer, getPointer(), (newBufferLength < m_Length ? newBufferLength : m_Length) * sizeof(typename Base::value_type));
 				// We will deallocate memory only if we have some
 				if (m_Length > 0)
 				{
 					// Deallocate old data
 					if (!deallocateData())
 					{
-						zeroFields(); // Clear object data
-						m_Allocator.deallocate(newBuffer); // Avoid memory leak
+						initialize(); // Clear object data
+						getAllocator().deallocate(newBuffer); // Avoid memory leak
 						return false;
 					}
 				}
 				// Set new data as current handled
-				m_Data = newBuffer;
+				getPointer() = newBuffer;
 				// Set curent known length of buffer
 				m_Length = newBufferLength;
 				// We definitely own data now
@@ -398,7 +406,7 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToAppendLen))
 					return false;
 				// Set new data space to zero
-				std::memset(m_Data + oldLength, initialValue, dataToAppendLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + oldLength, initialValue, dataToAppendLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -427,8 +435,8 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToAppendLen))
 					return false;
 				// There is no way that reallocate call doesn't reallocate current storage
-				// therefore we can safly use memcpy instead of memove
-				std::memcpy(m_Data + oldLength, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
+				// therefore we can safely use memcpy instead of memove
+				std::memcpy(getPointer() + oldLength, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -439,7 +447,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
-				// and -m_Length to "insert before first byte of current data" (a.e. at the begining)
+				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
 				if (m_Length < (typename Base::size)(-atIndex))
 					atIndex = -((typename Base::index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
@@ -449,9 +457,9 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory
-				std::memmove(m_Data + index + dataToInsertLen, m_Data + index, (-atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + index + dataToInsertLen, getPointer() + index, (-atIndex) * sizeof(typename Base::value_type));
 				// Fill new data with zeros
-				std::memset(m_Data + index, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + index, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -475,7 +483,7 @@ namespace pcpp
 				if (atIndex < 0)
 					return insert_back(atIndex, dataToInsertLen, initialValue);
 				// At this point atIndex must be in bound [0, m_Length]
-				// where 0 correspond to "insert before fisrt byte of current data"
+				// where 0 correspond to "insert before first byte of current data"
 				// and m_Length to "insert after last byte of current data" (a.e. append)
 				if ((typename Base::size)atIndex >= m_Length)
 					return append(dataToInsertLen);
@@ -486,9 +494,9 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, (oldLength - atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (oldLength - atIndex) * sizeof(typename Base::value_type));
 				// Fill new data with zeros
-				std::memset(m_Data + atIndex, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + atIndex, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -499,7 +507,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
-				// and -m_Length to "insert before first byte of current data" (a.e. at the begining)
+				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
 				if (m_Length < (typename Base::size)(-atIndex))
 					atIndex = -((typename Base::index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
@@ -509,9 +517,9 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(m_Data + index + dataToInsertLen, m_Data + index, (-atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + index + dataToInsertLen, getPointer() + index, (-atIndex) * sizeof(typename Base::value_type));
 				// Insert new data to it's place
-				std::memcpy(m_Data + index, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memcpy(getPointer() + index, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -552,9 +560,9 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(m_Data + atIndex + dataToInsertLen, m_Data + atIndex, (oldLength - atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (oldLength - atIndex) * sizeof(typename Base::value_type));
 				// Insert new data to it's place
-				std::memcpy(m_Data + atIndex, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memcpy(getPointer() + atIndex, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
 				return true;
 			}
 			/**
@@ -565,7 +573,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "clear last byte of data"
-				// and -m_Length to "clear from begining of data"
+				// and -m_Length to "clear from beginning of data"
 				// Don't handle the cases when atIndex is in (-Inf,-m_Length)
 				if (m_Length < (typename Base::size)(-atIndex))
 					return true;
@@ -579,7 +587,7 @@ namespace pcpp
 				}
 				else // There is tail memory to move
 				{	// Move tail memory to new place
-					std::memmove(m_Data + index, m_Data + index + numOfBytesToRemove, (m_Length - index - numOfBytesToRemove) * sizeof(typename Base::value_type));
+					std::memmove(getPointer() + index, getPointer() + index + numOfBytesToRemove, (m_Length - index - numOfBytesToRemove) * sizeof(typename Base::value_type));
 					// Shrink current buffer
 					return reallocate(m_Length - numOfBytesToRemove);
 				}
@@ -602,7 +610,7 @@ namespace pcpp
 				if (atIndex < 0)
 					return remove_back(atIndex, numOfBytesToRemove);
 				// At this point atIndex must be in bound [0, m_Length)
-				// where 0 correspond to "clear from begining of data"
+				// where 0 correspond to "clear from beginning of data"
 				// and m_Length-1 to "clear last byte of data"
 				if (atIndex >= m_Length)
 					return true;
@@ -613,18 +621,14 @@ namespace pcpp
 				}
 				else // There is tail memory to move
 				{	// Move tail memory to new place
-					std::memmove(m_Data + atIndex, m_Data + atIndex + numOfBytesToRemove, (m_Length - atIndex - numOfBytesToRemove) * sizeof(typename Base::value_type));
+					std::memmove(getPointer() + atIndex, getPointer() + atIndex + numOfBytesToRemove, (m_Length - atIndex - numOfBytesToRemove) * sizeof(typename Base::value_type));
 					// Shrink current buffer
 					return reallocate(m_Length - numOfBytesToRemove);
 				}
 			}
 		protected:
-			// Don't change the order of data members. 
-			// It is optimised for 64 byte cache line access.
-			// See: "Size comparison" note in MemoryProxy.h
-			pointer m_Data;
+			allocator_pointer_pair_t m_Pair;
 			size m_Length;
-			mutable Adapter m_Allocator; // Don't move this data member. By default it may have size from 1 to 16 bytes (1,8,16) depending on defines.
 			bool m_Ownership;
 		};
 

@@ -76,6 +76,16 @@ namespace pcpp
 				explicit AllocatorPointerPair(pointer p) : m_Pair(Adapter(), p) {}
 
 				/**
+				 * @brief General constructor.
+				 * Constructs a MemoryProxyAllocatorHelper initializing the stored pointer with p 
+				 * and allocator with alloc.
+				 * Requires that Allocator is CopyConstructible.
+				 * @param alloc Pointer to memory.
+				 * @param p Pointer to memory.
+				 */
+				AllocatorPointerPair(Allocator& alloc, pointer p) : m_Pair(Adapter(alloc), p) {}
+
+				/**
 				 * @brief Copy constructor.
 				 * @param other Instance to be copied.
 				 */

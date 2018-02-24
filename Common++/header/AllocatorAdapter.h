@@ -52,6 +52,12 @@ namespace pcpp
 			 */
 			AllocatorAdapter() : Base() {}
 			/**
+			 * @brief Default constructor.
+			 * Will call GetAllocator function to get a new allocator and construct internal allocator from result of that call.
+			 */
+			AllocatorAdapter(Allocator& alloc) : Base(alloc) {}
+
+			/**
 			 * @brief Copy constructor.
 			 * Will copy the allocator of other.
 			 * @param[in] other The instance to make copy of.

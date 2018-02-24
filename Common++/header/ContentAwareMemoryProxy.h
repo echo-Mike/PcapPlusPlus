@@ -154,6 +154,7 @@ namespace pcpp
 			{
 				// Deallocate current data
 				deallocateData();
+				// Move stored pair
 				m_Pair = PCAPPP_MOVE(other.m_Pair);
 				// Copy other data members
 				m_Length = other.m_Length;
@@ -406,7 +407,7 @@ namespace pcpp
 			 * @param[in] initialValue Initial value for new memory.
 			 * @return true if operation ended successfully, false otherwise.
 			 */
-			bool append(size dataToAppendLen, memory_value initialValue = 0) override
+			bool append(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				// Append of 0 bytes is always a success
 				if (!dataToAppendLen)
@@ -429,7 +430,7 @@ namespace pcpp
 			 * @return true if operation ended successfully, false otherwise.
 			 * @todo Add error msg
 			 */
-			bool append(const_pointer dataToAppend, size dataToAppendLen) override
+			bool append(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE
 			{
 				// Append of 0 bytes from any memory is a success
 				if (!dataToAppendLen)
