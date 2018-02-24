@@ -135,21 +135,21 @@ namespace pcpp
 				/**
 				 * @brief Method to access the stored allocator object.
 				 * This overload is selected by compiler if object is const-qualified.
-				 * @return Reference to the allocator object.
+				 * @return Reference to the const-qualified allocator object.
 				 */
 				inline const Adapter& get_allocator() const { return (m_Pair.get_first()); }
 
 				/**
 				 * @brief Method to access the stored pointer.
-				 * @return Reference to the pointer.
+				 * @return Reference to stored the pointer.
 				 */
 				inline typename traits::pointer& get_pointer() { return (m_Pair.get_second()); }
 				/**
 				 * @brief Method to access the stored pointer.
 				 * This overload is selected by compiler if object is const-qualified.
-				 * @return Reference to the pointer.
+				 * @return Copy of stored pointer.
 				 */
-				inline const typename traits::pointer& get_pointer() const { return (m_Pair.get_second()); }
+				inline const typename traits::pointer get_pointer() const { return (m_Pair.get_second()); }
 			protected:
 				allocator_pointer_pair_t m_Pair;    //<! Pair of allocator and pointer.
 			};
