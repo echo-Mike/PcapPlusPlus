@@ -47,7 +47,7 @@ namespace pcpp
 		};
 		/**
 		 * @brief Helper structure that wraps up a call to delete[] expression.
-		 * This specialisation is provided for deallocation of arrays of object with type T.
+		 * This specialization is provided for deallocation of arrays of object with type T.
 		 * @tparam T The base type of value to be deallocated via delete[].
 		 */
 		template < typename T >
@@ -133,9 +133,9 @@ namespace pcpp
 		};
 
 		/**
-		 * @brief The default allocator main tamplate.
+		 * @brief The default allocator main template.
 		 * At the time before C++11 there was no default allocator class so we must define our own.\n
-		 * The most basic implementation of allocator abstract intarface.\n
+		 * The most basic implementation of allocator abstract interface.\n
 		 * allocate method returns the result of "new T" expression. \n
 		 * deallocate method applies "delete" expression to provided pointer.
 		 * @tparam T The type for which the allocator is responsible to allocate memory.
@@ -170,9 +170,9 @@ namespace pcpp
 			}
 		};
 		/**
-		 * @brief The partial specialisation of default allocator template for dynamic arrays of objects.
+		 * @brief The partial specialization of default allocator template for dynamic arrays of objects.
 		 * At the time before C++11 there was no default allocator class so we must define our own.\n
-		 * The most basic implementation of allocator abstract intarface for dynamic arrays.\n
+		 * The most basic implementation of allocator abstract interface for dynamic arrays.\n
 		 * allocate method returns the result of "new T[size]" expression. \n
 		 * deallocate method applies "delete[]" expression to provided pointer.
 		 * @tparam T The type for which the allocator is responsible to allocate memory.

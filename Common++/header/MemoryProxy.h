@@ -12,7 +12,7 @@
  * @section details "Details"
  * @subsection pcappp_virtual_allocator_adapter "PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER macro"
  * If PCAPPP_VIRTUAL_ALLOCATOR_ADAPTER is defined then the class pcpp::memory::AllocatorAdapter has virtual specifier for it's functions
- * and may be a proper base interface class. This is only needed if you want to careate your own adapters for allocators based on AllocatorAdapter interface.
+ * and may be a proper base interface class. This is only needed if you want to create your own adapters for allocators based on AllocatorAdapter interface.
  * The cons of having the virtual interface is that size of AllocatorAdapter would be the same as a size of pointer on your platform or higher.
  * We are heavily rely on the size of this class because it is a member of RawPacket class around which a whole library constructed and it's size
  * is significant for efficiency.

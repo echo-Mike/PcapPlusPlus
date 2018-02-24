@@ -22,11 +22,11 @@ namespace pcpp
 	namespace memory
 	{
 		/**
-		 * @brief Content aware memory proxy class specialisation. 
-		 * This specialisation held two separate counters for internal data.\n
+		 * @brief Content aware memory proxy class specialization. 
+		 * This specialization held two separate counters for internal data.\n
 		 * m_Length - represents the length of known data in underlying storage.\n
 		 * m_Capacity - represents the real length of memory in underlying storage.\n
-		 * This is the safest specialisation to handle complex data manipulation.
+		 * This is the safest specialization to handle complex data manipulation.
 		 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
 		 */ 
 		template < typename Allocator >
@@ -118,7 +118,7 @@ namespace pcpp
 					// It is allocator's responsibility to handle memory allocation exceptions
 					m_Data = m_Allocator.allocate(other.m_Capacity);
 					// Check if new buffer was allocated
-					if (m_Data == PCAPPP_NULLPTR) {// Expect nullptr/NULL returned when execption thrown on allocation
+					if (m_Data == PCAPPP_NULLPTR) {// Expect nullptr/NULL returned when exception thrown on allocation
 						zeroFields();
 						return false;
 					};
@@ -176,7 +176,7 @@ namespace pcpp
 			/**
 			 * @brief General object constructor.
 			 * Simply sets data field to provided values.
-			 * @param[in] p Pointer to memoty to take handle of.
+			 * @param[in] p Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 */
@@ -254,7 +254,7 @@ namespace pcpp
 			 * This function is in MemoryProxyInterface function set.
 			 * @return Known underlying data length (NOT capacity).
 			 */
-			inline size getLength() const override { return m_Length; }
+			inline size getLength() const PCAPPP_OVERRIDE { return m_Length; }
 			/**
 			 * @brief Returns known underlying data capacity (NOT length).
 			 * This function is NOT in MemoryProxyInterface function set.
@@ -265,24 +265,24 @@ namespace pcpp
 			 * @brief Returns owning status of underlying data.
 			 * @return true if object owns it's underlying data, false otherwise.
 			 */
-			inline bool isOwning() const override { return m_Ownership; }
+			inline bool isOwning() const PCAPPP_OVERRIDE { return m_Ownership; }
 			/**
-			 * @brief Returns pointer to the begining of underlying data.
-			 * @return Pointer to the begining of underlying data.
+			 * @brief Returns pointer to the beginning of underlying data.
+			 * @return Pointer to the beginning of underlying data.
 			 */
-			inline pointer get() override { return m_Data; }
+			inline pointer get() PCAPPP_OVERRIDE { return m_Data; }
 			/**
-			 * @brief Returns pointer to the begining of const qualified underlying data.
-			 * This overload is called in object is const qualified.
-			 * @return Pointer to the begining of const qualified underlying data.
+			 * @brief Returns pointer to the beginning of const-qualified underlying data.
+			 * This overload is called in object is const-qualified.
+			 * @return Pointer to the beginning of const-qualified underlying data.
 			 */
-			inline const_pointer get() const override { return m_Data; }
+			inline const_pointer get() const PCAPPP_OVERRIDE { return m_Data; }
 			/**
 			 * @brief The ownership release method.
 			 * Firstly saves current data pointer in temporary pointer.
 			 * Next internally calls initialize method.
 			 * Then returns saved pointer.
-			 * @return Pointer to the begining of underlying data.
+			 * @return Pointer to the beginning of underlying data.
 			 */
 			pointer relese() override
 			{
@@ -295,12 +295,12 @@ namespace pcpp
 			 * Firstly implicitly deallocates current data.
 			 * Then if deallocation is successful set provided values as fields values of this object.
 			 * Else sets object in null-state.
-			 * @param[in] ptr Pointer to memoty to take handle of.
+			 * @param[in] ptr Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
 			 * @return true if new data was successfully accepted, false otherwise (object is in null-state in that case).
 			 */
-			bool reset(pointer ptr, size length = 0, bool ownership = true) override
+			bool reset(pointer ptr, size length = 0, bool ownership = true) PCAPPP_OVERRIDE
 			{
 				if (deallocateData())
 				{
@@ -333,15 +333,15 @@ namespace pcpp
 			 * If m_Capacity is greater or equal to newBufferLength - Immediately returns true.\n
 			 * newBufferLength set to 0 interpreted as clear operation a.e. deallocate data and call zeroFields member function.\n
 			 * In any other case firstly allocates memory for newBufferLength data entries. 
-			 * Then sets per-byte value of that memory to initialValue. After that copies old data to beginig of new memory.
+			 * Then sets per-byte value of that memory to initialValue. After that copies old data to beginning of new memory.
 			 * At the end deallocates old data and sets data member fields to their corresponding values.\n
 			 * Correctly handles the case when newBufferLength is less than m_Length -> only data that fits new memory will be copied and m_Length is changed.\n
 			 * If old data can't be deallocated sets object to a null-state.
 			 * @param[in] newBufferLength New size of data.
-			 * @param[in] initialValue Perbyte initial value of new memory on allocation.
+			 * @param[in] initialValue Per-byte initial value of new memory on allocation.
 			 * @return true if operation ended successfully, false otherwise (you may expect that object is in null-state).
 			 */
-			bool reallocate(size newBufferLength, memory_value initialValue = 0) override
+			bool reallocate(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				// Provided zero length is interpreted as clear operation
 				if (!newBufferLength)
@@ -357,7 +357,7 @@ namespace pcpp
 				// It is allocator's responsibility to handle memory allocation exceptions
 				typename Base::pointer newBuffer = m_Allocator.allocate(newBufferLength); 
 				// Check if new buffer was allocated
-				if (!newBuffer) // Expect nullptr/NULL returned when execption thrown on allocation
+				if (!newBuffer) // Expect nullptr/NULL returned when exception thrown on allocation
 					return false;
 				// Clear new buffer
 				std::memset(newBuffer, initialValue, newBufferLength * sizeof(typename Base::value_type));
@@ -437,7 +437,7 @@ namespace pcpp
 					return false;
 				// Copy memory from source data
 				// dataToAppend may (if reallocate call does not allocate) point to some byte in current data so use std::memmove
-				// m_Data + m_Length is points to where tha old data past-the-end byte is
+				// m_Data + m_Length is points to where the old data past-the-end byte is
 				std::memmove(m_Data + m_Length, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
 				// Increase current data length by new data length
 				m_Length += dataToAppendLen;
@@ -475,7 +475,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
-				// and -m_Length to "insert before first byte of current data" (a.e. at the begining)
+				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
 				if (m_Length < (typename Base::size)(-atIndex))
 					atIndex = -((typename Base::index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
@@ -501,7 +501,7 @@ namespace pcpp
 			 * @param[in] initialValue Initial value for new memory.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) override
+			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
 				// Inserting 0 bytes is always a success
 				if (!dataToInsertLen)
@@ -513,7 +513,7 @@ namespace pcpp
 				if (atIndex < 0)
 					return insert_back(atIndex, dataToInsertLen, initialValue);
 				// At this point atIndex must be in bound [0, m_Length]
-				// where 0 correspond to "insert before fisrt byte of current data"
+				// where 0 correspond to "insert before first byte of current data"
 				// and m_Length to "insert after last byte of current data" (a.e. append)
 				if ((typename Base::size)atIndex >= m_Length)
 					return append(dataToInsertLen);
@@ -537,7 +537,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
-				// and -m_Length to "insert before first byte of current data" (a.e. at the begining)
+				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
 				if (m_Length < (typename Base::size)(-atIndex))
 					atIndex = -((typename Base::index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
@@ -563,7 +563,7 @@ namespace pcpp
 			 * @param[in] dataToInsertLen Size of data to be inserted.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) override
+			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE
 			{
 				// Inserting 0 bytes from any memory is always a success
 				if (!dataToInsertLen)
@@ -581,7 +581,7 @@ namespace pcpp
 				if (atIndex < 0)
 					return insert_back(atIndex, dataToInsert, dataToInsertLen);
 				// At this point atIndex must be in bound [0, m_Length]
-				// where 0 correspond to "insert before fisrt byte of current data"
+				// where 0 correspond to "insert before first byte of current data"
 				// and m_Length to "insert after last byte of current data" (a.e. append)
 				if ((typename Base::size)atIndex >= m_Length)
 					return append(dataToInsert, dataToInsertLen);
@@ -605,7 +605,7 @@ namespace pcpp
 			{
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "clear last byte of data"
-				// and -m_Length to "clear from begining of data"
+				// and -m_Length to "clear from beginning of data"
 				// Don't handle the cases when atIndex is in (-Inf,-m_Length)
 				if (m_Length < (typename Base::size)(-atIndex))
 					return true;
@@ -626,14 +626,14 @@ namespace pcpp
 			}
 			/**
 			 * @brief Removes memory capable of holding numOfBytesToRemove data entries starting from atIndex.
-			 * Actualy makes no reallocations just shrinks m_Length value (tail bytes are handled correctly).\n
+			 * Actually makes no reallocations just shrinks m_Length value (tail bytes are handled correctly).\n
 			 * Case with negative atIndex is handled correctly.\n
 			 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
 			 * @param[in] atIndex Index from which removal take place.
 			 * @param[in] numOfBytesToRemove Size of data to be removed.
 			 * @return true if operation finished successfully, false otherwise.
 			 */
-			bool remove(index atIndex, size numOfBytesToRemove) override
+			bool remove(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE
 			{
 				// Removing zero bytes or removing from empty data is always a success
 				if (!(numOfBytesToRemove && m_Length))
@@ -642,7 +642,7 @@ namespace pcpp
 				if (atIndex < 0)
 					return remove_back(atIndex, numOfBytesToRemove);
 				// At this point atIndex must be in bound [0, m_Length)
-				// where 0 correspond to "clear from begining of data"
+				// where 0 correspond to "clear from beginning of data"
 				// and m_Length-1 to "clear last byte of data"
 				if (atIndex >= m_Length)
 					return true;
@@ -660,7 +660,7 @@ namespace pcpp
 			}
 		protected:
 			// Don't change the order of data members. 
-			// It is optimised for 64 byte cache line access.
+			// It is optimized for 64 byte cache line access.
 			// See: "Size comparison" note in MemoryProxy.h
 			pointer m_Data;
 			size m_Length, m_Capacity;

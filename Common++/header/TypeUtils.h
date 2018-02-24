@@ -183,14 +183,6 @@ namespace pcpp
 
 		/**
 		 * Implementations of next classes were copied from:
-		 * http://en.cppreference.com/w/cpp/types/is_void
-		 */
-
-		template< class T >
-		struct is_void : is_same<void, typename remove_cv<T>::type> {};
-
-		/**
-		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/is_array
 		 */
 
@@ -227,6 +219,14 @@ namespace pcpp
 		template<class T>
 		struct is_same<T, T> : true_type {};
 
+
+		/**
+		 * Implementations of next classes were copied from:
+		 * http://en.cppreference.com/w/cpp/types/is_void
+		 */
+		template< class T >
+		struct is_void : is_same< void, typename remove_cv<T>::type > {};
+		
 		/**
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/enable_if
