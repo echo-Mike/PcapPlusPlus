@@ -3,6 +3,14 @@
 
 #include "CPP11.h"
 
+/**
+ * If PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR is defined then the allocator class has no virtual methods (and it is not an abstract class).
+ * It's size is dropped from a size of pointer on your platform to 1 byte (or less). And therefore the size of default_allocator.
+ * We are heavily rely on the size of this class because it is a member of RawPacket class around which a whole library constructed and it's size
+ * is significant for efficiency.
+ */
+#define PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
+
 #ifdef PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
 	#define PCAPPP_SUPPRESS_VIRTUAL_BASE_ALLOCATOR__
 #endif // PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR
