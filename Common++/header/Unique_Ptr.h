@@ -26,10 +26,10 @@ namespace pcpp
  */
 #define PCAPPP_GET_MACRO_2(_1,_2,NAME,...) NAME
 /**
- * Next section represents a custom implementstion of std::unique_ptr for this library.
+ * Next section represents a custom implementation of std::unique_ptr for this library.
  * The whole implementation is a corrected for C++98 copy from MSVC 16.0 (Microsoft Visual Studio 2015) standard library implementation.
- * About next 'ifndef': Basicaly every compiler that have move semantics support have it's own implementation of std::unique_ptr.
- * So we just provide a macro definition that swaps our inplementation with standard one when it is possible.
+ * About next 'ifndef': Basically every compiler that have move semantics support have it's own implementation of std::unique_ptr.
+ * So we just provide a macro definition that swaps our implementation with standard one when it is possible.
  */
 #ifndef ENABLE_CPP11_MOVE_SEMANTICS
 		/**
@@ -104,11 +104,11 @@ namespace pcpp
 				// Handle self assignment case
 				if (this == &proxy.ref)
 					return *this;
-				// This member may optimised with move semantics but this case is to hard to handle in client side.
+				// This member may optimized with move semantics but this case is to hard to handle in client side.
 				// So we don't make any assumptions and just copy it.
 				// For zero-size object this operation is costless.
 				m_Pair.get_first() = proxy.ref.m_Pair.get_first();
-				// Second is definetly a pointer
+				// Second is definitely a pointer
 				m_Pair.get_second() = proxy.ref.m_Pair.get_second();
 				// Nullify provided object
 				proxy.ref.m_Pair.get_first() = Deleter();
@@ -143,15 +143,15 @@ namespace pcpp
 			/**
 			 * Pair that stores deleter and pointer compressed if it is possible.
 			 */
-			typename Implementation::CompressedPairDispatcher<Deleter, pointer>::pair_type m_Pair;
+			Implementation::CompressedPair<Deleter, pointer> m_Pair;
 		private:
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr_base is not copyable
 			 */
 			unique_ptr_base(const unique_ptr_base&) {}
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr_base is not copyable
 			 */
 			unique_ptr_base& operator=(const unique_ptr_base& a) { return *this; }
@@ -244,7 +244,7 @@ namespace pcpp
 
 			/**
 			 * @brief Destructor.
-			 * Deallocates memeory via calling the provided deleter with internal pointer as an argument.
+			 * Deallocates memory via calling the provided deleter with internal pointer as an argument.
 			 */
 			~unique_ptr()
 			{
@@ -303,19 +303,19 @@ namespace pcpp
 			}
 		private:
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr is not copyable
 			 */
 			unique_ptr(const unique_ptr&) {}
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr is not copyable
 			 */
 			unique_ptr& operator=(const unique_ptr& a) { return *this; }
 		};
 
 		/**
-		 * @brief Specialisation of unique_ptr for arrays.
+		 * @brief Specialization of unique_ptr for arrays.
 		 * Read more: http://en.cppreference.com/w/cpp/memory/unique_ptr
 		 * Does not have the swap function, some constructors and assignment operators.
 		 * @tparam T The type of values to be stored.
@@ -401,7 +401,7 @@ namespace pcpp
 
 			/**
 			 * @brief Destructor.
-			 * Deallocates memeory via calling the provided deleter with internal pointer as an argument.
+			 * Deallocates meeory via calling the provided deleter with internal pointer as an argument.
 			 */
 			~unique_ptr()
 			{
@@ -413,7 +413,7 @@ namespace pcpp
 			 * @brief Provides access to elements of an array managed by a unique_ptr.
 			 * The parameter index shall be less than the number of elements in the array; otherwise, the behavior is undefined.
 			 * @param index Index of element to be returned.
-			 * @return The element at index index, i.e. get()[i].
+			 * @return The element at index index, i.e. get()[index].
 			 */
 			element_type& operator[](size_t index) const { return (get()[index]); }
 
@@ -459,12 +459,12 @@ namespace pcpp
 			}
 		private:
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr is not copyable
 			 */
 			unique_ptr(const unique_ptr&) {}
 			/**
-			 * This function is explicitly hiden (there is no delete keyword for functions in C++98). 
+			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
 			 * unique_ptr is not copyable
 			 */
 			unique_ptr& operator=(const unique_ptr& a) { return *this; }
@@ -480,7 +480,7 @@ namespace pcpp
 #define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::pcpp::memory::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
- * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
+ * If provided type is a template instantiation with "," in it this macro will not work. Use some type alias method (using or typedef).
  */
 #define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
@@ -507,7 +507,7 @@ namespace pcpp
 #define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::std::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
- * If provided type is a tamplate instatiation with "," in it this macro will not work. Use some type alias method (using or typedef).
+ * If provided type is a template instantiation with "," in it this macro will not work. Use some type alias method (using or typedef).
  */
 #define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
