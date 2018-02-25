@@ -2,13 +2,14 @@
 #define PCAPPP_RAW_PACKET
 
 #include <stdint.h>
-#include <utility>
 #ifdef _MSC_VER
 #include <WinSock2.h>
 #else
 #include <sys/time.h>
 #endif
 #include <stddef.h>
+
+#include <MemoryProxy.h>
 
 /// @file
 
@@ -215,7 +216,7 @@ namespace pcpp
 	/**
 	 * @class RawPacket
 	 * This class holds the packet as raw (not parsed) data. The data is held as byte array. In addition to the data itself
-	 * every instance also holds a timestamp representing the time the packet was received by the NIC.
+	 * every instance also holds a time-stamp representing the time the packet was received by the NIC.
 	 * RawPacket instance isn't read only. The user can change the packet data, add or remove data, etc.
 	 * This class has the null-object state in which any object can be set to by call to clear member function.
 	 * Owning rules of underlying data:  
@@ -230,73 +231,78 @@ namespace pcpp
 	 */
 	class RawPacket
 	{
-	protected:
-		uint8_t* m_pRawData;
-		int m_RawDataLen;
-		int m_FrameLength;
-		timeval m_TimeStamp;
-		LinkLayerType m_linkLayerType;
-		bool m_DeleteRawDataAtDestructor;
-		bool m_RawPacketSet;
+	public:
+		/**
+		 * Defines underlying memory type.
+		 */
+		typedef ::pcpp::memory::Data_t value_type;
+		/**
+		 * Defines type of pointer to underlying memory type.
+		 */
+		typedef value_type* pointer;
+		/**
+		 * Defines type of constant pointer to underlying memory type.
+		 */
+		typedef const value_type* const_pointer;
+		/**
+		 * Defines type of reference to element of underlying memory type.
+		 */
+		typedef value_type& reference;
+		/**
+		 * Defines type of constant reference to element of underlying memory type.
+		 */
+		typedef const value_type& const_reference;
 
+		/**
+		 * Defines type of variables that represents size values.
+		 */
+		typedef unsigned long long size;
+		/**
+		 * Defines type of variables that represents length values.
+		 */
+		typedef signed long long length;
+		/**
+		 * Defines type of variables that represents index values.
+		 */
+		typedef signed long long index;
+		/**
+		 * Defines type of variables that represents initial memory values for std::memset.
+		 */
+		typedef int memory_value;
+	protected:
+		timeval m_TimeStamp;
+		length m_FrameLength;
+		LinkLayerType m_linkLayerType;
+	
 		/**
 		 * @brief Setups RawPacket object to a null-state.
 		 * Basically zeroes all fields, no data is touched.\n
 		 * m_TimeStamp field isn't touched either.\n
 		 * Both SafeToDeleteDataCondition and SafeToCopyDataCondition evaluate to false after this function call on the object.
 		 */
-		void initialize();
+		inline void initialize()
+		{
+			// Null object state
+			m_FrameLength = 0;
+			m_linkLayerType = LINKTYPE_ETHERNET;
+		}
 
-		/**
-		 * @brief Makes current object a copy of the other.
-		 * Will not make anything if other don't satisfy SafeToCopyDataCondition requirements.
-		 * @param[in] other Object to make copy from.
-		 * @param[in] allocateData If true new memory for data is allocated otherwise old memory is used.
-		 */
-		void copyDataFrom(const RawPacket& other, bool allocateData = true);
-
-		/**
-		 * @brief Moves data from other.
-		 * Deallocates current data if it is safe. Underlying raw data is not copied.\n
-		 * other is set to the null-state - state after default construction.
-		 * @param[in:out] other Object to move from.
-		 */
-		void moveDataFrom(RawPacket&& other);
-
-		/**
-		 * @brief Checks the condition in which underlying raw data may be safely deallocated.
-		 * @return true if condition is satisfied, false otherwise.
-		 */
-		inline bool SafeToDeleteDataCondition() const { return m_DeleteRawDataAtDestructor && m_RawPacketSet && static_cast<bool>(m_pRawData) && m_RawDataLen > 0; }
-		
-		/**
-		 * @brief Checks the condition in which underlying raw data may be safely copied to another object.
-		 * @return true if condition is satisfied, false otherwise.
-		 */
-		inline bool SafeToCopyDataCondition() const { return m_RawPacketSet && static_cast<bool>(m_pRawData) && m_RawDataLen > 0; }
-	
 	public:
+
+		/* General functions */
 
 		/**
 		 * @brief A default constructor that initializes class'es attributes to default value.
 		 * Internally calls initialize member function.
-		 * @todo timestamp isn't set here to a default value
+		 * @todo time-stamp isn't set here to a default value
 		 */
-		RawPacket();
+		RawPacket() 
+		{	// Produce an object at null-state
+			initialize();
+		}
 
-		/**
-		 * A constructor that receives a pointer to the raw data (allocated elsewhere). This constructor is usually used when packet
-		 * is captured using a packet capturing engine (like libPcap. WinPcap, PF_RING, etc.). The capturing engine allocates the raw data
-		 * memory and give the user a pointer to it + a timestamp it has arrived to the device.
-		 * If provided pRawData is nullptr or rawDataLen is less than 1 object is set to the null-state.
-		 * @param[in] pRawData A pointer to the raw data
-		 * @param[in] rawDataLen The raw data length in bytes
-		 * @param[in] timestamp The timestamp packet was received by the NIC
-		 * @param[in] deleteRawDataAtDestructor An indicator whether raw data pointer should be freed when the instance is freed or not. If set
-		 * to 'true' than pRawData will be freed when instanced is being freed
-		 * @param[in] layerType The link layer type of this raw packet. The default is Ethernet
-		 */
-		RawPacket(const uint8_t* pRawData, int rawDataLen, timeval timestamp, bool deleteRawDataAtDestructor, LinkLayerType layerType = LINKTYPE_ETHERNET);
+		RawPacket(timeval timestamp, LinkLayerType layerType, length frameLength) :
+			m_TimeStamp(timestamp), m_FrameLength(frameLength), m_linkLayerType(layerType) {}
 
 		/**
 		 * @brief Copy constructor that copies all data from another instance.
@@ -306,7 +312,8 @@ namespace pcpp
 		 * Data of other may not be copied if other don't satisfy SafeToCopyDataCondition.
 		 * @param[in] other The instance to make copy of.
 		 */
-		RawPacket(const RawPacket& other);
+		RawPacket(const RawPacket& other) :
+			m_TimeStamp(other.m_TimeStamp), m_FrameLength(other.m_FrameLength), m_linkLayerType(other.m_linkLayerType) {}
 
 		/**
 		 * @brief Copy assignment operator of this class.
@@ -319,66 +326,7 @@ namespace pcpp
 		 */
 		RawPacket& operator=(const RawPacket& other);
 
-		/**
-		 * @brief Move constructor that moves all data from another instance.
-		 * Notice no raw data is copied all other data members are copied.\n
-		 * Sets the new object to the null-state and internally calls moveDataFrom member function.\n
-		 * other object is set to the null-state.
-		 * @param[in] other The instance to move from.
-		 */
-		RawPacket(RawPacket&& other);
-
-		/**
-		 * @brief Move assignment operator of this class.
-		 * When using this operator on an already initialized RawPacket instance,
-		 * the original raw data is freed first if it is safe. Then the data of other instance 
-		 * is moved to this instance, the same way the move constructor works.\n
-		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
-		 * @param[in] other The instance to move from.
-		 */
-		RawPacket& operator=(RawPacket&& other);
-
-		/**
-		 * @brief Virtual destructor of this class.
-		 * Frees the raw data if SafeToDeleteDataCondition is satisfied.
-		 */
-		virtual ~RawPacket();
-
-		/**
-		 * @brief Sets provided raw data as new data to handle. 
-		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
-		 * State of m_DeleteRawDataAtDestructor flag is not touched.\n
-		 * If provided pRawData is nullptr or rawDataLen less than 1 nothing happens with data and false is returned.
-		 * @param[in] pRawData A pointer to the new raw data
-		 * @param[in] rawDataLen The new raw data length in bytes
-		 * @param[in] timestamp The timestamp packet was received by the NIC
-		 * @param[in] layerType The link layer type for this raw data
-		 * @param[in] frameLength When reading from pcap files, sometimes the captured length is different from the actual packet length. This parameter represents the packet 
-		 * length. This parameter is optional, if not set or set to -1 it is assumed both lengths are equal
-		 * @return true if raw data was set successfully, false otherwise.
-		 */
-		virtual bool setRawData(const uint8_t* pRawData, int rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, int frameLength = -1);
-
-		/**
-		 * @brief Method to get raw data pointer.
-		 * This overload is called if object is not const-qualified.
-		 * @return A pointer to the raw data.
-		 */
-		inline uint8_t* getRawData() { return m_pRawData; }
-
-		/**
-		 * @brief Method to get raw data pointer.
-		 * This overload is called if object is const-qualified.
-		 * @return A pointer to the const-qualified raw data.
-		 */
-		inline const uint8_t* getRawData() const { return m_pRawData; }
-
-		/**
-		 * @brief Method to get raw data pointer.
-		 * Same as call to getRawData member function of const object.
-		 * @return A pointer to the const-qualified raw data.
-		 */
-		inline const uint8_t* getRawDataReadOnly() const { return m_pRawData; }
+		/* Class API */
 
 		/**
 		 * @brief Method to get the link layer type.
@@ -387,35 +335,93 @@ namespace pcpp
 		inline LinkLayerType getLinkLayerType() const { return m_linkLayerType; }
 
 		/**
-		 * @brief Method to get raw data length in bytes.
-		 * @return Raw data length in bytes.
-		 */
-		inline int getRawDataLen() const { return m_RawDataLen; }
-
-		/**
 		 * @brief Method to get frame length in bytes.
 		 * @return Frame length in bytes.
 		 */
 		inline int getFrameLength() const { return m_FrameLength; }
 
 		/**
-		 * @brief Method to get raw data timestamp.
-		 * @return Raw data timestamp.
+		 * @brief Method to get raw data time-stamp.
+		 * @return Raw data time-stamp.
 		 */
 		inline timeval getPacketTimeStamp() const { return m_TimeStamp; }
 
 		/**
-		 * @brief Method to reset raw data timestamp.
+		 * @brief Method to reset raw data time-stamp.
 		 * Works by swapping provided and current values.
-		 * @return Previous raw data timestamp.
+		 * @return Previous raw data time-stamp.
 		 */
 		inline timeval& resetPacketTimeStamp(timeval& timestamp) { std::swap(m_TimeStamp, timestamp); return timestamp; }
 
 		/**
-		 * @brief Method to reset raw data timestamp.
-		 * Compiler calls this overload if timestamp directly returned from function call or explicitly moved
+		 * @brief Method to reset raw data time-stamp.
+		 * Compiler calls this overload if time-stamp directly returned from function call or explicitly moved
 		 */
 		inline void resetPacketTimeStamp(timeval&& timestamp) { m_TimeStamp = timestamp; }
+
+		/* Virtual API */
+
+		/**
+		 * @brief Virtual destructor of this class.
+		 */
+		virtual ~RawPacket() {}
+
+		/**
+		 * @brief Sets provided raw data as new data to handle. 
+		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
+		 * State of m_DeleteRawDataAtDestructor flag is not touched.\n
+		 * If provided pRawData is nullptr or rawDataLen less than 1 nothing happens with data and false is returned.
+		 * @param[in] pRawData A pointer to the new raw data
+		 * @param[in] rawDataLen The new raw data length in bytes
+		 * @param[in] timestamp The time-stamp packet was received by the NIC
+		 * @param[in] layerType The link layer type for this raw data
+		 * @param[in] frameLength When reading from pcap files, sometimes the captured length is different from the actual packet length. This parameter represents the packet 
+		 * length. This parameter is optional, if not set or set to -1 it is assumed both lengths are equal
+		 * @return true if raw data was set successfully, false otherwise.
+		 */
+		virtual bool setRawData(const_pointer /* pRawData */, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1);
+
+		/**
+		 * @brief Method to check if current object is in the null-state.
+		 * @return true if object is NOT in the null-state, false otherwise.
+		 */
+		virtual inline operator bool() const { return m_FrameLength || m_linkLayerType != LINKTYPE_ETHERNET; }
+
+		/**
+		 * @brief Method to check if current object is in the null-state.
+		 * Basically the negation of operator bool call.
+		 * @return true if object is in the null-state, false otherwise.
+		 */
+		inline bool isInNullState() const { return !(this->operator bool()); }
+
+		/* Abstract API: Data acquisition */
+
+		/**
+		 * @brief Method to get raw data pointer.
+		 * This overload is called if object is not const-qualified.
+		 * @return A pointer to the raw data.
+		 */
+		virtual inline pointer getRawData() = 0;
+
+		/**
+		 * @brief Method to get raw data pointer.
+		 * This overload is called if object is const-qualified.
+		 * @return A pointer to the const-qualified raw data.
+		 */
+		virtual inline const_pointer getRawData() const = 0;
+
+		/**
+		 * @brief Method to get raw data pointer.
+		 * Same as call to getRawData member function of const object.
+		 * @return A pointer to the const-qualified raw data.
+		 */
+		virtual inline const_pointer getRawDataReadOnly() const = 0;
+
+		/**
+		 * @brief Method to get raw data length in bytes.
+		 * @return Raw data length in bytes.
+		 */
+		virtual inline length getRawDataLen() const = 0;
 
 		/**
 		 * @brief Method to get an indication whether raw data was already set for this instance.
@@ -423,29 +429,46 @@ namespace pcpp
 		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
 		 * default constructor or clear() was called.
 		 */
-		inline bool isPacketSet() const { return static_cast<bool>(m_RawPacketSet); }
+		virtual inline bool isPacketSet() const = 0;
 
 		/**
-		 * @brief Method to check if current object is in the null-state.
-		 * @return true if object is NOT in the null-state, false otherwise.
+		 * @brief Method to get an indication whether raw data was already set for this instance.
+		 * @return True if raw data was set for this instance. Raw data can be set using the non-default constructor, using setRawData(), using
+		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
+		 * default constructor or clear() was called.
 		 */
-		inline operator bool() const { return m_RawDataLen || m_FrameLength || m_pRawData || m_RawPacketSet || m_DeleteRawDataAtDestructor || m_linkLayerType != LINKTYPE_ETHERNET; }
+		virtual inline bool isOwning() const = 0;
+
+		/* Abstract API: Data modification */
 
 		/**
-		 * @brief Method to check if current object is in the null-state.
-		 * Basically the negation of operator bool call.
-		 * @return true if object is in the null-state, false otherwise.
+		 * @brief Represents the facility to release the ownership of underlying data.
+		 * Derived class must overload this function if they can release ownership of data and set their self to some null-state.
+		 * @return Mostly common: Pointer to beginning of underlying data.
 		 */
-		inline bool isInNullState() const { return !(*this); }
+		virtual pointer releseData() = 0;
+
+		/**
+		 * @brief Re-allocate raw packet buffer meaning add size to it without losing the current packet data.
+		 * This method allocates the required buffer size as instructed by the user and then copies the raw data 
+		 * from the current allocated buffer to the new one. This method can become useful if the user wants to insert or
+		 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to 
+		 * allocate a larger buffer and get RawPacket instance to point to it.\n
+		 * Frees the raw data only if SafeToDeleteDataCondition is satisfied.\n
+		 * Copies previous data only if SafeToDeleteDataCondition is satisfied.
+		 * @param[in] newBufferLength The new buffer length as required by the user.
+		 * @return true if data was reallocated successfully, false otherwise.
+		 */
+		virtual bool reallocateData(size newBufferLength, memory_value initialValue = 0) = 0;
 
 		/**
 		 * @brief Clears all members of this instance.
 		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
 		 * Then internally calls initialize member function.
 		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
-		 * @todo set timestamp to a default value as well
+		 * @todo set time-stamp to a default value as well
 		 */
-		virtual void clear();
+		virtual bool clear() = 0;
 
 		/**
 		 * @brief Append data to the end of current data. 
@@ -456,7 +479,18 @@ namespace pcpp
 		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
 		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
 		 */
-		virtual void appendData(const uint8_t* dataToAppend, size_t dataToAppendLen);
+		virtual void appendData(size dataToAppendLen, memory_value initialValue = 0) = 0;
+
+		/**
+		 * @brief Append data to the end of current data. 
+		 * This method works without allocating more memory, it just uses std::memmove() to copy dataToAppend at
+		 * the end of the current data. This means that the method assumes this memory was already allocated by the user. 
+		 * If it isn't the case then this method will cause memory corruption.\n
+		 * This method can safely append data (by copy) from current packet to itself.
+		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
+		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
+		 */
+		virtual void appendData(const_pointer dataToAppend, size dataToAppendLen) = 0;
 
 		/**
 		 * @brief Insert array of zeros before some index of the current data and shift the remaining old data to the end.
@@ -468,7 +502,7 @@ namespace pcpp
 		 * @param[in] atIndex The index to insert the new data to.
 		 * @param[in] dataToInsertLen Length in bytes of array of zeros.
 		 */
-		virtual void insertData(int atIndex, size_t dataToInsertLen);
+		virtual void insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) = 0;
 		
 		/**
 		 * @brief Insert new data before some index of the current data and shift the remaining old data to the end. 
@@ -482,20 +516,7 @@ namespace pcpp
 		 * @param[in] dataToInsert A pointer to the new data to insert.
 		 * @param[in] dataToInsertLen Length in bytes of dataToInsert.
 		 */
-		virtual void insertData(int atIndex, const uint8_t* dataToInsert, size_t dataToInsertLen);
-
-		/**
-		 * @brief Re-allocate raw packet buffer meaning add size to it without losing the current packet data.
-		 * This method allocates the required buffer size as instructed by the user and then copies the raw data 
-		 * from the current allocated buffer to the new one. This method can become useful if the user wants to insert or
-		 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to 
-		 * allocate a larger buffer and get RawPacket instance to point to it.\n
-		 * Frees the raw data only if SafeToDeleteDataCondition is satisfied.\n
-		 * Copies previous data only if SafeToDeleteDataCondition is satisfied.
-		 * @param[in] newBufferLength The new buffer length as required by the user.
-		 * @return true if data was reallocated successfully, false otherwise.
-		 */
-		virtual bool reallocateData(size_t newBufferLength);
+		virtual void insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
 
 		/**
 		 * @brief Remove certain number of bytes from current raw data buffer.
@@ -505,8 +526,9 @@ namespace pcpp
 		 * @param[in] numOfBytesToRemove Number of bytes to remove.
 		 * @return true if all bytes were removed successfully, or false otherwise.
 		 */
-		virtual bool removeData(int atIndex, size_t numOfBytesToRemove);
+		virtual bool removeData(index atIndex, size numOfBytesToRemove) = 0;
 	};
+
 } // namespace pcpp
 
 #endif
