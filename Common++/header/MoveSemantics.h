@@ -149,4 +149,15 @@ namespace pcpp
  */
 #define PCAPPP_MOVE_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_MOVE_PARAMETER(Type_name))
 
+/**
+ * Generates definition of move-constructor with correct move-reference type.
+ * Use this macro in .cpp files.
+ */
+#define PCAPPP_MOVE_CONSTRUCTOR_IMPL(Type_name) Type_name::Type_name(PCAPPP_MOVE_PARAMETER(Type_name))
+/**
+ * Generates definition of move-assignment operator with correct move-reference type.
+ * Use this macro in .cpp files.
+ */
+#define PCAPPP_MOVE_ASSIGNMENT_IMPL(Type_name) Type_name& Type_name::operator=(PCAPPP_MOVE_PARAMETER(Type_name))
+
 #endif /* PCAPPP_MOVE_SEMANTICS */
