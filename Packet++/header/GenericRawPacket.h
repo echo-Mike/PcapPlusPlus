@@ -19,23 +19,23 @@ namespace pcpp
 	template <
 		typename MemoryProxyTag = ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag,
 		typename MemoryProxyT = typename ::pcpp::memory::MemoryProxyDispatcher< MemoryProxyTag >::memory_proxy_t,
-		typename MemoryProxyT::Base& (MemoryProxyT::* expose)() = &MemoryProxyT::expose,
-		typename = typename ::pcpp::type_traits::enable_if< 
-			::pcpp::type_traits::is_same<
-				::pcpp::memory::MemoryProxyInterface< ::pcpp::memory::Data_t >, 
-				typename MemoryProxyT::Base >::value, 
-			void >::type
+		typename = typename ::pcpp::type_traits::enable_if<
+			::pcpp::type_traits::is_base_of<
+				::pcpp::memory::MemoryProxyInterface< ::pcpp::memory::Data_t >,
+				MemoryProxyT
+			>::value,
+			void 
+		>::type
 	>
-	class GenericRawPacket PCAPPP_FINAL :
-		public RawPacket
+		class GenericRawPacket PCAPPP_FINAL :
+		public RawPacket,
+		protected MemoryProxyT
 	{
 	public:
 
 		/* MemoryProxy typedefs */
 
-		typedef MemoryProxyT memory_proxy_t;
-		
-		typedef ::pcpp::memory::MemoryProxyInterface< ::pcpp::memory::Data_t >& MPInterface_t;
+		typedef MemoryProxyT MPBase;
 		
 		typedef MemoryProxyTag tag_t;
 
@@ -79,19 +79,13 @@ namespace pcpp
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
 		typedef Base::memory_value memory_value;
+
 	protected:
-		/**
-		 * @brief Replacement for expression: dynamic_cast<MPInterface_t>(*&memory_proxy).
-		 * We already knew that memory_proxy base class must be ::pcpp::memory::MemoryProxyInterface< ::pcpp::memory::Data_t >
-		 * so no dynamic checks are needed.
-		 * @return Polymorphic reference to memory_proxy.
-		 */
-		inline MPInterface_t MPIterface() { return (memory_proxy.*expose)(); }
 
 		inline void initialize()
 		{
 			Base::initialize();
-			MPIterface().clear();
+			MPBase::initialize();
 		}
 
 	public:
@@ -99,73 +93,70 @@ namespace pcpp
 		GenericRawPacket() { initialize(); }
 
 		GenericRawPacket(const_pointer pRawData, size rawDataLen, timeval timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
-			Base(timestamp, layerType, rawDataLen), memory_proxy()
+			Base(timestamp, layerType, rawDataLen), MPBase()
 		{
-			MPIterface().reset(pRawData, rawDataLen, ownership);
+			MPBase::reset(pRawData, rawDataLen, ownership);
 		}
 
 		GenericRawPacket(const GenericRawPacket& other) :
-			Base(other), memory_proxy(other.memory_proxy) {}
+			Base(other), MPBase(other) {}
 
 		GenericRawPacket& operator=(const GenericRawPacket& other)
 		{
 			initialize();
-			memory_proxy = other.memory_proxy;
 			Base::operator=(other);
+			MPBase::operator=(other);
 		}
 
 		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
-			Base(PCAPPP_MOVE_OTHER), 
-			memory_proxy(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.memory_proxy))
+			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
+			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER))
 		{}
 
 		PCAPPP_MOVE_ASSIGNMENT(GenericRawPacket)
 		{
 			initialize();
-			memory_proxy = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.memory_proxy);
-			Base::operator=(PCAPPP_MOVE_OTHER);
+			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER));
 		}
 
 		~GenericRawPacket() {}
 
 		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
 		{
-			MPIterface().reset(pRawData, rawDataLen, MPIterface().isOwning());
+			MPBase::reset(pRawData, rawDataLen, MPBase::isOwning());
 			Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
 		}
 
-		inline operator bool() { return Base::operator bool() || MPIterface().operator bool(); }
+		inline operator bool() { return Base::operator bool() || MPBase::operator bool(); }
 
-		inline pointer getRawData() PCAPPP_OVERRIDE { return MPIterface().get(); }
+		inline pointer getRawData() PCAPPP_OVERRIDE { return MPBase::get(); }
 
-		inline const_pointer getRawData() const PCAPPP_OVERRIDE { return MPIterface().get(); }
+		inline const_pointer getRawData() const PCAPPP_OVERRIDE { return MPBase::get(); }
 
-		inline const_pointer getRawDataReadOnly() const PCAPPP_OVERRIDE { return MPIterface().get(); }
+		inline const_pointer getRawDataReadOnly() const PCAPPP_OVERRIDE { return MPBase::get(); }
 
-		inline length getRawDataLen() const PCAPPP_OVERRIDE { return MPIterface().getLength(); }
+		inline length getRawDataLen() const PCAPPP_OVERRIDE { return MPBase::getLength(); }
 
-		inline bool isPacketSet() const PCAPPP_OVERRIDE { return MPIterface().operator bool(); }
+		inline bool isPacketSet() const PCAPPP_OVERRIDE { return MPBase::operator bool(); }
 
-		inline bool isOwning() const PCAPPP_OVERRIDE { return MPIterface().isOwning(); }
+		inline bool isOwning() const PCAPPP_OVERRIDE { return MPBase::isOwning(); }
 
-		pointer releseData() PCAPPP_OVERRIDE { return MPIterface().release(); }
+		inline pointer releseData() PCAPPP_OVERRIDE { return MPBase::release(); }
 
-		bool reallocateData(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE { MPIterface().realocate(newBufferLength, initialValue); }
+		inline bool reallocateData(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE { return MPBase::realocate(newBufferLength, initialValue); }
 
-		bool clear() PCAPPP_OVERRIDE { MPIterface().clear(); }
+		inline bool clear() PCAPPP_OVERRIDE { return MPBase::clear(); }
 
-		void appendData(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE { MPIterface().append(dataToAppendLen, initialValue); }
+		inline bool appendData(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE { return MPBase::append(dataToAppendLen, initialValue); }
 
-		void appendData(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE { MPIterface().append(dataToAppend, dataToAppendLen); }
+		inline bool appendData(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE { return MPBase::append(dataToAppend, dataToAppendLen); }
 
-		void insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE { MPIterface().insert(atIndex, dataToInsertLen, initialValue); }
+		inline bool insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE { return MPBase::insert(atIndex, dataToInsertLen, initialValue); }
 		
-		void insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE { MPIterface().insert(atIndex, dataToInsert, dataToInsertLen); }
+		inline bool insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE { return MPBase::insert(atIndex, dataToInsert, dataToInsertLen); }
 
-		bool removeData(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE { MPIterface().remove(atIndex, numOfBytesToRemove); }
-
-	protected:
-		memory_proxy_t memory_proxy;
+		inline bool removeData(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE { return MPBase::remove(atIndex, numOfBytesToRemove); }
 	};
 
 } // namespace pcpp
