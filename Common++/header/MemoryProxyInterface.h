@@ -203,19 +203,23 @@ namespace pcpp
 		namespace MemoryProxyTags
 		{
 			/**
-			 * Used to signify that template specialization uses DPDKMemoryProxy as a memory handling facility.
+			 * Used to signifies that template specialization uses DPDKMemoryProxy as a memory handling facility.
 			 */
 			struct DpdkTag {};
 			/**
-			 * Used to signify that template specialization uses SizeAwareMemoryProxy as a memory handling facility.
+			 * Used to signifies that template specialization uses custom MemoryProxy implementation as a memory handling facility.
+			 */
+			struct CustomTag {};
+			/**
+			 * Used to signifies that template specialization uses SizeAwareMemoryProxy as a memory handling facility.
 			 */
 			struct SizeAwareTag {};
 			/**
-			 * Used to signify that template specialization uses ContentAwareMemoryProxy as a memory handling facility.
+			 * Used to signifies that template specialization uses ContentAwareMemoryProxy as a memory handling facility.
 			 */
 			struct ContentAwareTag {};
 			/**
-			 * Used to signify that template specialization uses OldMemoryModelMemoryProxy as a memory handling facility.
+			 * Used to signifies that template specialization uses OldMemoryModelMemoryProxy as a memory handling facility.
 			 */
 			struct OldMemoryModelTag {};
 		} // namespace pcpp::memory::MemoryProxyTags

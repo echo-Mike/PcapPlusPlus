@@ -350,13 +350,13 @@ namespace pcpp
 		 * http://en.cppreference.com/w/cpp/types/enable_if
 		 */
 		/**
-		 * @brief Standard type traits is_void trait replacement for C++98.
+		 * @brief Standard type traits enable_if trait replacement for C++98.
 		 * Contains type "type" that is defined as T if B is true otherwise it is false.
 		 */
 		template<bool B, class T = void>
 		struct enable_if {};
 		/**
-		 * @brief Standard type traits is_void trait replacement for C++98.
+		 * @brief Standard type traits enable_if trait replacement for C++98.
 		 * Contains type "type" that is defined as T if B is true otherwise it is false.
 		 */
 		template<class T>

@@ -215,19 +215,9 @@ namespace pcpp
 
 	/**
 	 * @class RawPacket
-	 * This class holds the packet as raw (not parsed) data. The data is held as byte array. In addition to the data itself
-	 * every instance also holds a time-stamp representing the time the packet was received by the NIC.
-	 * RawPacket instance isn't read only. The user can change the packet data, add or remove data, etc.
+	 * RawPacket is an abstract class that describes the interface which is used to work with raw (not parsed) packet data.
+	 * Additionally holds a time-stamp representing the time the packet was received by the NIC.
 	 * This class has the null-object state in which any object can be set to by call to clear member function.
-	 * Owning rules of underlying data:  
-	 * * Objects in null-state don't own anything;  
-	 * * Objects created by copy from other own their copy of underlying data;  
-	 * * Move operation transfers owning state from one object to another (a.e. if object from which move was made owns it's data then object to which move was made now owns this data and vise-versa);  
-	 * * Object from which move was made is a object in null-state;  
-	 * * Underlying data is freed on object deconstruction only if object owns it;  
-	 * * appendData, insertData and removeData operations doesn't change owning state;  
-	 * * Object which data was reallocated using reallocateData owns it's underlying data.  
-	 *   
 	 */
 	class RawPacket
 	{
@@ -276,9 +266,8 @@ namespace pcpp
 	
 		/**
 		 * @brief Setups RawPacket object to a null-state.
-		 * Basically zeroes all fields, no data is touched.\n
-		 * m_TimeStamp field isn't touched either.\n
-		 * Both SafeToDeleteDataCondition and SafeToCopyDataCondition evaluate to false after this function call on the object.
+		 * Basically zeroes all fields.
+		 * m_TimeStamp field isn't touched.
 		 */
 		inline void initialize()
 		{
@@ -292,36 +281,33 @@ namespace pcpp
 		/* General functions */
 
 		/**
-		 * @brief A default constructor that initializes class'es attributes to default value.
+		 * @brief Default constructor that initializes class'es attributes to default value.
 		 * Internally calls initialize member function.
 		 * @todo time-stamp isn't set here to a default value
 		 */
-		RawPacket() 
-		{	// Produce an object at null-state
-			initialize();
-		}
+		RawPacket() { initialize(); }
 
-		RawPacket(timeval timestamp, LinkLayerType layerType, length frameLength) :
+		/**
+		 * @brief Basic constructor that initializes class'es attributes to provided values.
+		 * @param[in] timestamp The time-stamp packet was received by the NIC.
+		 * @param[in] layerType The link layer type of this raw packet. The default is Ethernet
+		 * @param[in] frameLength Frame length parameter used by file devices.
+		 */
+		RawPacket(timeval timestamp, LinkLayerType layerType, length frameLength = -1) :
 			m_TimeStamp(timestamp), m_FrameLength(frameLength), m_linkLayerType(layerType) {}
 
 		/**
-		 * @brief Copy constructor that copies all data from another instance.
-		 * Notice all raw data is copied (using std::memcpy), so when the original or
-		 * the other instance are freed, the other won't be affected.\n
-		 * Sets the new object to the null-state and internally calls copyDataFrom member function.\n
-		 * Data of other may not be copied if other don't satisfy SafeToCopyDataCondition.
+		 * @brief Default copy constructor.
+		 * Copies data members from other instance.
 		 * @param[in] other The instance to make copy of.
 		 */
 		RawPacket(const RawPacket& other) :
 			m_TimeStamp(other.m_TimeStamp), m_FrameLength(other.m_FrameLength), m_linkLayerType(other.m_linkLayerType) {}
 
 		/**
-		 * @brief Copy assignment operator of this class.
-		 * When using this operator on an already initialized RawPacket instance,
-		 * the original raw data is freed first. Then the other instance is copied to 
-		 * this instance, the same way the copy constructor works.
-		 * Data of other may not be copied if other don't satisfy SafeToCopyDataCondition.
-		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
+		 * @brief Default copy assignment operator.
+		 * Copies data members from other instance.
+		 * Correctly handles self assignment case.
 		 * @param[in] other The instance to make copy of.
 		 */
 		RawPacket& operator=(const RawPacket& other);
@@ -368,9 +354,6 @@ namespace pcpp
 
 		/**
 		 * @brief Sets provided raw data as new data to handle. 
-		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
-		 * State of m_DeleteRawDataAtDestructor flag is not touched.\n
-		 * If provided pRawData is nullptr or rawDataLen less than 1 nothing happens with data and false is returned.
 		 * @param[in] pRawData A pointer to the new raw data
 		 * @param[in] rawDataLen The new raw data length in bytes
 		 * @param[in] timestamp The time-stamp packet was received by the NIC
@@ -425,17 +408,15 @@ namespace pcpp
 
 		/**
 		 * @brief Method to get an indication whether raw data was already set for this instance.
-		 * @return True if raw data was set for this instance. Raw data can be set using the non-default constructor, using setRawData(), using
-		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
-		 * default constructor or clear() was called.
+		 * Raw data can be set using the non-default constructor, using setRawData(), using
+		 * the copy constructor or using the assignment operator.
+		 * @return True if raw data was set for this instance, false otherwise.
 		 */
 		virtual inline bool isPacketSet() const = 0;
 
 		/**
-		 * @brief Method to get an indication whether raw data was already set for this instance.
-		 * @return True if raw data was set for this instance. Raw data can be set using the non-default constructor, using setRawData(), using
-		 * the copy constructor or using the assignment operator. Returns false otherwise, for example: if the instance was created using the
-		 * default constructor or clear() was called.
+		 * @brief Returns owning status of underlying data.
+		 * @return true if object owns it's underlying data, false otherwise.
 		 */
 		virtual inline bool isOwning() const = 0;
 
@@ -443,88 +424,77 @@ namespace pcpp
 
 		/**
 		 * @brief Represents the facility to release the ownership of underlying data.
-		 * Derived class must overload this function if they can release ownership of data and set their self to some null-state.
-		 * @return Mostly common: Pointer to beginning of underlying data.
+		 * @return Pointer to beginning of underlying data.
 		 */
 		virtual pointer releseData() = 0;
 
 		/**
-		 * @brief Re-allocate raw packet buffer meaning add size to it without losing the current packet data.
-		 * This method allocates the required buffer size as instructed by the user and then copies the raw data 
-		 * from the current allocated buffer to the new one. This method can become useful if the user wants to insert or
-		 * append data to the raw data, and the previous allocated buffer is too small, so the user wants to 
-		 * allocate a larger buffer and get RawPacket instance to point to it.\n
-		 * Frees the raw data only if SafeToDeleteDataCondition is satisfied.\n
-		 * Copies previous data only if SafeToDeleteDataCondition is satisfied.
-		 * @param[in] newBufferLength The new buffer length as required by the user.
-		 * @return true if data was reallocated successfully, false otherwise.
+		 * @brief Reallocates underlying data to a specified size.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] newBufferLength New size of data.
+		 * @param[in] initialValue Per-byte initial value of new memory on allocation.
+		 * @return true if operation ended successfully, false otherwise (you may expect that object is in null-state).
 		 */
 		virtual bool reallocateData(size newBufferLength, memory_value initialValue = 0) = 0;
 
 		/**
-		 * @brief Clears all members of this instance.
-		 * Frees the current raw data first if SafeToDeleteDataCondition is satisfied.\n
-		 * Then internally calls initialize member function.
-		 * @todo Memory leak is possible if SafeToDeleteDataCondition is not satisfied but data was owned by this raw packet.
-		 * @todo set time-stamp to a default value as well
+		 * @brief Clear/deallocate underlying data and set object to a null-state.
+		 * @return true if operation ended successfully, false otherwise.
 		 */
 		virtual bool clear() = 0;
 
 		/**
-		 * @brief Append data to the end of current data. 
-		 * This method works without allocating more memory, it just uses std::memmove() to copy dataToAppend at
-		 * the end of the current data. This means that the method assumes this memory was already allocated by the user. 
-		 * If it isn't the case then this method will cause memory corruption.\n
-		 * This method can safely append data (by copy) from current packet to itself.
-		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
-		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
+		 * @brief Append memory capable of holding dataToAppendLen data entries and set it per-byte to initialValue on allocation.
+		 * Appending 0 bytes is always a success.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] dataToAppendLen Size of data to be appended.
+		 * @param[in] initialValue Initial value for new memory.
+		 * @return true if operation ended successfully, false otherwise.
 		 */
 		virtual bool appendData(size dataToAppendLen, memory_value initialValue = 0) = 0;
 
 		/**
-		 * @brief Append data to the end of current data. 
-		 * This method works without allocating more memory, it just uses std::memmove() to copy dataToAppend at
-		 * the end of the current data. This means that the method assumes this memory was already allocated by the user. 
-		 * If it isn't the case then this method will cause memory corruption.\n
-		 * This method can safely append data (by copy) from current packet to itself.
-		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
-		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
+		 * @brief Append memory capable of holding dataToAppendLen data entries and copy data from dataToAppend to it (concatenate).
+		 * Appending 0 bytes is always a success.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] dataToAppend Buffer memory to be appended to current data.
+		 * @param[in] dataToAppendLen Size of data to be appended.
+		 * @return true if operation ended successfully, false otherwise.
 		 */
 		virtual bool appendData(const_pointer dataToAppend, size dataToAppendLen) = 0;
 
 		/**
-		 * @brief Insert array of zeros before some index of the current data and shift the remaining old data to the end.
-		 * This method works without allocating more memory, it just adds array of zeros
-		 * at the relevant index and shifts the remaining data to the end.
-		 * This means that the method assumes this memory was already allocated by the user.
-		 * If it isn't the case then this method will cause memory corruption.\n
-		 * Nothing is done if atIndex is less than 0 or dataToInsertLen equals 0.
-		 * @param[in] atIndex The index to insert the new data to.
-		 * @param[in] dataToInsertLen Length in bytes of array of zeros.
+		 * @brief Inserts memory capable of holding dataToInsertLen data entries and set it per-byte to initialValue on allocation.
+		 * Depending on Memory Proxy type may handle case with negative atIndex.\n
+		 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] atIndex Index before which insertion take place.
+		 * @param[in] dataToInsertLen Size of data to be inserted.
+		 * @param[in] initialValue Initial value for new memory.
+		 * @return true if operation finished successfully, false otherwise.
 		 */
 		virtual bool insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) = 0;
 		
 		/**
-		 * @brief Insert new data before some index of the current data and shift the remaining old data to the end. 
-		 * This method works without allocating more memory, it just copies dataToAppend 
-		 * at the relevant index and shifts the remaining data to the end. 
-		 * This means that the method assumes this memory was already allocated by the user. 
-		 * If it isn't the case then this method will cause memory corruption.\n
-		 * This method can't safely insert data from current packet to itself. dataToInsert must not point to any memory from current packet.\n
-		 * Nothing is done if atIndex is less than 0 or dataToInsertLen equals 0.
-		 * @param[in] atIndex The index to insert the new data to. dataToInsert is begins on atIndex after the insertion happens.
-		 * @param[in] dataToInsert A pointer to the new data to insert.
-		 * @param[in] dataToInsertLen Length in bytes of dataToInsert.
+		 * @brief Inserts memory capable of holding dataToInsertLen data entries and copy data from dataToAppend to it.
+		 * Depending on Memory Proxy type may handle case with negative atIndex.\n
+		 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] atIndex Index before which insertion take place.
+		 * @param[in] dataToInsert Buffer memory to be inserted to current data.
+		 * @param[in] dataToInsertLen Size of data to be inserted.
+		 * @return true if operation finished successfully, false otherwise.
 		 */
 		virtual bool insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
 
 		/**
-		 * @brief Remove certain number of bytes from current raw data buffer.
-		 * All data after the removed bytes will be shifted back.\n
-		 * Fails if atIndex is less than 0 or end of data to remove (atIndex + numOfBytesToRemove) exceeds known length of data.
-		 * @param[in] atIndex The index to start removing bytes from.
-		 * @param[in] numOfBytesToRemove Number of bytes to remove.
-		 * @return true if all bytes were removed successfully, or false otherwise.
+		 * @brief Removes memory capable of holding numOfBytesToRemove data entries starting from atIndex.
+		 * Depending on Memory Proxy type may handle case with negative atIndex is handled correctly.\n
+		 * See @ref memory_indexes_in_insert_and_remove_operation "Indexes in Insert and Remove operations" note.
+		 * @todo m_FrameLength member may be invalidated here.
+		 * @param[in] atIndex Index from which removal take place.
+		 * @param[in] numOfBytesToRemove Size of data to be removed.
+		 * @return true if operation finished successfully, false otherwise.
 		 */
 		virtual bool removeData(index atIndex, size numOfBytesToRemove) = 0;
 	};

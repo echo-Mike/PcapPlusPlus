@@ -41,22 +41,50 @@ namespace pcpp
 		 */
 		typedef OldMemoryModelMemoryProxy< Data_t > DefaultOldMemoryModelMemoryProxy;
 
-		template < typename MemoryProxyTag = MemoryProxyTags::OldMemoryModelTag >
+		// Forward declaration.
+		class DPDKMemoryProxy;
+
+		/**
+		 * @brief Helper structure that deduces type of default memory proxy from provided tag.
+		 * By default deduces to DefaultOldMemoryModelMemoryProxy;
+		 * @tparam MemoryProxyTag Tag for which the deduction is made.
+		 */
+		template < typename MemoryProxyTag = MemoryProxyTags::OldMemoryModelTag, typename = void >
 		struct MemoryProxyDispatcher
 		{
 			typedef DefaultOldMemoryModelMemoryProxy memory_proxy_t;
 		};
-
+		/**
+		 * @brief Specialization of MemoryProxyDispatcher that deduces DefaultSizeAwareMemoryProxy from SizeAwareTag.
+		 */
 		template <>
 		struct MemoryProxyDispatcher< MemoryProxyTags::SizeAwareTag >
 		{
 			typedef DefaultSizeAwareMemoryProxy memory_proxy_t;
 		};
-
+		/**
+		 * @brief Specialization of MemoryProxyDispatcher that deduces DefaultContentAwareMemoryProxy from ContentAwareTag.
+		 */
 		template <>
 		struct MemoryProxyDispatcher< MemoryProxyTags::ContentAwareTag >
 		{
 			typedef DefaultContentAwareMemoryProxy memory_proxy_t;
+		};
+		/**
+		 * @brief Specialization of MemoryProxyDispatcher that deduces DPDKMemoryProxy from DpdkTag.
+		 */
+		template <>
+		struct MemoryProxyDispatcher< MemoryProxyTags::DpdkTag >
+		{
+			typedef DPDKMemoryProxy memory_proxy_t;
+		};
+		/**
+		 * @brief Specialization of MemoryProxyDispatcher that deduces provided MemoryProxy type from CustomTag.
+		 */
+		template < typename MemoryProxy >
+		struct MemoryProxyDispatcher< MemoryProxyTags::CustomTag, MemoryProxy >
+		{
+			typedef MemoryProxy memory_proxy_t;
 		};
 
 	} // namespace pcpp::memory
