@@ -104,7 +104,7 @@ namespace pcpp
 			 * Derived class must overload this function if they can release ownership of data and set their self to some null-state.
 			 * @return Mostly common: Pointer to beginning of underlying data.
 			 */
-			virtual pointer relese() = 0;
+			virtual pointer release() = 0;
 			/**
 			 * @brief Represents the reset operation.
 			 * Derived class must overload this function if they can deallocate current data and set provided data as current.

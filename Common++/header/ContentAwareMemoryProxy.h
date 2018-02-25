@@ -255,7 +255,7 @@ namespace pcpp
 			 * @brief Exposes object interface thru pointer to Base class. 
 			 * @return this casted to pointer to Base class.
 			 */
-			inline Base* expose() { return this; }
+			inline Base& expose() { return *this; }
 
 			/**
 			 * @brief Returns known underlying data length (NOT capacity).
@@ -292,7 +292,7 @@ namespace pcpp
 			 * Then returns saved pointer.
 			 * @return Pointer to the beginning of underlying data.
 			 */
-			pointer relese() override
+			pointer release() PCAPPP_OVERRIDE
 			{
 				typename Base::pointer old = getPointer();
 				initialize();
@@ -325,7 +325,7 @@ namespace pcpp
 			 * @brief Method to check if current object is in the null-state.
 			 * @return true if object is NOT in the null-state, false otherwise.
 			 */
-			operator bool() const { return getPointer() || m_Ownership || m_Length > 0 || m_Capacity > 0; }
+			inline operator bool() const { return getPointer() || m_Ownership || m_Length > 0 || m_Capacity > 0; }
 			/**
 			 * @brief Represents the read access facility to the underlying allocator object.
 			 * @return Reference to underlying allocator object.
@@ -398,7 +398,7 @@ namespace pcpp
 			 * Internally calls reallocate(0).
 			 * @return true if operation ended successfully, false otherwise.
 			 */
-			bool clear() override { return reallocate(0); }
+			bool clear() PCAPPP_OVERRIDE { return reallocate(0); }
 			/**
 			 * @brief Append memory capable of holding dataToAppendLen data entries and set it per-byte to initialValue on allocation.
 			 * Appending 0 bytes is always a success.

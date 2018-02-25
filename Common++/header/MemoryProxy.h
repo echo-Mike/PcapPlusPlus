@@ -21,7 +21,7 @@ namespace pcpp
 	namespace memory
 	{
 		/**
-		 * Represents type that used in memory manipulations as a type of a single memory cell.
+		 * Represents type that is used in memory manipulations as a type of a single memory cell.
 		 */
 		typedef std::uint8_t Data_t;
 		/**
@@ -40,6 +40,24 @@ namespace pcpp
 		 * Represents type of OldMemoryModelMemoryProxy that works with default data type Data_t.
 		 */
 		typedef OldMemoryModelMemoryProxy< Data_t > DefaultOldMemoryModelMemoryProxy;
+
+		template < typename MemoryProxyTag = MemoryProxyTags::OldMemoryModelTag >
+		struct MemoryProxyDispatcher
+		{
+			typedef DefaultOldMemoryModelMemoryProxy memory_proxy_t;
+		};
+
+		template <>
+		struct MemoryProxyDispatcher< MemoryProxyTags::SizeAwareTag >
+		{
+			typedef DefaultSizeAwareMemoryProxy memory_proxy_t;
+		};
+
+		template <>
+		struct MemoryProxyDispatcher< MemoryProxyTags::ContentAwareTag >
+		{
+			typedef DefaultContentAwareMemoryProxy memory_proxy_t;
+		};
 
 	} // namespace pcpp::memory
 

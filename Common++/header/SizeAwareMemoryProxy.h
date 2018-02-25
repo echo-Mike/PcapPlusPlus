@@ -250,7 +250,7 @@ namespace pcpp
 			 * @brief Exposes object interface thru pointer to Base class. 
 			 * @return this casted to pointer to Base class.
 			 */
-			inline Base* expose() { return this; }
+			inline Base& expose() { return *this; }
 
 			/**
 			 * @brief Returns known underlying data length.
@@ -280,7 +280,7 @@ namespace pcpp
 			 * Then returns saved pointer.
 			 * @return Pointer to the beginning of underlying data.
 			 */
-			pointer relese() PCAPPP_OVERRIDE
+			pointer release() PCAPPP_OVERRIDE
 			{
 				typename Base::pointer old = getPointer();
 				initialize();

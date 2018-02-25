@@ -171,7 +171,7 @@ namespace pcpp
 			 * @brief Exposes object interface thru pointer to Base class. 
 			 * @return this casted to pointer to Base class.
 			 */
-			inline Base* expose() { return this; }
+			inline Base& expose() { return *this; }
 
 			/**
 			 * @brief Returns known underlying data length.
@@ -200,16 +200,17 @@ namespace pcpp
 			 * @todo Add meaning to this method.
 			 * @return Always returns nullptr.
 			 */
-			pointer relese() PCAPPP_OVERRIDE
+			pointer release() PCAPPP_OVERRIDE
 			{	// This function logic does not presented in original code
-				/*typename Base::pointer old = m_Data;
+				// Next code was created with common sense of release operation in mind.
+				typename Base::pointer old = m_Data;
 				initialize();
-				return old;*/
-				return PCAPPP_NULLPTR;
+				return old;
 			}
 			/**
 			 * @brief Underlying data reset method.
 			 * This method was not presented in original RawPacket class code.
+			 * Implementation was deduced from implementation of setRawData method of original RawPacket class.
 			 * @param[in] ptr Pointer to memory to take handle of.
 			 * @param[in] length Size of provided memory (NOT in bytes).
 			 * @param[in] ownership Indicator of ownership over provided memory.
@@ -218,27 +219,26 @@ namespace pcpp
 			 */
 			bool reset(pointer ptr, size length = 0, bool ownership = true) PCAPPP_OVERRIDE
 			{	// This function logic does not presented in original code
-				/*
-				if (deallocateData())
-				{
-					m_Data = ptr;
-					m_Length = length;
-					m_Ownership = ownership;
-					return true;
-				}
-				initialize();
-				*/
+				// Next code was deduced from implementation of setRawData method of original RawPacket class.
+				if (m_Data != PCAPPP_NULLPTR && m_Ownership)
+					delete[] m_Data;
+				m_Data = ptr;
+				m_RawDataLen = length;
+				m_Ownership = ownership;
+				m_DataSet = true;
 				return false;
 			}
 			/**
 			* @brief Method to check if current object is in the null-state.
 			 * This method was not presented in original RawPacket class code.
+			 * Implementation was deduced from implementation of isPacketSet method of original RawPacket class.
 			 * @todo Add meaning to this method.
 			 * @return Always returns false.
 			 */
-			operator bool() const 
+			operator bool() const
 			{	// This function logic does not presented in original code
-				// return m_Data || m_Ownership || m_Length > 0;
+				// Next code was deduced from implementation of isPacketSet method of original RawPacket class.
+				return m_DataSet;
 				return false;
 			}
 			/**
