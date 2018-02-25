@@ -82,15 +82,24 @@ namespace pcpp
 } // namespace pcpp
 
 /**
- * If move semantics is supported return std::move( Value_ ), otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
+ * If move semantics is supported return std::move( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
  */
 #define PCAPPP_MOVE(Value_) ::pcpp::move_semantics::move( Value_ )
 /**
- * If move semantics is supported return Value_ , otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
+ * If move semantics is supported return std::move( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( dynamic_cast<Type_to_cast>(Value_) )
+ * Used in generated move constructors and assignment operators.
+ */
+#define PCAPPP_MOVE_WITH_CAST(Type_to_cast, Value_) ::pcpp::move_semantics::move( dynamic_cast<Type_to_cast>(Value_) )
+/**
+ * If move semantics is supported return Value_ , 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
  */
 #define PCAPPP_MOVE_OR_RVO(Value_) ::pcpp::move_semantics::move( Value_ )
 /**
- * If move semantics is supported return std::forward( Value_ ), otherwise return internal implementation ::pcpp::move_semantics::forward( Value_ )
+ * If move semantics is supported return std::forward( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::forward( Value_ )
  */
 #define PCAPPP_FORWARD(Value_) ::pcpp::move_semantics::forward( Value_ )
 /**
@@ -112,15 +121,24 @@ namespace pcpp
 
 #include <utility>
 /**
- * If move semantics is supported return std::move( Value_ ), otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
+ * If move semantics is supported return std::move( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
  */
 #define PCAPPP_MOVE(Value_) ::std::move( Value_ )
 /**
- * If move semantics is supported return Value_ , otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
+ * If move semantics is supported return std::move( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( dynamic_cast<Type_to_cast>(Value_) )
+ * Used in generated move constructors and assignment operators.
+ */
+#define PCAPPP_MOVE_WITH_CAST(Type_to_cast, Value_) ::std::move( Value_ )
+/**
+ * If move semantics is supported return Value_ , 
+ * otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
  */
 #define PCAPPP_MOVE_OR_RVO(Value_) Value_
 /**
- * If move semantics is supported return std::forward( Value_ ), otherwise return internal implementation ::pcpp::move_semantics::forward( Value_ )
+ * If move semantics is supported return std::forward( Value_ ), 
+ * otherwise return internal implementation ::pcpp::move_semantics::forward( Value_ )
  */
 #define PCAPPP_FORWARD(Value_) ::std::forward( Value_ )
 /**
