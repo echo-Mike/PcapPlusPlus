@@ -479,7 +479,7 @@ namespace pcpp
 		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
 		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
 		 */
-		virtual void appendData(size dataToAppendLen, memory_value initialValue = 0) = 0;
+		virtual bool appendData(size dataToAppendLen, memory_value initialValue = 0) = 0;
 
 		/**
 		 * @brief Append data to the end of current data. 
@@ -490,7 +490,7 @@ namespace pcpp
 		 * @param[in] dataToAppend A pointer to the data to append to current raw data.
 		 * @param[in] dataToAppendLen Length in bytes of dataToAppend.
 		 */
-		virtual void appendData(const_pointer dataToAppend, size dataToAppendLen) = 0;
+		virtual bool appendData(const_pointer dataToAppend, size dataToAppendLen) = 0;
 
 		/**
 		 * @brief Insert array of zeros before some index of the current data and shift the remaining old data to the end.
@@ -502,7 +502,7 @@ namespace pcpp
 		 * @param[in] atIndex The index to insert the new data to.
 		 * @param[in] dataToInsertLen Length in bytes of array of zeros.
 		 */
-		virtual void insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) = 0;
+		virtual bool insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) = 0;
 		
 		/**
 		 * @brief Insert new data before some index of the current data and shift the remaining old data to the end. 
@@ -516,7 +516,7 @@ namespace pcpp
 		 * @param[in] dataToInsert A pointer to the new data to insert.
 		 * @param[in] dataToInsertLen Length in bytes of dataToInsert.
 		 */
-		virtual void insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
+		virtual bool insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) = 0;
 
 		/**
 		 * @brief Remove certain number of bytes from current raw data buffer.
