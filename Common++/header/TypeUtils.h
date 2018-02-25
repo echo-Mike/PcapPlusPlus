@@ -106,15 +106,30 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/remove_cv
 		 */
-
+		/**
+		 * @brief Standard type traits remove_const trait replacement for C++98.
+		 * Contains type "type" if provided T is not const-qualified.
+		 */
 		template< class T > struct remove_const { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_const trait replacement for C++98.
+		 * Contains type "type" if provided T is const-qualified.
+		 */
 		template< class T > struct remove_const<const T> { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_volatile trait replacement for C++98.
+		 * Contains type "type" if provided T is not volatile-qualified.
+		 */
 		template< class T > struct remove_volatile { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_volatile trait replacement for C++98.
+		 * Contains type "type" if provided T is volatile-qualified.
+		 */
 		template< class T > struct remove_volatile<volatile T> { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_cv trait replacement for C++98.
+		 * Removes const- volatile- qualifiers from provided type T.
+		 */
 		template< class T >
 		struct remove_cv {
 			typedef typename remove_volatile<typename remove_const<T>::type>::type type;
@@ -124,13 +139,22 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/remove_extent
 		 */
-
+		/**
+		 * @brief Standard type traits remove_extent trait replacement for C++98.
+		 * Contains type "type" if provided T is not an array.
+		 */
 		template<class T>
 		struct remove_extent { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_extent trait replacement for C++98.
+		 * Contains type "type" if provided T is an array of unknown size.
+		 */
 		template<class T>
 		struct remove_extent<T[]> { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_extent trait replacement for C++98.
+		 * Contains type "type" if provided T is not an array of some size.
+		 */
 		template<class T, std::size_t N>
 		struct remove_extent<T[N]> { typedef T type; };
 
@@ -138,15 +162,24 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/remove_all_extents
 		 */
-
+		/**
+		 * @brief Standard type traits remove_all_extents trait replacement for C++98.
+		 * Contains type "type" if provided T is not an array.
+		 */
 		template<class T>
 		struct remove_all_extents { typedef T type; };
-
+		/**
+		 * @brief Standard type traits remove_all_extents trait replacement for C++98.
+		 * Contains type "type" if provided T is an array of unknown size.
+		 */
 		template<class T>
 		struct remove_all_extents<T[]> {
 			typedef typename remove_all_extents<T>::type type;
 		};
-
+		/**
+		 * @brief Standard type traits remove_all_extents trait replacement for C++98.
+		 * Contains type "type" if provided T is an array of some size.
+		 */
 		template<class T, std::size_t N>
 		struct remove_all_extents<T[N]> {
 			typedef typename remove_all_extents<T>::type type;
@@ -158,14 +191,23 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/add_cv
 		 */
-
+		/**
+		 * @brief Standard type traits add_cv trait replacement for C++98.
+		 * Contains type "type" that is defined as const volatile T.
+		 */
 		template< class T >
 		struct add_cv { typedef const volatile T type; };
-
+		/**
+		 * @brief Standard type traits add_const trait replacement for C++98.
+		 * Contains type "type" that is defined as const T.
+		 */
 		template< class T> struct add_const { typedef const T type; };
-
+		/**
+		 * @brief Standard type traits add_volatile trait replacement for C++98.
+		 * Contains type "type" that is defined as volatile T.
+		 */
 		template< class T> struct add_volatile { typedef volatile T type; };
-		
+
 		/* "is something" checkers */
 
 		/**
@@ -178,7 +220,10 @@ namespace pcpp
 			template< class T > struct is_pointer_helper : false_type {};
 			template< class T > struct is_pointer_helper<T*> : true_type {};
 		} // namespace pcpp::type_traits::detail
-		
+		/**
+		 * @brief Standard type traits is_pointer trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is a pointer type and false otherwise.
+		 */
 		template< class T > struct is_pointer : detail::is_pointer_helper<typename remove_cv<T>::type> {};
 
 		/**
@@ -188,14 +233,20 @@ namespace pcpp
 
 		namespace detail
 		{
+			struct two { char c[2]; };
 			template <class T> char class_test(int T::*);
-			struct class_two { char c[2]; };
-			template <class T> class_two class_test(...);
+			template <class T> two class_test(...);
 		} // namespace pcpp::type_traits::detail
-		
+		/**
+		 * @brief Standard type traits is_class trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is a class, enum or struct type and false otherwise.
+		 */
 		template <class T>
 		struct is_class : integral_constant<bool, sizeof(detail::class_test<T>(0)) == 1 > {};
-
+		/**
+		 * @brief Standard type traits is_empty trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is an empty class type and false otherwise.
+		 */
 		template <class T>
 		struct is_empty : integral_constant<bool, is_class<T>::value && sizeof(T) == sizeof(true_type) > {};
 
@@ -203,13 +254,23 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/is_array
 		 */
-
+		/**
+		 * @brief Standard type traits is_array trait replacement for C++98.
+		 * Fallback for not array types.
+		 * Contains static constant boolean "value" which is false.
+		 */
 		template<class T>
 		struct is_array : false_type {};
-
+		/**
+		 * @brief Standard type traits is_array trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is an type of array of unknown size.
+		 */
 		template<class T>
 		struct is_array<T[]> : true_type {};
-
+		/**
+		 * @brief Standard type traits is_array trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is an type of array of some size.
+		 */
 		template<class T, std::size_t N>
 		struct is_array<T[N]> : true_type {};
 
@@ -219,28 +280,67 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/conditional
 		 */
-
+		/**
+		 * @brief Standard type traits conditional trait replacement for C++98.
+		 * Contains type "type" that is defined as T if B is true.
+		 */
 		template<bool B, class T, class F>
 		struct conditional { typedef T type; };
-
+		/**
+		 * @brief Standard type traits conditional trait replacement for C++98.
+		 * Contains type "type" that is defined as F if B is false.
+		 */
 		template<class T, class F>
 		struct conditional<false, T, F> { typedef F type; };
+
+		/**
+		 * Implementations of next classes were inspired by:
+		 * http://en.cppreference.com/w/cpp/types/is_base_of
+		 * No visible behavior differences from listed above implementation was found on clang, gcc and other compilers (in CompilerExplorer).
+		 */
+		namespace detail
+		{
+			template <typename Base> char is_base_of_test_func(const volatile Base*);
+			template <typename Base> two  is_base_of_test_func(const volatile void*);
+			template <typename Base, typename Derived, typename DerPtr = Derived* >
+			struct pre_is_base_of : integral_constant<bool, sizeof(is_base_of_test_func<Base>(DerPtr())) == 1 > {};
+		}
+		/**
+		 * @brief Standard type traits is_base_of trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if Base is a base type of Derived.
+		 */
+		template < typename Base, typename Derived >
+		struct is_base_of : 
+			public conditional <
+				is_class< Base >::value && is_class< Derived >::value,
+				detail::pre_is_base_of< Base, Derived >,
+				false_type
+		>::type {};
 
 		/**
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/is_same
 		 */
-
+		/**
+		 * @brief Standard type traits is_same trait replacement for C++98.
+		 * Contains static constant boolean "value" which is false if T and U are not same type.
+		 */
 		template<class T, class U>
 		struct is_same : false_type {};
-
+		/**
+		 * @brief Standard type traits is_same trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T and U are same type.
+		 */
 		template<class T>
 		struct is_same<T, T> : true_type {};
-
 
 		/**
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/is_void
+		 */
+		/**
+		 * @brief Standard type traits is_void trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is a possibly cv-qualified void.
 		 */
 		template< class T >
 		struct is_void : is_same< void, typename remove_cv<T>::type > {};
@@ -249,10 +349,16 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/enable_if
 		 */
-
+		/**
+		 * @brief Standard type traits is_void trait replacement for C++98.
+		 * Contains type "type" that is defined as T if B is true otherwise it is false.
+		 */
 		template<bool B, class T = void>
 		struct enable_if {};
-
+		/**
+		 * @brief Standard type traits is_void trait replacement for C++98.
+		 * Contains type "type" that is defined as T if B is true otherwise it is false.
+		 */
 		template<class T>
 		struct enable_if<true, T> { typedef T type; };
 
