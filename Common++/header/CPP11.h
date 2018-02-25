@@ -8,7 +8,7 @@
 
 #if !defined(SUPPRESS_CPP11_DETECTION)
 
-	// C++11 autodetect feature is supported for: GCC/G++, ICC, CLANG(Xcode partially), VS(MSVC) 
+	// C++11 auto-detect feature is supported for: GCC/G++, ICC, CLANG(Xcode partially), VS(MSVC) 
 
 	/* Information sources */
 	// See: http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system
@@ -17,31 +17,17 @@
 	// See: http://nadeausoftware.com/articles/2012/10/c_c_tip_how_detect_compiler_name_and_version_using_compiler_predefined_macros
 	/* Information sources */
 
-	/* Compilers with unsupported C++11 detection feature */
-	#if defined(_ACC_) || defined(__CMB__) || defined(__CHC__) || defined(__ACK__) || defined(__CC_ARM) || defined(__AZTEC_C__) || \
-		defined(__CC65__) || defined(__COMO__) || defined(__DECC) || defined(__convexc__) || defined(__COVERITY__) || defined(_CRAYC) || \
-		defined(__DCC__) || defined(_DICE) || defined(__DMC__) || defined(__SYSC__) || defined(__DJGPP__) || defined(__PATHCC__) || \
-		defined(__FCC_VERSION) || defined(__ghs__) || defined(__HP_cc) || defined(__HP_aCC) || defined(__IAR_SYSTEMS_ICC__) || defined(__xlc__) || \
-		defined(__IBMC__) || defined(__IBMCPP__) || defined(__IMAGECRAFT__) || defined(__KCC) || defined(__CA__) || defined(__C166__) || \
-		defined(__C51__) || defined(__LCC__) || defined(__llvm__) || defined(__HIGHC__) || defined(__MWERKS__) || defined(_MRI) || \
-		defined(__NDPC__) || defined(__NDPX__) || defined(__sgi) || defined(MIRACLE) || defined(__MRC__) || defined(__CC_NORCROFT) || \
-		defined(__NWCC__) || defined(__OPEN64__) || defined(ORA_PROC) || defined(__SUNPRO_C) || defined(__PACIFIC__) || defined(_PACC_VER) || \
-		defined(__POCC__) || defined(__PGI) || defined(__RENESAS__) || defined(SASC) || defined(__SASC) || defined(__SASC__) || \
-		defined(_SCO_DS) || defined(SDCC) || defined(__SNC__) || defined(__VOSC__) || defined(__SC__) || defined(__TenDRA__) || \
-		defined(__TI_COMPILER_VERSION__) || defined(THINKC3) || defined(THINKC4) || defined(__TINYC__) || defined(__TURBOC__) || defined(_UCC) || \
-		defined(__USLC__) || defined(__VBCC__) || defined(__WATCOMC__) || defined(__ZTC__)
+	/* Show error message for compilers for which C++11 detection feature is not supported */
+	#if !( defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__ICC) || defined(__clang__) || defined(_MSC_VER) )
 
-		// defined(__EDG__) // EDG C++ Frontend - this macro is defined by VS2015
-		#error \
-		This compiler is a target to be done for automatic C++11 detection. \
-		Please specify ENABLE_CPP11_MOVE_SEMANTICS macro by hand if you compiler version support C++11 rvalue ref v2.0. \
-		To suppress automatic C++11 detection feature define SUPPRESS_CPP11_DETECTION macro. \
-		This error does NOT mean that library can't be build on Your compiler. \
-		And if You can please add issue to https://github.com/seladb/PcapPlusPlus
+		#error This compiler is a target to be done for automatic C++11 detection. Please specify ENABLE_CPP11_MOVE_SEMANTICS macro by hand if you compiler version support C++11 rvalue ref v2.0. \
+To suppress automatic C++11 detection feature define SUPPRESS_CPP11_DETECTION macro. This error does NOT mean that library can not be build on Your compiler. \
+And if You can please add issue to https://github.com/seladb/PcapPlusPlus
+
 	#endif
-	/* Compilers with unsupported C++11 detection feature */
 
 	/* Compiler based definitions */
+
 	// GCC
 	#if defined(__GNUC__) && !(defined(__INTEL_COMPILER) || defined(__ICC) || defined(__clang__))
 		// See : https://gcc.gnu.org/projects/cxx-status.html#cxx11
@@ -79,9 +65,9 @@
 			#define __ICC_VERSION__ __INTEL_COMPILER
 		#endif
 	#endif /* ICC */
-	/* Compiler based definitions */
 
 	/* Detection */
+
 	#if defined(WIN32) || defined(_WIN64) || defined(_WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 		#if defined(__MINGW32__) || defined(__CYGWIN32__) || defined(__CYGWIN__)
 			// MinGW or CygWin builds : CLANG and GCC are supported
@@ -298,21 +284,21 @@
 		#define PCAPPP_NULLPTR NULL
 		#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 	#endif
-	/* Detection */
+
 #else
-#ifndef __cpp_constexpr
-	#define PCAPPP_CONSTEXPR const
-#else
-	#define PCAPPP_CONSTEXPR constexpr
-#endif
-#ifdef __cpp_rvalue_references
-	#define ENABLE_CPP11_MOVE_SEMANTICS
-#endif
-#define PCAPPP_NOEXCEPT
-#define PCAPPP_FINAL
-#define PCAPPP_OVERRIDE
-#define PCAPPP_NULLPTR NULL
-#define NO_TEMPLATE_FUNCTION_DEF_ARGS
+	#ifndef __cpp_constexpr
+		#define PCAPPP_CONSTEXPR const
+	#else
+		#define PCAPPP_CONSTEXPR constexpr
+	#endif
+	#ifdef __cpp_rvalue_references
+		#define ENABLE_CPP11_MOVE_SEMANTICS
+	#endif
+	#define PCAPPP_NOEXCEPT
+	#define PCAPPP_FINAL
+	#define PCAPPP_OVERRIDE
+	#define PCAPPP_NULLPTR NULL
+	#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 #endif /* SUPPRESS_CPP11_DETECTION */
 
 #endif /* PCAPPP_CPP11DETECTION */
