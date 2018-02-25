@@ -1,10 +1,6 @@
 #define LOG_MODULE PacketLogModuleRawPacket
 
 #include "RawPacket.h"
-// For std::memcopy, std::memmove and std::memset
-#include <cstring>
-// For std::move
-#include <utility>
 #include "Logger.h"
 
 namespace pcpp
@@ -21,7 +17,7 @@ RawPacket& RawPacket::operator=(const RawPacket& other)
 	return *this;
 }
 
-bool RawPacket::setRawData(const_pointer /* pRawData */, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1)
+bool RawPacket::setRawData(const_pointer /* pRawData */, size rawDataLen, timeval timestamp, LinkLayerType layerType, length frameLength)
 {
 	if(frameLength == -1)
 		frameLength = rawDataLen;

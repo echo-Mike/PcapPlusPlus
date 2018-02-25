@@ -247,12 +247,6 @@ namespace pcpp
 			~SizeAwareMemoryProxy() { deallocateData(); }
 
 			/**
-			 * @brief Exposes object interface thru pointer to Base class. 
-			 * @return this casted to pointer to Base class.
-			 */
-			inline Base& expose() { return *this; }
-
-			/**
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
 			 */

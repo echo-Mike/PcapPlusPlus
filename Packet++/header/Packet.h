@@ -2,6 +2,7 @@
 #define PACKETPP_PACKET
 
 #include "RawPacket.h"
+#include "GenericRawPacket.h"
 #include "Layer.h"
 #ifdef USE_DPDK
 // When DPDK is used there is a derived class from RawPacket - MBufRawPacket

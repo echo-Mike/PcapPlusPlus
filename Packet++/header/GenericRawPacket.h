@@ -118,7 +118,7 @@ namespace pcpp
 		GenericRawPacket(const_pointer pRawData, size rawDataLen, timeval timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
 			Base(timestamp, layerType, rawDataLen), MPBase()
 		{
-			MPBase::reset(pRawData, rawDataLen, ownership);
+			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, ownership);
 		}
 		
 		/**
@@ -195,7 +195,7 @@ namespace pcpp
 		 */
 		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
 		{
-			MPBase::reset(pRawData, rawDataLen, MPBase::isOwning());
+			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());
 			Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
 		}
 
@@ -339,6 +339,11 @@ namespace pcpp
 		 */
 		inline bool removeData(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE { return MPBase::remove(atIndex, numOfBytesToRemove); }
 	};
+
+	/**
+	 * @brief Represents a type of default library-wide RawPacket implementation.
+	 */
+	typedef GenericRawPacket<> DefaultRawPacket;
 
 } // namespace pcpp
 

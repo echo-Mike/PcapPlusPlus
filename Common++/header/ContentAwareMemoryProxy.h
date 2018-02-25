@@ -252,12 +252,6 @@ namespace pcpp
 			~ContentAwareMemoryProxy() { deallocateData(); }
 
 			/**
-			 * @brief Exposes object interface thru pointer to Base class. 
-			 * @return this casted to pointer to Base class.
-			 */
-			inline Base& expose() { return *this; }
-
-			/**
 			 * @brief Returns known underlying data length (NOT capacity).
 			 * This function is in MemoryProxyInterface function set.
 			 * @return Known underlying data length (NOT capacity).

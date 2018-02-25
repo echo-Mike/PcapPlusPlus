@@ -168,12 +168,6 @@ namespace pcpp
 			}
 
 			/**
-			 * @brief Exposes object interface thru pointer to Base class. 
-			 * @return this casted to pointer to Base class.
-			 */
-			inline Base& expose() { return *this; }
-
-			/**
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
 			 */
@@ -223,7 +217,7 @@ namespace pcpp
 				if (m_Data != PCAPPP_NULLPTR && m_Ownership)
 					delete[] m_Data;
 				m_Data = ptr;
-				m_RawDataLen = length;
+				m_Length = length;
 				m_Ownership = ownership;
 				m_DataSet = true;
 				return false;

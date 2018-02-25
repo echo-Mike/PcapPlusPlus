@@ -324,7 +324,7 @@ namespace pcpp
 		 * @brief Method to get frame length in bytes.
 		 * @return Frame length in bytes.
 		 */
-		inline int getFrameLength() const { return m_FrameLength; }
+		inline length getFrameLength() const { return m_FrameLength; }
 
 		/**
 		 * @brief Method to get raw data time-stamp.

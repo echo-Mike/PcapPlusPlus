@@ -53,7 +53,7 @@ Packet::Packet(size_t maxPacketLen)
 	// Create this object in null-state
 	initialize();
 	// Allocate new null-state RawPacket
-	m_RawPacket = new RawPacket();
+	m_RawPacket = new DefaultRawPacket();
 	m_FreeRawPacket = true;
 	m_MaxPacketLen = maxPacketLen;
 	// Set timestamp of packet
@@ -110,7 +110,7 @@ void Packet::copyDataFrom(const Packet& other)
 	// Destruct current packet data
 	destructPacketData();
 	// Allocate new RawPacket and copy construct it from other's RawPacket
-	m_RawPacket = new RawPacket(*(other.m_RawPacket));
+	m_RawPacket = new DefaultRawPacket(*(other.m_RawPacket));
 	// We definitely own an underlying RawPacket now
 	m_FreeRawPacket = true;
 	m_MaxPacketLen = other.m_MaxPacketLen;
