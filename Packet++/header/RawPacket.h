@@ -377,6 +377,30 @@ namespace pcpp
 		 */
 		inline bool isInNullState() const { return !(this->operator bool()); }
 
+		/* Abstract API: Object manipulation */
+
+		/**
+		 * @brief Special method that allocates new object of underlying type on a heap.
+		 * Object is constructed using default constructor.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 */
+		virtual inline RawPacket* newObject() = 0;
+
+		/**
+		 * @brief Special method that allocates new object of underlying type on a heap.
+		 * Object is constructed using copy constructor to which this object is passed as other instance.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 */
+		virtual inline RawPacket* copy() = 0;
+
+		/**
+		 * @brief Special method that allocates new object of underlying type on a heap.
+		 * Object is constructed using move constructor to which this object is passed as other instance.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 */
+		virtual inline RawPacket* move() = 0;
+
+
 		/* Abstract API: Data acquisition */
 
 		/**

@@ -197,7 +197,7 @@ namespace pcpp
 		
 		/**
 		 * @brief Resets underlying raw packet to provided packet rawPacket by copy- or move-constructor.
-		 * Decallocation of current underlying raw packet is made only after new packet is allocated and only if m_FreeRawPacket is up.\n
+		 * Deallocation of current underlying raw packet is made only after new packet is allocated and only if m_FreeRawPacket is up.\n
 		 * If it is possible layers are not reset.
 		 * @param[in] rp Left- or Right-reference to value or a value itself. Raw packet to use in operations.
 		 * Usage:\n

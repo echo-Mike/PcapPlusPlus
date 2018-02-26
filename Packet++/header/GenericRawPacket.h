@@ -97,13 +97,9 @@ namespace pcpp
 
 		/**
 		 * @brief A default constructor that initializes class'es attributes to default value.
-		 * Internally calls initialize member functions of both base classes. 
+		 * Internally calls initialize member functions of both base classes (via their constructors).
 		 */
-		GenericRawPacket() 
-		{ 
-			Base::initialize();
-			MPBase::initialize();
-		}
+		GenericRawPacket() {}
 
 		/**
 		 * A constructor that receives a pointer to the raw data. 
@@ -181,6 +177,8 @@ namespace pcpp
 
 		/* Interface binding */
 
+		/* Virtual API implementation */
+
 		/**
 		 * @brief Implements setRawData from RawPacket interface.
 		 * Binds together effects of reset function from Memory Proxy interface
@@ -204,6 +202,83 @@ namespace pcpp
 		 * @return true if object is NOT in the null-state, false otherwise.
 		 */
 		inline operator bool() { return Base::operator bool() || MPBase::operator bool(); }
+
+		/* Abstract API implementation */
+
+		/**
+		 * @brief Special method that allocates new object on a heap.
+		 * Object is constructed using default constructor.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 * @todo Add logger and error message x2
+		 */
+		inline RawPacket* newObject() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket;
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
+
+		/**
+		 * @brief Special method that allocates new object on a heap.
+		 * Object is constructed using copy constructor to which this object is passed as other instance.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 * @todo Add logger and error message x2
+		 */
+		inline RawPacket* copy() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket(*this);
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
+
+		/**
+		 * @brief Special method that allocates new object on a heap.
+		 * Object is constructed using move constructor to which this object is passed as other instance.
+		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
+		 * @todo Add logger and error message x2
+		 */
+		virtual inline RawPacket* move() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket(PCAPPP_MOVE(*this));
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
 
 		/**
 		 * @brief Method to get raw data pointer.

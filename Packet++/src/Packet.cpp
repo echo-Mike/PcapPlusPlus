@@ -53,10 +53,10 @@ Packet::Packet(size_t maxPacketLen)
 	// Create this object in null-state
 	initialize();
 	// Allocate new null-state RawPacket
-	m_RawPacket = new DefaultRawPacket();
+	m_RawPacket = new DefaultRawPacket;
 	m_FreeRawPacket = true;
 	m_MaxPacketLen = maxPacketLen;
-	// Set timestamp of packet
+	// Set time-stamp of packet
 	timeval time;
 	gettimeofday(&time, NULL);
 	m_RawPacket->resetPacketTimeStamp(time);
@@ -110,19 +110,19 @@ void Packet::copyDataFrom(const Packet& other)
 	// Destruct current packet data
 	destructPacketData();
 	// Allocate new RawPacket and copy construct it from other's RawPacket
-	m_RawPacket = new DefaultRawPacket(*(other.m_RawPacket));
+	m_RawPacket = other.m_RawPacket->copy();
 	// We definitely own an underlying RawPacket now
 	m_FreeRawPacket = true;
 	m_MaxPacketLen = other.m_MaxPacketLen;
 	m_ProtocolTypes = other.m_ProtocolTypes;
 	// @todo:
-	// An error here may occur if first layer is not ethernet
+	// An error here may occur if first layer is not Ethernet
 	// An error here may occur if m_RawPacket->getRawData() returns nullptr a.e. RawPacket is even but data is corrupted
 	m_FirstLayer = new EthLayer(m_RawPacket->getRawData(), m_RawPacket->getRawDataLen(), this);
 	m_LastLayer = m_FirstLayer;
 	// Recreate layer structure
 	// @todo:
-	// Reparsing is a bad decision, consider to use dynamic_cast based approach, benchmarks needed.
+	// Re-parsing is a bad decision, consider to use dynamic_cast based approach, benchmarks needed.
 	Layer* curLayer = m_FirstLayer;
 	while (curLayer)
 	{
