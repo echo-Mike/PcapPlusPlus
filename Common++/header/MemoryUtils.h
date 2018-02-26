@@ -156,6 +156,15 @@ namespace pcpp
 			 * Base type of this class.
 			 */
 			typedef allocator<T> Base;
+
+			/* Restore types from base allocator class. */
+
+			using typename Base::value_type;
+			using typename Base::const_pointer;
+			using typename Base::reference;
+			using typename Base::const_reference;
+			using typename Base::pointer;
+
 			/**
 			 * @brief Allocates memory for one object of type T.
 			 * WARNING!! The default constructor of object is called.\n
@@ -163,13 +172,13 @@ namespace pcpp
 			 * @param[in] l Ignores it.
 			 * @return Pointer to newly allocated memory.
 			 */
-			pointer allocate(std::size_t) { return new T; }
+			pointer allocate(std::size_t) PCAPPP_OVERRIDE { return new T; }
 			/**
 			 * @brief Deallocates memory for one object of type T.
 			 * Internally applies "delete" expression to provided pointer.
 			 * @param[in] p Pointer to a memory previously allocated by this allocator.
 			 */
-			void deallocate(pointer p)
+			void deallocate(pointer p) PCAPPP_OVERRIDE
 			{
 				if (p != typename Base::pointer())
 				{
@@ -193,6 +202,15 @@ namespace pcpp
 			 * Base type of this class.
 			 */
 			typedef allocator<T> Base;
+
+			/* Restore types from base allocator class. */
+
+			using typename Base::value_type;
+			using typename Base::const_pointer;
+			using typename Base::reference;
+			using typename Base::const_reference;
+			using typename Base::pointer;
+
 			/**
 			 * @brief Allocates memory for size object of type T.
 			 * WARNING!! The default constructor of every object is called.\n
