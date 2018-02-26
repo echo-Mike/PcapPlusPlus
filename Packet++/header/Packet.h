@@ -1,16 +1,11 @@
 #ifndef PACKETPP_PACKET
 #define PACKETPP_PACKET
 
-#include "RawPacket.h"
-#include "GenericRawPacket.h"
 #include "Layer.h"
-#ifdef USE_DPDK
-// When DPDK is used there is a derived class from RawPacket - MBufRawPacket
-// that must be handled differently in castBasedCopyResetRawPacket and castBasedMoveResetRawPacket member functions.
-#include "MBufRawPacket.h" 
-#endif // USE_DPDK
+#include "RawPacket.h"
+#include <MoveSemantics.h>
+#include "GenericRawPacket.h"
 
-#include <utility>
 #include <vector>
 
 /// @file
@@ -42,20 +37,27 @@ namespace pcpp
 	 * * Object definitely own it's underlying RawPacket object after call to resetRawPacket member function.  
 	 *
 	 */
-	class Packet {
+	class Packet 
+	{
 		friend class Layer;
 		RawPacket* m_RawPacket;
 		Layer* m_FirstLayer;
 		Layer* m_LastLayer;
 		uint64_t m_ProtocolTypes;
-		size_t m_MaxPacketLen;
 		bool m_FreeRawPacket;
 
 		/**
 		 * @brief Setups Packet object to a null-state.
 		 * Basically zeroes all fields, no data is touched.
 		 */
-		void initialize();
+		inline void initialize()
+		{
+			m_RawPacket = PCAPPP_NULLPTR;
+			m_LastLayer = PCAPPP_NULLPTR;
+			m_FirstLayer = PCAPPP_NULLPTR;
+			m_FreeRawPacket = false;
+			m_ProtocolTypes = UnknownProtocol;
+		}
 
 		/**
 		 * @brief Makes current object a copy of the other.
@@ -73,7 +75,7 @@ namespace pcpp
 		 * other is set to the null-state - state after default construction.
 		 * @param[in:out] other Object to move from.
 		 */
-		void moveDataFrom(Packet&& other);
+		void moveDataFrom(Packet& other);
 
 		/**
 		 * @brief Deallocates packet data.
@@ -165,7 +167,7 @@ namespace pcpp
 		 * other object is set to the null-state.
 		 * @param[in] other The instance to move from.
 		 */
-		Packet(Packet&& other);
+		PCAPPP_MOVE_CONSTRUCTOR(Packet);
 
 		/**
 		 * @brief Move assignment operator of this class.
@@ -174,7 +176,7 @@ namespace pcpp
 		 * is moved to this instance, the same way the move constructor works.
 		 * @param[in] other The instance to move from.
 		 */
-		Packet& operator=(Packet&& other);
+		PCAPPP_MOVE_ASSIGNMENT(Packet);
 
 		/**
 		 * @brief Destructor for this class. 
@@ -196,22 +198,28 @@ namespace pcpp
 		void setRawPacket(RawPacket* rawPacket, bool freeRawPacket, ProtocolType parseUntil = UnknownProtocol, OsiModelLayer parseUntilLayer = OsiModelLayerUnknown);
 		
 		/**
-		 * @brief Resets underlying raw packet to provided packet rawPacket by copy- or move-constructor.
+		 * @brief Switches underlying raw packet to a copy of provided one with proper deallocation.
 		 * Deallocation of current underlying raw packet is made only after new packet is allocated and only if m_FreeRawPacket is up.\n
-		 * If it is possible layers are not reset.
-		 * @param[in] rp Left- or Right-reference to value or a value itself. Raw packet to use in operations.
-		 * Usage:\n
-		 * Obtain owning of current underlying raw packet by making copy of it:\n
-		 * packet.resetRawPacket(*packet.getRawPacket());\n
-		 * Or by moving data from it:\n
-		 * packet.resetRawPacket(std::move(*packet.getRawPacket()));\n
-		 * If provided rawPacket is obtained from pointer dereferencing and it points to object of class derived from RawPacket (a.e. MBufRawPacket)
-		 * then the pointer must be casted to the derived type before dereferencing:\n
-		 * packet.resetRawPacket(*dynamic_cast<MBufRawPacket*>(packet.getRawPacket())); // Copy\n
-		 * packet.resetRawPacket(std::move(*dynamic_cast<MBufRawPacket*>(packet.getRawPacket()))); // Move
+		 * If it is possible layers are not reset.\n
+		 * After call to this function this Packet objects owns underlying raw packet.
+		 * May be used with getRawPacket to obtain owning of underlying raw packet object.
+		 * @param[in] rawPacket Pointer to RawPacket instance to make copy of.
+		 * @return true if copying was successful, false otherwise.
+		 * @todo Add error message x2.
 		 */
-		template < typename RawPacketT >
-		void resetRawPacket(RawPacketT&& rawPacket);
+		bool holdCopy(RawPacket* rawPacket);
+
+		/**
+		 * @brief Switches underlying raw packet to the provided one with proper deallocation.
+		 * Deallocation of current underlying raw packet is made only if m_FreeRawPacket is up.\n
+		 * If it is possible layers are not reset.\n
+		 * After call to this function this Packet objects owns underlying raw packet.
+		 * May be used with getRawPacket to obtain owning of underlying raw packet object.
+		 * @param[in] rawPacket Pointer to RawPacket instance to take control over.
+		 * @return true if moving was successful, false otherwise.
+		 * @todo Add error message x2.
+		 */
+		bool holdProvided(RawPacket* rawPacket);
 
 		/**
 		 * @brief Method to get a pointer to the underlying RawPacket.
@@ -226,52 +234,6 @@ namespace pcpp
 		 * @return A pointer to the const-qualified underlying RawPacket.
 		 */
 		inline const RawPacket* getRawPacket() const { return m_RawPacket; }
-
-#ifdef USE_DPDK // If DPDK is presented in project then there is an derived class of RawPacket - MBufRawPacket
-
-		/**
-		 * @brief Method to call resetRawPacket with automatically defined type of underlying RawPacket.
-		 * Call this function if packet needs to be reset by calling copy-constructor.\n
-		 * Uses the dynamic_cast behavior to return nullptr if cast failed.
-		 */
-		void castBasedCopyResetRawPacket() 
-		{
-			MBufRawPacket* castResult = dynamic_cast<MBufRawPacket*>(getRawPacket());
-			if (castResult)
-				resetRawPacket(*castResult);
-			else
-				resetRawPacket(*getRawPacket()); 
-		}
-
-		/**
-		 * @brief Method to call resetRawPacket with automatically defined type of underlying RawPacket.
-		 * Call this function if packet needs to be reset by calling move-constructor.\n
-		 * Uses the dynamic_cast behavior to return nullptr if cast failed.
-		 */
-		void castBasedMoveResetRawPacket()
-		{
-			MBufRawPacket* castResult = dynamic_cast<MBufRawPacket*>(getRawPacket());
-			if (castResult)
-				resetRawPacket(std::move(*castResult));
-			else
-				resetRawPacket(std::move(*getRawPacket()));
-		}
-#else // If it is not then the only class under RawPacket* is RawPacket
-
-		/**
-		 * @brief Method to call resetRawPacket with automatically defined type of underlying RawPacket.
-		 * Call this function if packet needs to be reset by calling copy-constructor.\n
-		 * Uses the dynamic_cast behavior to return nullptr if cast failed.
-		 */
-		void castBasedCopyResetRawPacket() { resetRawPacket(*getRawPacket()); }
-
-		/**
-		 * @brief Method to call resetRawPacket with automatically defined type of underlying RawPacket.
-		 * Call this function if packet needs to be reset by calling move-constructor.\n
-		 * Uses the dynamic_cast behavior to return nullptr if cast failed.
-		 */
-		void castBasedMoveResetRawPacket() { resetRawPacket(std::move(*getRawPacket())); }
-#endif // USE_DPDK
 
 		/**
 		 * @brief Method to get a pointer to the underlying RawPacket in read-only manner.
@@ -309,7 +271,6 @@ namespace pcpp
 
 		/**
 		 * @brief Method to check if current object is in the null-state.
-		 * m_MaxPacketLen is ignored on purpose - all objects created via default constructor is in the null-state (ant their underlying RawPacket objects as well).
 		 * @return true if object NOT in the null-state, false otherwise.
 		 */
 		inline operator bool() const { return m_RawPacket || m_LastLayer || m_FirstLayer || m_FreeRawPacket || m_ProtocolTypes != UnknownProtocol; }
@@ -319,7 +280,13 @@ namespace pcpp
 		 * Basically the negation of operator bool call.
 		 * @return true if object is in the null-state, false otherwise.
 		 */
-		inline bool isInNullState() const { return !(*this); }
+		inline bool isInNullState() const { return !(this->operator bool()); }
+
+		/**
+		 * @brief Method to check that packet owns it's underlying raw packet.
+		 * @return true if packet owns it's underlying raw packet, false otherwise.
+		 */
+		inline bool isOwning() const { return m_FreeRawPacket; }
 
 		/**
 		 * @brief Add a new layer as the last layer in the packet. 
@@ -360,7 +327,7 @@ namespace pcpp
 		 * If no layer of such type is found, NULL is returned.
 		 * @return A pointer to the layer of the requested type, NULL if not found.
 		 */
-		template<class TLayer>
+		template< class TLayer >
 		TLayer* getLayerOfType();
 
 		/**
@@ -371,7 +338,7 @@ namespace pcpp
 		 * @param[in] after A pointer to the layer to start search from.
 		 * @return A pointer to the layer of the requested type, NULL if not found.
 		 */
-		template<class TLayer>
+		template< class TLayer >
 		TLayer* getNextLayerOfType(Layer* after);
 
 		/**
@@ -407,40 +374,8 @@ namespace pcpp
 		bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend);
 		bool shortenLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToShorten);
 
-		void reallocateRawData(size_t newSize);
-
 		std::string printPacketInfo(bool timeAsLocalTime);
 	};
-
-	template < typename RawPacketT >
-	void Packet::resetRawPacket(RawPacketT&& rawPacket)
-	{
-		// Obtain real (not const- or volatile-qualified) type of rawPacket
-		using RealRawPacketT = typename std::decay<RawPacketT>::type; // std::decay_t is the c++14 feature
-		static_assert(std::is_base_of<RawPacket, RealRawPacketT>::value, "Provided object must be derived from RawPacket or be RawPacket.");
-		// This will assert if RawPacketT is const-qualified and have been moved to this function
-		static_assert(std::is_constructible<RealRawPacketT, decltype(std::forward<RawPacketT>(rawPacket))>::value, "Provided type must have copy- or move-constructor.");
-		// Store old raw packet in separate pointer
-		RawPacket* oldRawPacket = m_RawPacket;
-		bool oldFreRawPacket = m_FreeRawPacket;
-		// Allocate new raw packet object by copy- or move-construction
-		m_RawPacket = new RealRawPacketT(std::forward<RawPacketT>(rawPacket));
-		m_FreeRawPacket = false; // Turn off raw packet deallocation in next destructPacketData call
-		if ( !std::is_same<RawPacketT, RealRawPacketT>::value || // This is true if copy-constructor was called
-			oldRawPacket != &rawPacket ) // Or if move-constructor called on not current underlying RawPacket
-		{	
-			// Layers now are messed up => recreate them
-			destructPacketData();
-			parseLayers();
-			// If rawPacket is current underlying RawPacket and move-constructor is called
-			// then all layers are not messed up and will still point to correct memory locations
-		}
-		// Deallocate old object if it is needed
-		if (oldFreRawPacket)
-			delete oldRawPacket;
-		// We definitely own an underlying RawPacket now
-		m_FreeRawPacket = true;
-	}
 
 	template<class TLayer>
 	TLayer* Packet::getLayerOfType()

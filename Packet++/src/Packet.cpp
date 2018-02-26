@@ -18,24 +18,13 @@
 #include "SystemUtils.h"
 #endif
 
-
 namespace pcpp
 {
-
-void Packet::initialize()
-{
-	m_MaxPacketLen = 0;
-	m_RawPacket = nullptr;
-	m_LastLayer = nullptr;
-	m_FirstLayer = nullptr;
-	m_FreeRawPacket = false;
-	m_ProtocolTypes = UnknownProtocol;
-}
 
 void Packet::destructPacketData()
 {
 	// Clear layer storage
-	Layer* curLayer = m_FirstLayer, *nextLayer = nullptr;
+	Layer* curLayer = m_FirstLayer, *nextLayer = PCAPPP_NULLPTR;
 	while (curLayer)
 	{
 		nextLayer = curLayer->getNextLayer();
@@ -44,7 +33,7 @@ void Packet::destructPacketData()
 		curLayer = nextLayer;
 	}
 	// Deallocate RawPacket
-	if (m_RawPacket && m_FreeRawPacket)
+	if (m_RawPacket != PCAPPP_NULLPTR && m_FreeRawPacket)
 		delete m_RawPacket;
 }
 
@@ -54,8 +43,8 @@ Packet::Packet(size_t maxPacketLen)
 	initialize();
 	// Allocate new null-state RawPacket
 	m_RawPacket = new DefaultRawPacket;
+	m_RawPacket->reallocateData(maxPacketLen);
 	m_FreeRawPacket = true;
-	m_MaxPacketLen = maxPacketLen;
 	// Set time-stamp of packet
 	timeval time;
 	gettimeofday(&time, NULL);
@@ -102,18 +91,17 @@ Packet& Packet::operator=(const Packet& other)
 void Packet::copyDataFrom(const Packet& other)
 {
 	// This is an invalid case and very it is hard to handle
-	if (!other.m_RawPacket)
+	if (other.m_RawPacket == PCAPPP_NULLPTR)
 	{
 		LOG_DEBUG("Attempt to make copy of packet without underlying RawPacket.");
 		return;
 	}
 	// Destruct current packet data
 	destructPacketData();
-	// Allocate new RawPacket and copy construct it from other's RawPacket
+	// Create new copy of other raw packet object
 	m_RawPacket = other.m_RawPacket->copy();
 	// We definitely own an underlying RawPacket now
 	m_FreeRawPacket = true;
-	m_MaxPacketLen = other.m_MaxPacketLen;
 	m_ProtocolTypes = other.m_ProtocolTypes;
 	// @todo:
 	// An error here may occur if first layer is not Ethernet
@@ -134,23 +122,22 @@ void Packet::copyDataFrom(const Packet& other)
 	}
 }
 
-Packet::Packet(Packet&& other)
-{
-	// Create this object in null-state
+PCAPPP_MOVE_CONSTRUCTOR_IMPL(Packet)
+{	// Create this object in null-state
 	initialize();
-	moveDataFrom(std::move(other));
+	moveDataFrom(PCAPPP_MOVE_OTHER);
 }
 
-Packet& Packet::operator=(Packet&& other)
+PCAPPP_MOVE_ASSIGNMENT_IMPL(Packet)
 {
 	// Will not move if assigned to itself
 	if (this == &other) 
 		return *this;
-	moveDataFrom(std::move(other));
+	moveDataFrom(PCAPPP_MOVE_OTHER);
 	return *this;
 }
 
-void Packet::moveDataFrom(Packet&& other)
+void Packet::moveDataFrom(Packet& other)
 {
 	// Destruct current packet data
 	destructPacketData();
@@ -166,7 +153,6 @@ void Packet::moveDataFrom(Packet&& other)
 		curLayer = curLayer->getNextLayer();
 	}
 	// Copy non-movable data members
-	m_MaxPacketLen = other.m_MaxPacketLen;
 	m_FreeRawPacket = other.m_FreeRawPacket;
 	m_ProtocolTypes = other.m_ProtocolTypes;
 	// Return other to a null-state
@@ -239,39 +225,91 @@ void Packet::setRawPacket(RawPacket* rawPacket, bool freeRawPacket, ProtocolType
 {
 	destructPacketData();
 	initialize();
-	m_MaxPacketLen = rawPacket->getRawDataLen();
 	m_FreeRawPacket = freeRawPacket;
 	m_RawPacket = rawPacket;
-	if (!m_RawPacket)
+	if (m_RawPacket == PCAPPP_NULLPTR)
 		return;
 	parseLayers(parseUntil, parseUntilLayer);
 }
 
-void Packet::reallocateRawData(size_t newSize)
+bool Packet::holdCopy(RawPacket* rawPacket)
 {
-	LOG_DEBUG("Allocating packet to new size: %d", (int)newSize);
-
-	// allocate a new array with size newSize
-	m_MaxPacketLen = newSize;
-
-	// set the new array to RawPacket
-	if (!m_RawPacket->reallocateData(m_MaxPacketLen))
+	if (rawPacket == PCAPPP_NULLPTR)
 	{
-		LOG_ERROR("Couldn't reallocate data of raw packet to %d bytes", (int)m_MaxPacketLen);
-		return;
+		// TODO: Add error message
+		return false;
+	}
+	// Create copy
+	RawPacket* temp = rawPacket->copy();
+	if (temp == PCAPPP_NULLPTR)
+	{
+		// TODO: Add error message
+		return false;
 	}
 
-	// set all data pointers in layers to the new array address
-	uint8_t* dataPtr = m_RawPacket->getRawData();
+	if (m_RawPacket != PCAPPP_NULLPTR && rawPacket == m_RawPacket) {
+		// Reset pointers of packet layers to newly allocated object memory
+		Layer* curLayer = m_FirstLayer;
+		RawPacket::pointer oldBegin = m_RawPacket->getRawData();
+		RawPacket::pointer newBegin = temp->getRawData();
+		while (curLayer)
+		{
+			curLayer->m_Data = newBegin + (curLayer->m_Data - oldBegin);
+			curLayer = curLayer->getNextLayer();
+		}
 
-	Layer* curLayer = m_FirstLayer;
-	while (curLayer)
-	{
-		LOG_DEBUG("Setting new data pointer to layer '%s'", typeid(curLayer).name());
-		curLayer->m_Data = dataPtr;
-		dataPtr += curLayer->getHeaderLen();
-		curLayer = curLayer->getNextLayer();
+		// Deallocate RawPacket
+		if ( m_FreeRawPacket )
+			delete m_RawPacket;
+
+		m_RawPacket = temp;
+	} else {
+		destructPacketData();
+		initialize();
+		m_RawPacket = temp;
+		parseLayers();
 	}
+	// We definitely own an underlying raw packet now
+	m_FreeRawPacket = true;
+	return true;
+}
+
+bool Packet::holdProvided(RawPacket* rawPacket)
+{
+	if (rawPacket == PCAPPP_NULLPTR)
+	{
+		// TODO: Add error message
+		return false;
+	}
+
+	bool is_same = (rawPacket == m_RawPacket);
+
+	// Create copy by move
+	RawPacket* temp = rawPacket->move();
+	if (temp == PCAPPP_NULLPTR)
+	{
+		// TODO: Add error message
+		return false;
+	}
+
+	if (is_same) { 
+		// data was moved not copied --> no pointer correction needed.
+		// Deallocate RawPacket
+		if (m_FreeRawPacket)
+			delete m_RawPacket;
+
+		m_RawPacket = temp;
+	} else {
+		// Re-parsing layers
+		destructPacketData();
+		initialize();
+		m_RawPacket = temp;
+		parseLayers();
+	}
+
+	// We definitely own an underlying raw packet now
+	m_FreeRawPacket = true;
+	return true;
 }
 
 bool Packet::addLayer(Layer* newLayer)
@@ -293,29 +331,16 @@ bool Packet::insertLayer(Layer* prevLayer, Layer* newLayer)
 		return false;
 	}
 
-	// Underlying RawPacket may be in null-state by now
-	if (!m_RawPacket->isPacketSet())
-		reallocateRawData(m_MaxPacketLen);
-
-	if (m_RawPacket->getRawDataLen() + newLayer->getHeaderLen() > m_MaxPacketLen)
-	{
-		// reallocate to maximum value of: twice the max size of the packet or max size + new required length
-		if (m_RawPacket->getRawDataLen() + newLayer->getHeaderLen() > m_MaxPacketLen*2)
-			reallocateRawData(m_RawPacket->getRawDataLen() + newLayer->getHeaderLen() + m_MaxPacketLen);
-		else
-			reallocateRawData(m_MaxPacketLen*2);
-	}
-
 	size_t appendDataLen = newLayer->getHeaderLen();
 
 	// insert layer data to raw packet
 	int indexToInsertData = 0;
 	if (prevLayer != NULL)
-		indexToInsertData = prevLayer->m_Data+prevLayer->getHeaderLen() - m_RawPacket->getRawData();
+		indexToInsertData = prevLayer->m_Data + prevLayer->getHeaderLen() - m_RawPacket->getRawData();
 	m_RawPacket->insertData(indexToInsertData, newLayer->m_Data, appendDataLen);
 
 	// delete previous layer data
-	delete[] newLayer->m_Data; //<- This is really bad, Layer must be a proper proxy class for data on it's own
+	delete[] newLayer->m_Data; //<- @todo This is really bad, Layer must be a proper proxy class for data on it's own
 
 	// add layer to layers linked list
 	if (prevLayer != NULL)
@@ -448,23 +473,6 @@ bool Packet::extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExt
 	{
 		LOG_ERROR("Layer isn't allocated to this packet");
 		return false;
-	}
-
-	// I don't belive that underlying RawPacket object may be in null-state here.
-	// If it is the case uncomment next block.
-	/*
-	// Underlying RawPacket may be in null-state by now
-	if (!m_RawPacket->isPacketSet())
-		reallocateRawData(m_MaxPacketLen);
-	*/
-
-	if (m_RawPacket->getRawDataLen() + numOfBytesToExtend > m_MaxPacketLen)
-	{
-		// reallocate to maximum value of: twice the max size of the packet or max size + new required length
-		if (m_RawPacket->getRawDataLen() + numOfBytesToExtend > m_MaxPacketLen*2)
-			reallocateRawData(m_RawPacket->getRawDataLen() + numOfBytesToExtend + m_MaxPacketLen);
-		else
-			reallocateRawData(m_MaxPacketLen*2);
 	}
 
 	// insert layer data to raw packet

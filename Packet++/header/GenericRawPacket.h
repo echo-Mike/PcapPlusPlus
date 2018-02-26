@@ -93,8 +93,6 @@ namespace pcpp
 		 */
 		typedef Base::memory_value memory_value;
 
-	public:
-
 		/**
 		 * @brief A default constructor that initializes class'es attributes to default value.
 		 * Internally calls initialize member functions of both base classes (via their constructors).
@@ -193,8 +191,8 @@ namespace pcpp
 		 */
 		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
 		{
-			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());
-			Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
+			bool result = MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());
+			return result && Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
 		}
 
 		/**
@@ -261,7 +259,7 @@ namespace pcpp
 		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
 		 * @todo Add logger and error message x2
 		 */
-		virtual inline RawPacket* move() PCAPPP_OVERRIDE
+		inline RawPacket* move() PCAPPP_OVERRIDE
 		{
 			RawPacket* newObj = PCAPPP_NULLPTR;
 			try {
@@ -312,10 +310,10 @@ namespace pcpp
 		inline length getRawDataLen() const PCAPPP_OVERRIDE { return MPBase::getLength(); }
 
 		/**
-		* @brief Method to get an indication whether raw data was already set for this instance.
-		* Binds MemoryProxy::operator bool to RawPacket::isPacketSet.
-		* @return True if raw data was set for this instance, false otherwise.
-		*/
+		 * @brief Method to get an indication whether raw data was already set for this instance.
+		 * Binds MemoryProxy::operator bool to RawPacket::isPacketSet.
+		 * @return True if raw data was set for this instance, false otherwise.
+		 */
 		inline bool isPacketSet() const PCAPPP_OVERRIDE { return MPBase::operator bool(); }
 
 		/**
@@ -413,6 +411,255 @@ namespace pcpp
 		 * @return true if operation finished successfully, false otherwise.
 		 */
 		inline bool removeData(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE { return MPBase::remove(atIndex, numOfBytesToRemove); }
+	};
+
+	/**
+	 * @brief Specialization for DefaultOldMemoryModelMemoryProxy.
+	 */
+	template <>
+	class GenericRawPacket< ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag, ::pcpp::memory::DefaultOldMemoryModelMemoryProxy, void > PCAPPP_FINAL :
+		public RawPacket,
+		protected ::pcpp::memory::DefaultOldMemoryModelMemoryProxy
+	{
+	public:
+
+		/* MemoryProxy typedefs */
+
+		/**
+		 * Convenient alias typedef for base memory proxy class. 
+		 */
+		typedef ::pcpp::memory::DefaultOldMemoryModelMemoryProxy MPBase;
+		/**
+		 * Defines type of tag used to deduce memory proxy type.
+		 */
+		typedef ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag tag_t;
+
+		/* RawPacket typedefs */
+
+		/**
+		 * Convenient alias typedef for base raw packet class. 
+		 */
+		typedef RawPacket Base;
+		/**
+		 * Defines underlying memory type.
+		 */
+		typedef Base::value_type value_type;
+		/**
+		 * Defines type of pointer to underlying memory type.
+		 */
+		typedef Base::pointer pointer;
+		/**
+		 * Defines type of constant pointer to underlying memory type.
+		 */
+		typedef Base::const_pointer const_pointer;
+		/**
+		 * Defines type of reference to element of underlying memory type.
+		 */
+		typedef Base::reference reference;
+		/**
+		 * Defines type of constant reference to element of underlying memory type.
+		 */
+		typedef Base::const_reference const_reference;
+
+		/**
+		 * Defines type of variables that represents size values.
+		 */
+		typedef Base::size size;
+		/**
+		 * Defines type of variables that represents length values.
+		 */
+		typedef Base::length length;
+		/**
+		 * Defines type of variables that represents index values.
+		 */
+		typedef Base::index index;
+		/**
+		 * Defines type of variables that represents initial memory values for std::memset.
+		 */
+		typedef Base::memory_value memory_value;
+
+		GenericRawPacket() : m_MaxLength(0) {}
+
+		GenericRawPacket(const_pointer pRawData, size rawDataLen, timeval timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
+			Base(timestamp, layerType, rawDataLen), MPBase()
+		{
+			m_MaxLength = rawDataLen;
+			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, ownership);
+		}
+		
+		GenericRawPacket(const GenericRawPacket& other) :
+			Base(other), MPBase(other), m_MaxLength(other.m_MaxLength) {}
+
+		GenericRawPacket& operator=(const GenericRawPacket& other)
+		{
+			if (this == &other)
+				return *this;
+			Base::operator=(other);
+			MPBase::operator=(other);
+			m_MaxLength = other.m_MaxLength;
+			return *this;
+		}
+
+		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
+			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
+			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER)),
+			m_MaxLength(PCAPPP_MOVE_OTHER.m_MaxLength)
+		{}
+
+		PCAPPP_MOVE_ASSIGNMENT(GenericRawPacket)
+		{
+			if (this == &PCAPPP_MOVE_OTHER)
+				return *this;
+			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER));
+			m_MaxLength = PCAPPP_MOVE_OTHER.m_MaxLength;
+			return *this;
+		}
+
+		~GenericRawPacket() {}
+
+		/* Interface binding */
+
+		/* Virtual API implementation */
+
+		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
+		{
+			m_MaxLength = rawDataLen;
+			bool result = MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());
+			return result && Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
+		}
+
+		inline operator bool() { return Base::operator bool() || MPBase::operator bool(); }
+
+		/* Abstract API implementation */
+
+		inline RawPacket* newObject() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket;
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
+
+		inline RawPacket* copy() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket(*this);
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
+
+		inline RawPacket* move() PCAPPP_OVERRIDE
+		{
+			RawPacket* newObj = PCAPPP_NULLPTR;
+			try {
+				newObj = new GenericRawPacket(PCAPPP_MOVE(*this));
+			}
+			catch (const std::exception&)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			catch (...)
+			{
+				// TODO: Add logger and error message
+				return PCAPPP_NULLPTR;
+			}
+			return newObj;
+		}
+
+		inline pointer getRawData() PCAPPP_OVERRIDE { return MPBase::get(); }
+
+		inline const_pointer getRawData() const PCAPPP_OVERRIDE { return MPBase::get(); }
+
+		inline const_pointer getRawDataReadOnly() const PCAPPP_OVERRIDE { return MPBase::get(); }
+
+		inline length getRawDataLen() const PCAPPP_OVERRIDE { return MPBase::getLength(); }
+
+		inline bool isPacketSet() const PCAPPP_OVERRIDE { return MPBase::operator bool(); }
+
+		inline bool isOwning() const PCAPPP_OVERRIDE { return MPBase::isOwning(); }
+
+		inline pointer releseData() PCAPPP_OVERRIDE { return MPBase::release(); }
+
+		inline bool reallocateData(size newBufferLength, memory_value initialValue = 0) PCAPPP_OVERRIDE 
+		{
+			m_MaxLength = newBufferLength;
+			return MPBase::reallocate(newBufferLength, initialValue); 
+		}
+		
+		inline bool clear() PCAPPP_OVERRIDE 
+		{
+			m_MaxLength = 0;
+			Base::initialize();
+			return MPBase::clear();
+		}
+
+		inline bool appendData(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE 
+		{
+			realloc_impl(dataToAppendLen);
+			return MPBase::append(dataToAppendLen, initialValue); 
+		}
+		
+		inline bool appendData(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE 
+		{
+			realloc_impl(dataToAppendLen);
+			return MPBase::append(dataToAppend, dataToAppendLen);
+		}
+		
+		inline bool insertData(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE 
+		{ 
+			realloc_impl(dataToInsertLen);
+			return MPBase::insert(atIndex, dataToInsertLen, initialValue);
+		}
+		
+		inline bool insertData(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE
+		{
+			realloc_impl(dataToInsertLen);
+			return MPBase::insert(atIndex, dataToInsert, dataToInsertLen);
+		}
+		
+		inline bool removeData(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE { return MPBase::remove(atIndex, numOfBytesToRemove); }
+		
+	private:
+
+		inline void realloc_impl(size new_size)
+		{
+			if (!Base::isPacketSet()) {
+				reallocateData(new_size > m_MaxLength ? new_size : m_MaxLength );
+			} else if ( MPBase::getLength() + new_size > m_MaxLength ) {
+				// reallocate to maximum value of: twice the max size of the packet or max size + new required length
+				if ( MPBase::getLength() + new_size > m_MaxLength * 2 ) {
+					reallocateData(MPBase::getLength() + new_size + m_MaxLength);
+				} else {
+					reallocateData(m_MaxLength * 2);
+				}
+			}
+		}
+
+		size m_MaxLength; //<! Was previously a data member of Packet class called m_MaxPacketLen.
 	};
 
 	/**

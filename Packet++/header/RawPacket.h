@@ -400,7 +400,6 @@ namespace pcpp
 		 */
 		virtual inline RawPacket* move() = 0;
 
-
 		/* Abstract API: Data acquisition */
 
 		/**
