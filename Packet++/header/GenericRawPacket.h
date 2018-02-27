@@ -1,10 +1,10 @@
 #ifndef PCAPPP_GENERIC_RAW_PACKET
 #define PCAPPP_GENERIC_RAW_PACKET
 
-#include <CPP11.h>
-#include <TypeUtils.h>
-#include <MoveSemantics.h>
-#include <MemoryProxy.h>
+#include "CPP11.h"
+#include "TypeUtils.h"
+#include "MoveSemantics.h"
+#include "MemoryProxy.h"
 #include "RawPacket.h"
 
 /// @file
@@ -32,7 +32,7 @@ namespace pcpp
 			>::value
 		>::type
 	>
-	class GenericRawPacket PCAPPP_FINAL :
+	class GenericRawPacket :
 		public RawPacket,
 		protected MemoryProxyT
 	{
@@ -421,7 +421,7 @@ namespace pcpp
 	 * @brief Specialization for DefaultOldMemoryModelMemoryProxy.
 	 */
 	template <>
-	class GenericRawPacket< ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag, ::pcpp::memory::DefaultOldMemoryModelMemoryProxy, void > PCAPPP_FINAL :
+	class GenericRawPacket< ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag, ::pcpp::memory::DefaultOldMemoryModelMemoryProxy, void > :
 		public RawPacket,
 		protected ::pcpp::memory::DefaultOldMemoryModelMemoryProxy
 	{
