@@ -3,6 +3,7 @@
 
 #include "CPP11.h"
 #include "MemoryUtils.h"
+#include "MoveSemantics.h"
 #include "CompressedPair.h"
 
 /// @file
@@ -48,25 +49,24 @@ namespace pcpp
 
 			/**
 			 * @brief Default constructor.
-			 * Will call GetAllocator function to get a new allocator and construct internal allocator from result of that call.
 			 */
 			AllocatorAdapter() : Base() {}
+
 			/**
-			 * @brief Default constructor.
-			 * Will call GetAllocator function to get a new allocator and construct internal allocator from result of that call.
+			 * @brief Basic constructor.
+			 * Constructs allocator via copy-construction.
 			 */
 			AllocatorAdapter(Allocator& alloc) : Base(alloc) {}
 
 			/**
 			 * @brief Copy constructor.
-			 * Will copy the allocator of other.
 			 * @param[in] other The instance to make copy of.
 			 */
 			AllocatorAdapter(const AllocatorAdapter& other) : Base(other) {}
+
 			/**
 			 * @brief Copy assignment operator.
-			 * Don't allows self assignment.\n
-			 * Will copy the allocator of other.
+			 * Don't allows self assignment.
 			 * @param[in] other The instance to make copy of.
 			 */
 			AllocatorAdapter& operator=(const AllocatorAdapter& other) 
@@ -76,53 +76,28 @@ namespace pcpp
 				Base::operator=(other);
 				return *this;
 			}
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
+
 			/**
 			 * @brief Move constructor.
-			 * Will move the allocator from other.\n
-			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
 			 * @param[in:out] other The instance to move from.
 			 */
-			AllocatorAdapter(AllocatorAdapter&& other) : 
-				Base(std::move(other)) {}
+			PCAPPP_MOVE_CONSTRUCTOR(AllocatorAdapter) :
+				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+
 			/**
 			 * @brief Move assignment operator.
-			 * Don't allows self assignment.\n
-			 * Will move the allocator from other.\n
-			 * This function is unavailable if ENABLE_CPP11_MOVE_SEMANTICS macro is not defined.
+			 * Don't allows self assignment.
 			 * @param[in:out] other The instance to move from.
 			 */
-			AllocatorAdapter& operator=(AllocatorAdapter&& other)
-			{
-				// Handle self assignment case
-				if (this == &other)
-					return *this;
-				Base::operator=(std::move(other));
-				return *this;
-			}
-#else
-			/**
-			 * @brief Move constructor.
-			 * Will move the allocator from other.\n
-			 * @param[in:out] other The instance to move from.
-			 */
-			PCAPPP_MOVE_CONSTRUCTOR(AllocatorAdapter) : 
-				Base(PCAPPP_MOVE(dynamic_cast<Base&>(PCAPPP_MOVE_OTHER)) {}
-			/**
-			 * @brief Move assignment operator.
-			 * Don't allows self assignment.\n
-			 * Will move the allocator from other.\n
-			 * @param[in:out] other The instance to move from.
-			 */
-			PCAPPP_MOVE_ASSIGNMENT(AllocatorAdapter) :
+			PCAPPP_MOVE_ASSIGNMENT(AllocatorAdapter)
 			{
 				// Handle self assignment case
 				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
-				Base::operator=(PCAPPP_MOVE(dynamic_cast<Base&>(PCAPPP_MOVE_OTHER));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
-#endif
+
 			/**
 			 * @brief Destructor.
 			 */
@@ -133,6 +108,7 @@ namespace pcpp
 			 * @return Reference to underlying allocator object.
 			 */
 			inline typename traits::allocator_type& getAllocator() { return *this; }
+
 			/**
 			 * @brief The wrapper over internal allocator object's allocate member method.
 			 * Will internally call Allocate class template parameter on internal allocator object and forward the length function parameter to it.\n
@@ -140,6 +116,7 @@ namespace pcpp
 			 * @return Pointer to new memory allocated by internal allocator.
 			 */
 			inline typename traits::pointer allocate(std::size_t length = 1) { return (getAllocator().*Allocate)(length); }
+
 			/**
 			 * @brief The wrapper over internal allocator object's deallocate member method.
 			 * Will internally call Deallocate class template parameter on internal allocator object and forward the p function parameter to it.\n
