@@ -5,18 +5,19 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_FORMAT_MACROS
 
+#include "DpdkMemoryProxy.h"
 #include "DpdkDevice.h"
 #include "DpdkDeviceList.h"
 #include "Logger.h"
+
 #include "rte_config.h"
 #include "rte_ethdev.h"
 #include "rte_errno.h"
+
 #include <cstring>
 #include <utility>
 #include <stdint.h>
 #include <unistd.h>
-
-#define MBUF_DATA_SIZE 2048
 
 #define MBUF_SIZE (MBUF_DATA_SIZE + sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 
@@ -25,15 +26,33 @@
 namespace pcpp
 {
 
+namespace memory
+{
+
 /**
- * ===================
- * Class MBufRawPacket
- * ===================
+ * =====================
+ * Class DPDKMemoryProxy
+ * =====================
  */
 
-bool MBufRawPacket::setMBuf(struct rte_mbuf* mBuf, timeval timestamp)
+DPDKMemoryProxy::size DPDKMemoryProxy::getLength() const
+{ 
+	return rte_pktmbuf_pkt_len(m_MBuf); 
+}
+
+DPDKMemoryProxy::pointer DPDKMemoryProxy::get()
+{ 
+	return rte_pktmbuf_mtod(m_MBuf, pointer); 
+}
+
+DPDKMemoryProxy::const_pointer DPDKMemoryProxy::get() const
+{ 
+	return rte_pktmbuf_mtod(m_MBuf, const_pointer); 
+}
+
+bool DPDKMemoryProxy::setMBuf(mbuf_ptr mBuf)
 {
-	if (mBuf == NULL)
+	if (mBuf == PCAPPP_NULLPTR)
 	{
 		LOG_ERROR("mbuf to set is NULL");
 		return false;
@@ -42,44 +61,18 @@ bool MBufRawPacket::setMBuf(struct rte_mbuf* mBuf, timeval timestamp)
 	// Free mBuf only if it is present and not same as provided (self assignment case)
 	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
 	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-	if (m_MBuf != NULL && m_MBuf != mBuf)
+	if (m_MBuf != PCAPPP_NULLPTR && m_MBuf != mBuf)
 		rte_pktmbuf_free(m_MBuf);
 	
 	// Set current mBuf to be the provided one
 	m_MBuf = mBuf;
-
-	// Disable deallocation mechanism in next function call
-	m_RawPacketSet = false;
-	// Only set base class fields, don't do anything with data
-	// rte_pktmbuf_mtod: 
-	//		A macro that points to the start of the data in the mbuf
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a2a8b10263496c7b580e9d0c7f2a1f073
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a2a8b10263496c7b580e9d0c7f2a1f073
-	// rte_pktmbuf_pkt_len: 
-	//		A macro that returns the length of the carried data
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ab3d5990c3ca14784ed3e0135844282a3
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a7a7ea614c79d5b9ed790a56c1c79189d
-	if (!RawPacket::setRawData(rte_pktmbuf_mtod(mBuf, const uint8_t*), rte_pktmbuf_pkt_len(mBuf), timestamp, LINKTYPE_ETHERNET))
-	{ 
-		// This function may return false if rte_pktmbuf_pkt_len(mBuf) < 1
-		// Here we are in some undetermined state -> UB after this line
-		LOG_ERROR("Can't set mBuf. mBuf length is 0.");
-		// Possible solutions (uncomment appropriate combination):
-		// rte_pktmbuf_free(m_MBuf);
-		/*
-		m_MBuf = NULL;
-		m_Device = NULL;
-		*/
-		// RawPacket::initialize(); // Call to clear will be unsafe
-		return false;
-	}
 	return true;
 }
 
-bool MBufRawPacket::allocate(rte_mbuf* &mBuf, rte_mempool* pool)
+bool DPDKMemoryProxy::allocate(mbuf_ptr& mBuf, rte_mempool* pool)
 {
 	// Check for pool to not to be nullptr
-	if (!pool)
+	if (pool == PCAPPP_NULLPTR)
 	{
 		LOG_ERROR("Invalid mBuf pool pointer. Can't allocate mBuf.");
 		return false;
@@ -98,10 +91,10 @@ bool MBufRawPacket::allocate(rte_mbuf* &mBuf, rte_mempool* pool)
 	return true;
 }
 
-bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t newSize)
+bool DPDKMemoryProxy::adjust(mbuf_ptr& mBuf, std::size_t oldSize, std::size_t newSize)
 {
 	// We can't work with unknown object
-	if (mBuf == NULL)
+	if (mBuf == PCAPPP_NULLPTR)
 	{
 		LOG_ERROR("Can't adjust NULL mbuf");
 		return false;
@@ -109,7 +102,7 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t new
 
 	if (newSize > MBUF_DATA_SIZE)
 	{
-		LOG_ERROR("Can't adjust mBuf. Provided size is gereater than maximum possible size. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newSize);
+		LOG_ERROR("Can't adjust mBuf. Provided size is greater than maximum possible size. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newSize);
 		return false;
 	}
 
@@ -143,7 +136,7 @@ bool MBufRawPacket::adjust(rte_mbuf* &mBuf, std::size_t oldSize, std::size_t new
 	return true;
 }
 
-bool MBufRawPacket::allocateAndResize(rte_mbuf* &mBuf, rte_mempool* pool, std::size_t mBufSize)
+bool DPDKMemoryProxy::allocateAndResize(mbuf_ptr& mBuf, rte_mempool* pool, std::size_t mBufSize)
 {
 	// mBuf is allocated with length of 0
 	if (!allocate(mBuf, pool))
@@ -154,10 +147,382 @@ bool MBufRawPacket::allocateAndResize(rte_mbuf* &mBuf, rte_mempool* pool, std::s
 	return true;
 }
 
+DPDKMemoryProxy::DPDKMemoryProxy(const DPDKMemoryProxy& other) :
+	m_Device(other.m_Device)
+{
+	// Check that other have a mBuf
+	if (other.m_MBuf == PCAPPP_NULLPTR)
+	{
+		LOG_DEBUG("Copy construction form object in the not-initialized state.");
+		// This object now is in proper not-initialized state - base class instance is in null-state
+		return;
+	}
+	// Try to make a "clone" of underlying mBuf object in same pool as original
+	// allocateAndResize approach may be taken here but rte_pktmbuf_clone is faster
+	// Clone is a packet of same DPDK structure not a packet data
+	// rte_pktmbuf_clone:
+	//		Creates a "clone" of the given packet mbuf
+	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
+	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
+	rte_mbuf* newMbuf = rte_pktmbuf_clone(other.m_MBuf, other.m_MBuf->pool);
+	if (newMbuf == NULL)
+		return; // If exit here then object is in not-initialized state
+	// Set newly allocated packet
+	m_MBuf = newMbuf;
+	// Copy data from other
+	std::memcpy(get(), other.get(), other.getLength());
+}
+
+DPDKMemoryProxy& DPDKMemoryProxy::operator=(const DPDKMemoryProxy& other)
+{
+	// Do nothing in case of self assignment
+	if (this == &other)
+		return *this;
+
+	if (m_MBuf == PCAPPP_NULLPTR)
+	{
+		// This must not be an error: initialize and copy state of other a call to copy constructor
+		LOG_ERROR("DPDKMemoryProxy isn't initialized.");
+		return *this;
+	}
+
+	if (other.m_MBuf == PCAPPP_NULLPTR)
+	{
+		LOG_ERROR("Provided DPDKMemoryProxy isn't initialized.");
+		return *this;
+	}
+
+	if (!adjust(m_MBuf, getLength(), other.getLength()))
+		return *this;
+	// Copy data from other
+	std::memcpy(get(), other.get(), other.getLength());
+	return *this;
+}
+
+PCAPPP_MOVE_CONSTRUCTOR_IMPL(DPDKMemoryProxy) :
+	m_MBuf(PCAPPP_MOVE_OTHER.m_MBuf),
+	m_Device(PCAPPP_MOVE_OTHER.m_Device)
+{	// Lave other in not-initialized state
+	PCAPPP_MOVE_OTHER.m_MBuf = PCAPPP_NULLPTR;
+}
+
+PCAPPP_MOVE_ASSIGNMENT_IMPL(DPDKMemoryProxy)
+{
+	// Do nothing in case of self assignment
+	if (this == &PCAPPP_MOVE_OTHER)
+		return *this;
+	setMBuf(PCAPPP_MOVE_OTHER.m_MBuf);
+	// Lave other in not-initialized state
+	PCAPPP_MOVE_OTHER.m_MBuf = PCAPPP_NULLPTR;
+	return *this;
+}
+
+DPDKMemoryProxy::~DPDKMemoryProxy()
+{
+	// If mBuf is presented in current packet call dpdk mBuf deallocation function
+	// rte_pktmbuf_free:
+	//		Free a packet mbuf back into its original mempool	
+	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
+	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
+	if (m_MBuf != PCAPPP_NULLPTR)
+		rte_pktmbuf_free(m_MBuf);
+}
+
+bool DPDKMemoryProxy::reset(pointer ptr, size length, bool)
+{
+	if (ptr == PCAPPP_NULLPTR)
+	{
+		LOG_ERROR("Provided pointer to data is nullptr.");
+		return false;
+	}
+	if (length > MBUF_DATA_SIZE)
+	{
+		LOG_ERROR("Cannot set raw data which length is larger than mBuf max size. mBuf max length: %d; requested length: %d.", (int)MBUF_DATA_SIZE, (int)length);
+		return false;
+	}
+	if (m_MBuf == NULL)
+	{
+		if (!allocateAndResize(m_MBuf, m_Device->m_MBufMempool, length))
+		{
+			LOG_ERROR("Error occurred during allocation or resize operation.");
+			return false;
+		}
+	}
+	// Copy provided data
+	std::memcpy(get(), ptr, length);
+	// Free provided memory
+	delete[] ptr;
+	return true;
+}
+
+bool DPDKMemoryProxy::reallocate(size newBufferLength, memory_value)
+{
+	if (newBufferLength < getLength())
+	{
+		LOG_ERROR("Cannot reallocate mBuf raw packet to a smaller size. Current data length: %d; requested length: %d", (int)getLength(), (int)newBufferLength);
+		return false;
+	}
+	if (newBufferLength > MBUF_DATA_SIZE)
+	{
+		LOG_ERROR("Cannot reallocate mBuf raw packet to a size larger than mBuf data. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newBufferLength);
+		return false;
+	}
+	// no need to do any memory allocation because mbuf is already allocated
+	return true;
+}
+
+bool DPDKMemoryProxy::clear() 
+{ 
+	if (m_MBuf != PCAPPP_NULLPTR)
+	{
+		// rte_pktmbuf_free:
+		//		Free a packet mbuf back into its original mempool	
+		//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
+		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
+		rte_pktmbuf_free(m_MBuf);
+		m_MBuf = PCAPPP_NULLPTR;
+	}
+}
+
+bool DPDKMemoryProxy::append(size dataToAppendLen, memory_value initialValue = 0)
+{
+	// Append of 0 bytes is always a success
+	if (!dataToAppendLen)
+		return true;
+	if (m_MBuf == NULL)
+	{
+		LOG_ERROR("DPDKMemoryProxy not initialized. Please call the initialize() method");
+		return false;
+	}
+	// Save old length
+	const size oldLength = getLength();
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToAppendLen))
+		return false;
+	// Set new data space to zero
+	std::memset(get() + oldLength, initialValue, dataToAppendLen * sizeof(value_type));
+	LOG_DEBUG("Appended %d bytes to DPDKMemoryProxy", (int)dataToAppendLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::append(const_pointer dataToAppend, size dataToAppendLen)
+{
+	// Append of 0 bytes from any memory is a success
+	if (!dataToAppendLen)
+		return true;
+	// If memory to append is not presented it is an error
+	if (!dataToAppend)
+	{
+		// TODO: Add error msg
+		return false;
+	}
+	if (m_MBuf == NULL)
+	{
+		LOG_ERROR("DPDKMemoryProxy not initialized. Please call the initialize() method");
+		return false;
+	}
+	// Save old length
+	const size oldLength = getLength();
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToAppendLen))
+		return false;
+
+	std::memcpy(get() + oldLength, dataToAppend, dataToAppendLen * sizeof(value_type));
+	LOG_DEBUG("Appended %d bytes to DPDKMemoryProxy", (int)dataToAppendLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::insert_back(index atIndex, size dataToInsertLen, memory_value initialValue = 0)
+{
+	const size oldLength = getLength();
+	// Index at this point must be in bound [-m_Length, -1]
+	// where -1 correspond to "insert before last byte of current data"
+	// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
+	if (oldLength < (size)(-atIndex))
+		atIndex = -((index)oldLength);
+	// Compute normal index position that correspond to negative atIndex value
+	const index index_ = ((index)oldLength) + atIndex;
+	// Here index must be in bound [0, m_Length)
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToInsertLen))
+		return false;
+	// Move old data from where new data will be inserted to the end of memory
+	std::memmove(get() + index_ + dataToInsertLen, get() + index_, (-atIndex) * sizeof(value_type));
+	// Fill new data with zeros
+	std::memset(get() + index_, initialValue, dataToInsertLen * sizeof(value_type));
+	LOG_DEBUG("Inserted %d bytes to DPDKMemoryProxy", (int)dataToInsertLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0)
+{
+	// Inserting 0 bytes is always a success
+	if (!dataToInsertLen)
+		return true;
+	if (m_MBuf == NULL)
+	{
+		LOG_ERROR("DPDKMemoryProxy not initialized. Please call the initialize() method");
+		return false;
+	}
+	// If object has no data insert is equal to append
+	if (!getLength())
+		return append(dataToInsertLen);
+	// Handle cases when insertion must start from the back
+	if (atIndex < 0)
+		return insert_back(atIndex, dataToInsertLen, initialValue);
+	// At this point atIndex must be in bound [0, m_Length]
+	// where 0 correspond to "insert before first byte of current data"
+	// and m_Length to "insert after last byte of current data" (a.e. append)
+	if ((size)atIndex >= getLength())
+		return append(dataToInsertLen);
+	// Here atIndex must be in bound [0, m_Length)
+	// Save old length
+	const size oldLength = getLength();
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToInsertLen))
+		return false;
+	// Move old data from where new data will be inserted to the end of memory 
+	std::memmove(get() + atIndex + dataToInsertLen, get() + atIndex, (oldLength - atIndex) * sizeof(value_type));
+	// Fill new data with zeros
+	std::memset(get() + atIndex, initialValue, dataToInsertLen * sizeof(value_type));
+	LOG_DEBUG("Inserted %d bytes to DPDKMemoryProxy", (int)dataToInsertLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::insert_back(index atIndex, const_pointer dataToInsert, size dataToInsertLen)
+{
+	const size oldLength = getLength();
+	// Index at this point must be in bound [-m_Length, -1]
+	// where -1 correspond to "insert before last byte of current data"
+	// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
+	if (oldLength < (size)(-atIndex))
+		atIndex = -((index)oldLength);
+	// Compute normal index position that correspond to negative atIndex value
+	const index index_ = ((index)oldLength) + atIndex;
+	// Here index must be in bound [0, m_Length)
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToInsertLen))
+		return false;
+	// Move old data from where new data will be inserted to the end of memory 
+	std::memmove(get() + index_ + dataToInsertLen, get() + index_, (-atIndex) * sizeof(value_type));
+	// Insert new data to it's place
+	std::memcpy(get() + index_, dataToInsert, dataToInsertLen * sizeof(value_type));
+	LOG_DEBUG("Inserted %d bytes to DPDKMemoryProxy", (int)dataToInsertLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen)
+{
+	// Inserting 0 bytes from any memory is always a success
+	if (!dataToInsertLen)
+		return true;
+	// If memory to insert is not presented it is an error
+	if (!dataToInsert)
+	{
+		// TODO: Add error msg
+		return false;
+	}
+	if (m_MBuf == NULL)
+	{
+		LOG_ERROR("DPDKMemoryProxy not initialized. Please call the initialize() method");
+		return false;
+	}
+	// If object has no data insert is equal to append
+	if (!getLength())
+		return append(dataToInsert, dataToInsertLen);
+	// Handle cases when insertion must start from the back
+	if (atIndex < 0)
+		return insert_back(atIndex, dataToInsert, dataToInsertLen);
+	// At this point atIndex must be in bound [0, m_Length]
+	// where 0 correspond to "insert before fisrt byte of current data"
+	// and m_Length to "insert after last byte of current data" (a.e. append)
+	if ((size)atIndex >= getLength())
+		return append(dataToInsert, dataToInsertLen);
+	// Here atIndex must be in bound [0, m_Length)
+	// Save old length
+	const size oldLength = getLength();
+	// Ensure that we have enough place to hold new data
+	if (!adjust(m_MBuf, oldLength, oldLength + dataToInsertLen))
+		return false;
+	// Move old data from where new data will be inserted to the end of memory 
+	std::memmove(get() + atIndex + dataToInsertLen, get() + atIndex, (oldLength - atIndex) * sizeof(value_type));
+	// Insert new data to it's place
+	std::memcpy(get() + atIndex, dataToInsert, dataToInsertLen * sizeof(value_type));
+	LOG_DEBUG("Inserted %d bytes to DPDKMemoryProxy", (int)dataToInsertLen);
+	return true;
+}
+
+bool DPDKMemoryProxy::remove_back(index atIndex, size numOfBytesToRemove)
+{
+	const size oldLength = getLength();
+	// Index at this point must be in bound [-m_Length, -1]
+	// where -1 correspond to "clear last byte of data"
+	// and -m_Length to "clear from beginning of data"
+	// Don't handle the cases when atIndex is in (-Inf,-m_Length)
+	if (oldLength < (size)(-atIndex))
+		return true;
+	// Compute normal index position that correspond to negative atIndex value
+	const index index_ = ((index)oldLength) + atIndex;
+	// Here index must be in bound [0, m_Length)
+	LOG_DEBUG("Trimmed %d bytes from DPDKMemoryProxy", (int)numOfBytesToRemove);
+	// End of data to clear must be in (atIndex, m_Length]
+	if ((size)index_ + numOfBytesToRemove >= oldLength) // There is no tail memory to move
+	{	// Just shrink current buffer length to remaining data
+		return adjust(m_MBuf, oldLength, index_);
+	}
+	else // There is tail memory to move
+	{	// Move tail memory to new place
+		std::memmove(get() + index_, get() + index_ + numOfBytesToRemove, (oldLength - index_ - numOfBytesToRemove) * sizeof(value_type));
+		// Shrink current buffer
+		return adjust(m_MBuf, oldLength, index_);
+	}
+}
+
+bool DPDKMemoryProxy::remove(index atIndex, size numOfBytesToRemove)
+{
+	if (m_MBuf == NULL)
+	{
+		LOG_ERROR("DPDKMemoryProxy not initialized. Please call the initialize() method");
+		return false;
+	}
+	const size oldLength = getLength();
+	// Removing zero bytes or removing from empty data is always a success
+	if (!(numOfBytesToRemove && oldLength))
+		return true;
+	// Handle cases when removal must start from the back
+	if (atIndex < 0)
+		return remove_back(atIndex, numOfBytesToRemove);
+	// At this point atIndex must be in bound [0, m_Length)
+	// where 0 correspond to "clear from beginning of data"
+	// and m_Length-1 to "clear last byte of data"
+	if (atIndex >= oldLength)
+		return true;
+	LOG_DEBUG("Trimmed %d bytes from DPDKMemoryProxy", (int)numOfBytesToRemove);
+	// End of data to clear must be in (atIndex, m_Length]
+	if ((size)atIndex + numOfBytesToRemove >= oldLength) // There is no tail memory to move
+	{	// Just shrink current length to remaining data
+		return adjust(m_MBuf, oldLength, atIndex);
+	}
+	else // There is tail memory to move
+	{	// Move tail memory to new place
+		std::memmove(get() + atIndex, get() + atIndex + numOfBytesToRemove, (oldLength - atIndex - numOfBytesToRemove) * sizeof(value_type));
+		// Shrink current buffer
+		return reallocate(oldLength - numOfBytesToRemove);
+	}
+}
+
+} // namespace pcpp::memory
+
+/**
+ * ===================
+ * Class MBufRawPacket
+ * ===================
+ */
+
 bool MBufRawPacket::initialize(DpdkDevice* device)
 {
 	// Check if there is already a mBuf associated with this object
-	if (m_MBuf != NULL)
+	if (m_MBuf != PCAPPP_NULLPTR)
 	{
 		LOG_ERROR("MBufRawPacket already initialized");
 		return false;
@@ -167,224 +532,6 @@ bool MBufRawPacket::initialize(DpdkDevice* device)
 		return false;
 	// Set dpdkDevice 
 	m_Device = device;
-	return true;
-}
-
-MBufRawPacket::MBufRawPacket(const MBufRawPacket& other)
-{
-	// Clear data of base class
-	RawPacket::initialize();
-	// Clear this class data
-	m_MBuf = NULL;
-	m_Device = other.m_Device;
-	// Check that other have a mBuf
-	if (other.m_MBuf == NULL)
-	{
-		LOG_DEBUG("Copy construction form object in the not-initialized state.");
-		// This object now is in proper not-initialized state - base class instance is in null-state
-		return;
-	}
-	// Try to make a "clone" of underlying mBuf object in same pool as oroginal
-	// allocateAndResize approach may be taken here but rte_pktmbuf_clone is faster
-	// Clone is a packet of same dpdk structure not a packet data
-	// rte_pktmbuf_clone:
-	//		Creates a "clone" of the given packet mbuf
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
-	rte_mbuf* newMbuf = rte_pktmbuf_clone(other.m_MBuf, other.m_MBuf->pool);
-	if (newMbuf == NULL)
-		return; // If exit here then object is in not-initialized state
-	// Correctly set all fields that handles dpdk data 
-	setMBuf(newMbuf, other.m_TimeStamp);
-	// Copy data members of base class and copy packet data
-	copyDataFrom(other, false);
-}
-
-MBufRawPacket& MBufRawPacket::operator=(const MBufRawPacket& other)
-{
-	// Do nothing in case of self assignment
-	if (this == &other) 
-		return *this;
-	// Clear all base class fields
-	RawPacket::initialize();
-
-	if (m_MBuf == NULL)
-	{
-		// This must not be an error: initialize and copy state of other a call to copy constructor
-		LOG_ERROR("MBufRawPacket isn't initialized");
-		return *this;
-	}
-
-	if (!adjust(m_MBuf, m_RawDataLen, other.m_RawDataLen))
-		return *this;
-	// Correctly set all fields that handles dpdk data 
-	setMBuf(m_MBuf, other.m_TimeStamp);
-	// Copy data members of base class and copy packet data
-	copyDataFrom(other, false);
-	return *this;
-}
-
-MBufRawPacket::MBufRawPacket(MBufRawPacket&& other) :
-	RawPacket(std::move(other)),
-	m_MBuf(other.m_MBuf),
-	m_Device(other.m_Device)
-{
-	// Lave other in not-initialized state
-	other.m_MBuf = NULL;
-}
-
-MBufRawPacket& MBufRawPacket::operator=(MBufRawPacket&& other)
-{
-	// Do nothing in case of self assignment
-	if (this == &other) 
-		return *this;
-	// Free underlying packet if it is present
-	// rte_pktmbuf_free:
-	//		Free a packet mbuf back into its original mempool			
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-	if (m_MBuf != NULL)
-		rte_pktmbuf_free(m_MBuf);
-	// Move data from other
-	m_MBuf = other.m_MBuf;
-	m_Device = other.m_Device;
-	// Desable deallocation of raw data in next call
-	m_RawPacketSet = false;
-	// Call move-assignment operator of base class
-	RawPacket::operator=(std::move(other));
-	// Lave other in not-initialized state
-	other.m_MBuf = NULL;
-	return *this;
-}
-
-MBufRawPacket::~MBufRawPacket()
-{
-	// If mBuf is presented in current packet call dpdk mBuf deallocation function
-	// rte_pktmbuf_free:
-	//		Free a packet mbuf back into its original mempool	
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-	if (m_MBuf != NULL)
-		rte_pktmbuf_free(m_MBuf);
-}
-
-bool MBufRawPacket::setRawData(const uint8_t* pRawData, int rawDataLen, timeval timestamp, LinkLayerType layerType, int frameLength)
-{
-	if (!pRawData)
-	{
-		LOG_ERROR("Provided pointer to data is nullptr.");
-		return false;
-	}
-	if (rawDataLen > MBUF_DATA_SIZE)
-	{
-		LOG_ERROR("Cannot set raw data which length is larger than mBuf max size. mBuf max length: %d; requested length: %d.", (int)MBUF_DATA_SIZE, (int)rawDataLen);
-		return false;
-	}
-	if (m_MBuf == NULL)
-	{
-		if (!allocateAndResize(m_MBuf, m_Device->m_MBufMempool, rawDataLen))
-		{
-			LOG_ERROR("Error occurred during allocation or resize operation.");
-			return false;
-		}
-	}
-	// rte_pktmbuf_mtod:
-	//		A macro that points to the start of the data in the mbuf
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a2a8b10263496c7b580e9d0c7f2a1f073
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a2a8b10263496c7b580e9d0c7f2a1f073
-	m_pRawData = rte_pktmbuf_mtod(m_MBuf, uint8_t*);
-	// rte_pktmbuf_pkt_len: 
-	//		A macro that returns the length of the carried data
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#ab3d5990c3ca14784ed3e0135844282a3
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a7a7ea614c79d5b9ed790a56c1c79189d
-	m_RawDataLen = rte_pktmbuf_pkt_len(m_MBuf);
-	// Copy memory content from other storage to dpdk storage
-	std::memcpy(m_pRawData, pRawData, m_RawDataLen);
-	// Free provided memory
-	delete[] pRawData;
-	// Setup other data members
-	m_TimeStamp = timestamp;
-	if (frameLength == -1)
-		frameLength = m_RawDataLen;
-	m_FrameLength = frameLength;
-	m_linkLayerType = layerType;
-	m_RawPacketSet = true;
-	return true;
-}
-
-void MBufRawPacket::clear()
-{
-	if (m_MBuf != NULL)
-	{
-		// rte_pktmbuf_free:
-		//		Free a packet mbuf back into its original mempool	
-		//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-		//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1215458932900b7cd5192326fa4a6902
-		rte_pktmbuf_free(m_MBuf);
-		m_MBuf = NULL;
-	}
-	// Clear fields of base class
-	RawPacket::initialize();
-}
-
-void MBufRawPacket::appendData(const uint8_t* dataToAppend, size_t dataToAppendLen)
-{
-	// Add memory to end of packet
-	if (!adjust(m_MBuf, m_RawDataLen, m_RawDataLen + dataToAppendLen))
-		return;
-	// Call base class method to handle data
-	RawPacket::appendData(dataToAppend, dataToAppendLen);
-	LOG_DEBUG("Appended %d bytes to MBufRawPacket", (int)dataToAppendLen);
-}
-
-void MBufRawPacket::insertData(int atIndex, const uint8_t* dataToInsert, size_t dataToInsertLen)
-{
-	// Add memory to end of packet
-	if (!adjust(m_MBuf, m_RawDataLen, m_RawDataLen + dataToInsertLen))
-		return;
-	// Call base class method to handle data
-	RawPacket::insertData(atIndex, dataToInsert, dataToInsertLen);
-	LOG_DEBUG("Inserted %d bytes to MBufRawPacket", (int)dataToInsertLen);
-}
-
-bool MBufRawPacket::removeData(int atIndex, size_t numOfBytesToRemove)
-{
-	// Trim method was not separated in the memory management API
-	// So this is full implementation of it:
-	if (m_MBuf == NULL)
-	{
-		LOG_ERROR("MBufRawPacket not initialized. Please call the initialize() method");
-		return false;
-	}
-	// Call base class method to handle data
-	if (!RawPacket::removeData(atIndex, numOfBytesToRemove))
-		return false;
-	// rte_pktmbuf_trim:
-	//		Remove len bytes of data at the end of the mbuf
-	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#abe1bed439015acec170d1342e8dabb3b
-	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#abe1bed439015acec170d1342e8dabb3b
-	if (rte_pktmbuf_trim(m_MBuf, numOfBytesToRemove) != 0)
-	{
-		LOG_ERROR("Couldn't trim the mBuf");
-		return false;
-	}
-	LOG_DEBUG("Trimmed %d bytes from MBufRawPacket", (int)numOfBytesToRemove);
-	return true;
-}
-
-bool MBufRawPacket::reallocateData(size_t newBufferLength)
-{
-	if ((int)newBufferLength < m_RawDataLen)
-	{
-		LOG_ERROR("Cannot reallocate mBuf raw packet to a smaller size. Current data length: %d; requested length: %d", m_RawDataLen, (int)newBufferLength);
-		return false;
-	}
-	if (newBufferLength > MBUF_DATA_SIZE)
-	{
-		LOG_ERROR("Cannot reallocate mBuf raw packet to a size larger than mBuf data. mBuf max length: %d; requested length: %d", (int)MBUF_DATA_SIZE, (int)newBufferLength);
-		return false;
-	}
-	// no need to do any memory allocation because mbuf is already allocated
 	return true;
 }
 

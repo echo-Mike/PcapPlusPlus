@@ -211,6 +211,7 @@ namespace pcpp
 	class DpdkDevice : public IPcapDevice
 	{
 		friend class DpdkDeviceList;
+		friend class memory::DPDKMemoryProxy;
 		friend class MBufRawPacket;
 	public:
 
