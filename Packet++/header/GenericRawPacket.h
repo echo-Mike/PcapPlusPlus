@@ -92,6 +92,10 @@ namespace pcpp
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
 		typedef Base::memory_value memory_value;
+		/**
+		 * Represents type of structure that holds time-stamp.
+		 */
+		typedef Base::time_t time_t;
 
 		/**
 		 * @brief A default constructor that initializes class'es attributes to default value.
@@ -109,7 +113,7 @@ namespace pcpp
 		 * @param[in] ownership An indicator whether raw data should be freed upon object destruction.
 		 * @param[in] layerType The link layer type of this raw packet. The default is Ethernet
 		 */
-		GenericRawPacket(const_pointer pRawData, size rawDataLen, timeval timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
+		GenericRawPacket(const_pointer pRawData, size rawDataLen, time_t timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
 			Base(timestamp, layerType, rawDataLen), MPBase()
 		{
 			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, ownership);
@@ -189,7 +193,7 @@ namespace pcpp
 		 * length. This parameter is optional, if not set or set to -1 it is assumed both lengths are equal
 		 * @return true if raw data was set successfully, false otherwise.
 		 */
-		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
+		bool setRawData(const_pointer pRawData, size rawDataLen, time_t timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
 		{
 			bool result = MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());
 			return result && Base::setRawData(pRawData, rawDataLen, timestamp, layerType, frameLength);
@@ -477,10 +481,14 @@ namespace pcpp
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
 		typedef Base::memory_value memory_value;
+		/**
+		 * Represents type of structure that holds time-stamp.
+		 */
+		typedef Base::time_t time_t;
 
 		GenericRawPacket() : m_MaxLength(0) {}
 
-		GenericRawPacket(const_pointer pRawData, size rawDataLen, timeval timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
+		GenericRawPacket(const_pointer pRawData, size rawDataLen, time_t timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
 			Base(timestamp, layerType, rawDataLen), MPBase()
 		{
 			m_MaxLength = rawDataLen;
@@ -522,7 +530,7 @@ namespace pcpp
 
 		/* Virtual API implementation */
 
-		bool setRawData(const_pointer pRawData, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
+		bool setRawData(const_pointer pRawData, size rawDataLen, time_t timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1) PCAPPP_OVERRIDE
 		{
 			m_MaxLength = rawDataLen;
 			bool result = MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, MPBase::isOwning());

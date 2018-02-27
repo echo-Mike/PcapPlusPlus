@@ -29,12 +29,12 @@ namespace pcpp
 	 *  Owning rules of underlying data:  
 	 * * Objects in null-state don't own anything;  
 	 * * Objects constructed by default constructor own underlying RawPacket object;  
-	 * * Objects constructed with constructors other than default own their underlying RawPacket object dependent on presence and value of freeRawPacket paramather;  
+	 * * Objects constructed with constructors other than default own their underlying RawPacket object dependent on presence and value of freeRawPacket parameter;  
 	 * * Objects created by copy from other own their copy of underlying RawPacket object;  
 	 * * Move operation transfers owning state from one object to another (a.e. if object from which move was made owns it's data then object to which move was made now owns this data and vise-versa);  
-	 * * Object from which move was made is a object in null-state;  
+	 * * Object from which move was made is an object in null-state;  
 	 * * Underlying RawPacket object is freed on object deconstruction only if object owns it;  
-	 * * Object definitely own it's underlying RawPacket object after call to resetRawPacket member function.  
+	 * * Object owns provided RawPacket after call to holdCopy or holdProvided member functions.  
 	 *
 	 */
 	class Packet 
@@ -96,8 +96,10 @@ namespace pcpp
 		/**
 		 * @brief A default constructor for creating a new packet. 
 		 * Very useful when creating packets. When using this constructor an 
-		 * underlying RawPacket object is created in null-state ready for adding layers.
+		 * underlying RawPacket object is created in null-state ready for adding layers.\n
+		 * The type of underlying raw packet will be DefaultRawPacket.
 		 * @param[in] maxPacketLen The expected packet length in bytes.
+		 * @todo: Add warning message.
 		 */
 		Packet(size_t maxPacketLen = 1);
 
@@ -290,7 +292,7 @@ namespace pcpp
 
 		/**
 		 * @brief Add a new layer as the last layer in the packet. 
-		 * This method gets a pointer to the new layer as a parameter and attaches it to the packet. 
+		 * This method gets a pointer to the new layer as a parameter. It attaches provided layer to the packet. 
 		 * Notice after calling this method the input layer is attached to the packet so
 		 * every change you make in it affect the packet. Also it cannot be attached to other packets.\n
 		 * If underlying RawPacket object was in null-state then raw data for it will be allocated here.
@@ -302,7 +304,7 @@ namespace pcpp
 
 		/**
 		 * @brief Insert a new layer after an existing layer in the packet. 
-		 * This method gets a pointer to the new layer as a parameter and attaches it to the packet. 
+		 * This method gets a pointer to the new layer as a parameter. It attaches provided layer to the packet. 
 		 * Notice after calling this method the input layer is attached to the packet 
 		 * so every change you make in it affect the packet. Also it cannot be attached to other packets.\n
 		 * If underlying RawPacket object was in null-state then raw data for it will be allocated here.

@@ -259,8 +259,12 @@ namespace pcpp
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
 		typedef int memory_value;
+		/**
+		 * Represents type of structure that holds time-stamp.
+		 */
+		typedef timeval time_t;
 	protected:
-		timeval m_TimeStamp;
+		time_t m_TimeStamp;
 		length m_FrameLength;
 		LinkLayerType m_linkLayerType;
 	
@@ -293,7 +297,7 @@ namespace pcpp
 		 * @param[in] layerType The link layer type of this raw packet. The default is Ethernet
 		 * @param[in] frameLength Frame length parameter used by file devices.
 		 */
-		RawPacket(timeval timestamp, LinkLayerType layerType, length frameLength = -1) :
+		RawPacket(time_t timestamp, LinkLayerType layerType, length frameLength = -1) :
 			m_TimeStamp(timestamp), m_FrameLength(frameLength), m_linkLayerType(layerType) {}
 
 		/**
@@ -330,20 +334,20 @@ namespace pcpp
 		 * @brief Method to get raw data time-stamp.
 		 * @return Raw data time-stamp.
 		 */
-		inline timeval getPacketTimeStamp() const { return m_TimeStamp; }
+		inline time_t getPacketTimeStamp() const { return m_TimeStamp; }
 
 		/**
 		 * @brief Method to reset raw data time-stamp.
 		 * Works by swapping provided and current values.
 		 * @return Previous raw data time-stamp.
 		 */
-		inline timeval& resetPacketTimeStamp(timeval& timestamp) { std::swap(m_TimeStamp, timestamp); return timestamp; }
+		inline time_t& resetPacketTimeStamp(time_t& timestamp) { std::swap(m_TimeStamp, timestamp); return timestamp; }
 
 		/**
 		 * @brief Method to reset raw data time-stamp.
 		 * Compiler calls this overload if time-stamp directly returned from function call or explicitly moved
 		 */
-		inline void resetPacketTimeStamp(timeval&& timestamp) { m_TimeStamp = timestamp; }
+		inline void resetPacketTimeStamp(time_t&& timestamp) { m_TimeStamp = timestamp; }
 
 		/* Virtual API */
 
@@ -362,7 +366,7 @@ namespace pcpp
 		 * length. This parameter is optional, if not set or set to -1 it is assumed both lengths are equal
 		 * @return true if raw data was set successfully, false otherwise.
 		 */
-		virtual bool setRawData(const_pointer /* pRawData */, size rawDataLen, timeval timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1);
+		virtual bool setRawData(const_pointer /* pRawData */, size rawDataLen, time_t timestamp, LinkLayerType layerType = LINKTYPE_ETHERNET, length frameLength = -1);
 
 		/**
 		 * @brief Method to check if current object is in the null-state.

@@ -24,7 +24,7 @@ namespace pcpp
 void Packet::destructPacketData()
 {
 	// Clear layer storage
-	Layer* curLayer = m_FirstLayer, *nextLayer = PCAPPP_NULLPTR;
+	Layer *curLayer = m_FirstLayer, *nextLayer = PCAPPP_NULLPTR;
 	while (curLayer)
 	{
 		nextLayer = curLayer->getNextLayer();
@@ -43,6 +43,7 @@ Packet::Packet(size_t maxPacketLen)
 	initialize();
 	// Allocate new null-state RawPacket
 	m_RawPacket = new DefaultRawPacket;
+	// TODO: add warning message if result of reallocateData is false
 	m_RawPacket->reallocateData(maxPacketLen);
 	m_FreeRawPacket = true;
 	// Set time-stamp of packet
@@ -90,7 +91,7 @@ Packet& Packet::operator=(const Packet& other)
 
 void Packet::copyDataFrom(const Packet& other)
 {
-	// This is an invalid case and very it is hard to handle
+	// This is an invalid case and it is very hard to handle
 	if (other.m_RawPacket == PCAPPP_NULLPTR)
 	{
 		LOG_DEBUG("Attempt to make copy of packet without underlying RawPacket.");
