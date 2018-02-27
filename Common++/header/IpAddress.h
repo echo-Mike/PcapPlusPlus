@@ -115,11 +115,7 @@ namespace pcpp
 		in_addr* m_pInAddr;
 		void initialize(char* addressAsString);
 		void copyDataFrom(const IPv4Address& other);
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
-		void moveDataFrom(IPv4Address&& other);
-#else
-		void moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
-#endif
+		void moveDataFrom(IPv4Address& other);
 	public:
 		/**
 		 * A constructor that creates an instance of the class out of 4-byte integer value
@@ -158,33 +154,15 @@ namespace pcpp
 		 */
 		IPv4Address& operator=(const IPv4Address& other);
 
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
 		/**
 		 * A move constructor for this class.
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
 		 */
-		IPv4Address(IPv4Address&& other);
+		PCAPPP_MOVE_CONSTRUCTOR(IPv4Address);
 
 		/**
 		 * Overload of the move assignment operator
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
 		 */
-		IPv4Address& operator=(IPv4Address&& other);
-#else
-		/**
-		 * A move constructor for this class.
-		 * This is the move constructor which is based on library implementation of C++11 move semantics.
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
-		 */
-		IPv4Address(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
-
-		/**
-		 * Overload of the move assignment operator
-		 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
-		 */
-		IPv4Address& operator=(::pcpp::move_semantics::MoveProxy<IPv4Address> proxy);
-#endif
+		PCAPPP_MOVE_ASSIGNMENT(IPv4Address);
 
 		~IPv4Address();
 
@@ -192,7 +170,7 @@ namespace pcpp
 		 * Returns a std::string representation of the address.
 		 * This method is the only one (apart from copy constructor) that triggers 
 		 * the allocation of memory for string representation.
-		 * If adress is not valid the zero length string will be returned.
+		 * If address is not valid the zero length string will be returned.
 		 * @return A string representation of the address.
 		 */
 		std::string toString() const PCAPPP_OVERRIDE;
@@ -210,7 +188,7 @@ namespace pcpp
 
 		/**
 		 * Returns a in_addr struct pointer representing the IPv4 address
-		 * @return a in_addr struct pointer representing the IPv4 address
+		 * @return A in_addr struct pointer representing the IPv4 address
 		 */
 		in_addr* toInAddr() { return m_pInAddr; }
 
@@ -218,19 +196,19 @@ namespace pcpp
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		bool operator==(const IPv4Address& other) const { return isValid() && other.isValid() && !std::memcmp(m_pInAddr, other.m_pInAddr, sizeof(uint32_t)); }
+		inline bool operator==(const IPv4Address& other) const { return isValid() && other.isValid() && !std::memcmp(m_pInAddr, other.m_pInAddr, sizeof(uint32_t)); }
 
 		/**
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		bool operator==(const uint32_t addr) const { return isValid() && !std::memcmp(m_pInAddr, &addr, sizeof(uint32_t)); }
+		inline bool operator==(const uint32_t addr) const { return isValid() && !std::memcmp(m_pInAddr, &addr, sizeof(uint32_t)); }
 
 		/**
 		 * Overload of the non-equal operator
 		 * @return true if 2 addresses are not equal. False otherwise
 		 */
-		bool operator!=(const IPv4Address& other) const { return !operator==(other); }
+		inline bool operator!=(const IPv4Address& other) const { return !operator==(other); }
 
 		/**
 		 * Checks whether the address matches a subnet.
@@ -260,11 +238,7 @@ namespace pcpp
 		in6_addr* m_pInAddr;
 		void initialize(char* addressAsString);
 		void copyDataFrom(const IPv6Address& other);
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
-		void moveDataFrom(IPv6Address&& other);
-#else
-		void moveDataFrom(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
-#endif
+		void moveDataFrom(IPv6Address& other);
 	public:
 
 		/**
@@ -298,33 +272,15 @@ namespace pcpp
 		 */
 		IPv6Address& operator=(const IPv6Address& other);
 
-#ifdef ENABLE_CPP11_MOVE_SEMANTICS
-		/**
-		 * A move constructor for this class
-		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
-		 */
-		IPv6Address(IPv6Address&& other);
-
-		/**
-		 * Overload of the move assignment operator
-		 * This function  is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is defined.
-		 */
-		IPv6Address& operator=(IPv6Address&& other);
-#else
 		/**
 		 * A move constructor for this class.
-		 * This is the move constructor which is based on library implementation of C++11 move semantics.
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
 		 */
-		IPv6Address(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
+		PCAPPP_MOVE_CONSTRUCTOR(IPv6Address);
 
 		/**
 		 * Overload of the move assignment operator
-		 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
-		 * This function is enabled only if ENABLE_CPP11_MOVE_SEMANTICS is not defined.
 		 */
-		IPv6Address& operator=(::pcpp::move_semantics::MoveProxy<IPv6Address> proxy);
-#endif
+		PCAPPP_MOVE_ASSIGNMENT(IPv6Address);
 
 		~IPv6Address();
 
@@ -332,7 +288,7 @@ namespace pcpp
 		 * Returns a std::string representation of the address.
 		 * This method is the only one (apart from copy constructor) that triggers 
 		 * the allocation of memory for string representation.
-		 * If adress is not valid the zero length string will be returned.
+		 * If address is not valid the zero length string will be returned.
 		 * @return A string representation of the address.
 		 */
 		std::string toString() const PCAPPP_OVERRIDE;
@@ -366,13 +322,13 @@ namespace pcpp
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		bool operator==(const IPv6Address& other) const { return isValid() && other.isValid() && (std::memcmp(m_pInAddr, other.m_pInAddr, sizeof(in6_addr)) == 0); }
+		inline bool operator==(const IPv6Address& other) const;
 
 		/**
 		 * Overload of the non-equal operator
 		 * @return true if 2 addresses are not equal. False otherwise
 		 */
-		bool operator!=(const IPv6Address& other) const { return !operator==(other); }
+		inline bool operator!=(const IPv6Address& other) const { return !operator==(other); }
 
 		/**
 		 * A static value representing a zero value of IPv6 address, meaning address of value
