@@ -68,7 +68,7 @@ namespace pcpp
 				 * By default empty objects have great default constructors.
 				 * The signature of this function must be the same as for other specialization, 
 				 * except base class must be provided by value to not fill the stack (sizeof Base == 1 Byte, sizeof Base& == 4/8 Byte).
-				 * @param val2 The value to be provide to the copy constructor of stored value.
+				 * @param[in] val2 The value to be provide to the copy constructor of stored value.
 				 */
 				CompressedPair(const Base, const T2& val2) :
 					Base(), m_Val2(val2) {}
@@ -97,7 +97,7 @@ namespace pcpp
 				/**
 				 * @brief Move constructor.
 				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
 					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
@@ -105,7 +105,7 @@ namespace pcpp
 				/**
 				 * @brief Move assignment operator.
 				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
@@ -176,8 +176,8 @@ namespace pcpp
 				 * @brief Main constructor of this class.
 				 * Simply calls copy constructors of members with corresponding parameters.\n
 				 * The T1 and T2 must meet copy-constructible requirement.
-				 * @param val1 The value to be provide to the copy constructor of first stored value.
-				 * @param val2 The value to be provide to the copy constructor of second stored value.
+				 * @param[in] val1 The value to be provide to the copy constructor of first stored value.
+				 * @param[in] val2 The value to be provide to the copy constructor of second stored value.
 				 */
 				CompressedPair(const T1& val1, const T2& val2) :
 					m_Val1(val1), m_Val2(val2) {}
@@ -207,7 +207,7 @@ namespace pcpp
 				/**
 				 * @brief Move constructor.
 				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
 					m_Val1(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1)),
@@ -216,7 +216,7 @@ namespace pcpp
 				/**
 				 * @brief Move assignment operator.
 				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)

@@ -39,17 +39,17 @@ namespace pcpp
 			/**
 			 * @brief Main constructor.
 			 * Sets up internal reference to provided one.
-			 * @param ref Reference to object to be proxied.
+			 * @param[in] ref Reference to object to be proxied.
 			 */
 			MoveProxy(reference ref_) : ref(ref_) {}
 			/**
 			 * @brief Basic copy constructor.
-			 * @param other Instance to make copy of.
+			 * @param[in] other Instance to make copy of.
 			 */
 			MoveProxy(const MoveProxy& other) : ref(other.ref) {}
 			/**
 			 * @brief Basic copy assignment operator.
-			 * @param other Instance to make copy of.
+			 * @param[in] other Instance to make copy of.
 			 */
 			MoveProxy& operator=(const MoveProxy& other) { ref = other.ref; return *this; }
 			/**

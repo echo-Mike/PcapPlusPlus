@@ -33,8 +33,8 @@ namespace pcpp
 			/**
 			 * @class AllocatorPointerPair
 			 * @brief This is a helper class that is manages compressed pair of allocator and pointer. 
-			 * @tparam[in] Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
-			 * @tparam[in] traits Defines a set of requirements for Allocator type (Default: pcpp::memory::allocator_traits<Allocator>)
+			 * @tparam Allocator Represents memory allocator that must satisfy pcpp::memory::allocator_traits.
+			 * @tparam traits Defines a set of requirements for Allocator type (Default: pcpp::memory::allocator_traits<Allocator>)
 			 */ 
 			template < typename Allocator, typename traits = allocator_traits<Allocator> >
 			struct AllocatorPointerPair
@@ -71,7 +71,7 @@ namespace pcpp
 				 * Constructs a MemoryProxyAllocatorHelper initializing the stored pointer with p 
 				 * and value-initializing the stored allocator. 
 				 * Requires that Allocator is DefaultConstructible.
-				 * @param p Pointer to memory.
+				 * @param[in] p Pointer to memory.
 				 */
 				explicit AllocatorPointerPair(pointer p) : m_Pair(Adapter(), p) {}
 
@@ -80,21 +80,21 @@ namespace pcpp
 				 * Constructs a MemoryProxyAllocatorHelper initializing the stored pointer with p 
 				 * and allocator with alloc.
 				 * Requires that Allocator is CopyConstructible.
-				 * @param alloc Pointer to memory.
-				 * @param p Pointer to memory.
+				 * @param[in] alloc Pointer to memory.
+				 * @param[in] p Pointer to memory.
 				 */
 				AllocatorPointerPair(Allocator& alloc, pointer p) : m_Pair(Adapter(alloc), p) {}
 
 				/**
 				 * @brief Copy constructor.
-				 * @param other Instance to be copied.
+				 * @param[in] other Instance to be copied.
 				 */
 				AllocatorPointerPair(const AllocatorPointerPair& other) :
 					m_Pair(other.m_Pair) {}
 
 				/**
 				 * @brief Copy assignment operator.
-				 * @param other Instance to be copied.
+				 * @param[in] other Instance to be copied.
 				 * @return Reference to this object.
 				 */
 				AllocatorPointerPair& operator=(const AllocatorPointerPair& other)
@@ -109,7 +109,7 @@ namespace pcpp
 				/**
 				 * @brief Move constructor.
 				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(AllocatorPointerPair) :
 					m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
@@ -122,7 +122,7 @@ namespace pcpp
 				/**
 				 * @brief Move assignment operator.
 				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param other Instance to be moved from.
+				 * @param[in:out] other Instance to be moved from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(AllocatorPointerPair)

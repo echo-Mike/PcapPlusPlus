@@ -43,7 +43,7 @@ namespace pcpp
 			/**
 			 * @brief Calls delete expression on provided pointer.
 			 * Does nothing if provided pointer is same as result of expression: pointer().
-			 * @param ptr Pointer to object to be deleted.
+			 * @param[in] ptr Pointer to object to be deleted.
 			 */
 			void operator()(pointer ptr) const
 			{
@@ -68,7 +68,7 @@ namespace pcpp
 			/**
 			 * @brief Calls delete[] expression on provided pointer.
 			 * Does nothing if provided pointer is same as result of expression: pointer().
-			 * @param ptr Pointer to object to be deleted.
+			 * @param[in] ptr Pointer to object to be deleted.
 			 */
 			void operator()(pointer ptr) const
 			{

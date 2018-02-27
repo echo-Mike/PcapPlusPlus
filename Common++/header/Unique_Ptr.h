@@ -74,7 +74,7 @@ namespace pcpp
 			 * Constructs a unique_ptr_base which owns p, initializing the stored pointer with p 
 			 * and value-initializing the stored deleter. 
 			 * Requires that Deleter is DefaultConstructible.
-			 * @param p Pointer to memory to be owned.
+			 * @param[in] p Pointer to memory to be owned.
 			 */
 			explicit unique_ptr_base(pointer p) : m_Pair(Deleter(), p) {}
 
@@ -82,7 +82,7 @@ namespace pcpp
 			 * @brief Move constructor.
 			 * This is the move constructor which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr_base(unique_ptr_base&& other) move constructor.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr_base instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
 			 */
 			unique_ptr_base(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy) :
 				m_Pair(proxy.ref.m_Pair.get_first(), proxy.ref.m_Pair.get_second())
@@ -96,7 +96,7 @@ namespace pcpp
 			 * @brief Move assignment operator.
 			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr_base& operator=(unique_ptr_base&& other) move assignment operator.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr_base instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
 			 * @return Reference to this object.
 			 */
 			unique_ptr_base& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy)
@@ -213,7 +213,7 @@ namespace pcpp
 			 * Constructs a unique_ptr which owns p, initializing the stored pointer with p 
 			 * and value-initializing the stored deleter. 
 			 * Requires that Deleter is DefaultConstructible.
-			 * @param p Pointer to memory to be owned.
+			 * @param[in] p Pointer to memory to be owned.
 			 */
 			explicit unique_ptr(pointer p) : Base(p) {}
 
@@ -221,7 +221,7 @@ namespace pcpp
 			 * @brief Move constructor.
 			 * This is the move constructor which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 */
 			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
 				Base(PCAPPP_MOVE(dynamic_cast<Base&>(proxy.ref))) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
@@ -230,7 +230,7 @@ namespace pcpp
 			 * @brief Move assignment operator.
 			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 * @return Reference to this object.
 			 */
 			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
@@ -293,6 +293,7 @@ namespace pcpp
 			 * Saves a copy of the current pointer old_ptr = current_ptr\n
 			 * Overwrites the current pointer with the argument current_ptr = ptr\n
 			 * If the old pointer was non-empty, deletes the previously managed object if(old_ptr != nullptr) get_deleter()(old_ptr).
+			 * @param[in] ptr Pointer to replace with.
 			 */
 			void reset(pointer ptr = pointer())
 			{	
@@ -370,7 +371,7 @@ namespace pcpp
 			 * Constructs a unique_ptr which owns p, initializing the stored pointer with p 
 			 * and value-initializing the stored deleter. 
 			 * Requires that Deleter is DefaultConstructible.
-			 * @param p Pointer to memory to be owned.
+			 * @param[in] p Pointer to memory to be owned.
 			 */
 			explicit unique_ptr(pointer p) : Base(p) {}
 
@@ -378,7 +379,7 @@ namespace pcpp
 			 * @brief Move constructor.
 			 * This is the move constructor which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 */
 			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
 				Base(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) )) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
@@ -387,7 +388,7 @@ namespace pcpp
 			 * @brief Move assignment operator.
 			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
 			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
-			 * @param proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 * @return Reference to this object.
 			 */
 			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
@@ -449,6 +450,7 @@ namespace pcpp
 			 * Saves a copy of the current pointer old_ptr = current_ptr\n
 			 * Overwrites the current pointer with the argument current_ptr = ptr\n
 			 * If the old pointer was non-empty, deletes the previously managed object if(old_ptr != nullptr) get_deleter()(old_ptr).
+			 * @param[in] ptr Pointer to replace with.
 			 */
 			void reset(pointer ptr = pointer())
 			{
