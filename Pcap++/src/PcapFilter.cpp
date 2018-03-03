@@ -110,8 +110,8 @@ void IPFilter::convertToIPAddressWithLen(std::string& ipAddrmodified, int& len)
 		IPv6Address* ip6Addr = (IPv6Address*)ipAddr.get();
 		uint8_t* addrAsArr; size_t addrLen;
 		ip6Addr->copyTo(&addrAsArr, addrLen);
-		uint64_t addrLowerBytes = (long)addrAsArr;
-		uint64_t addrHigherBytes = (long)(addrAsArr+8);
+		uint64_t addrLowerBytes =  *reinterpret_cast<long*>(addrAsArr);
+		uint64_t addrHigherBytes = *reinterpret_cast<long*>(addrAsArr+8);
 		if (len > (int)(sizeof(uint64_t)*8))
 		{
 			addrLowerBytes = 0;
