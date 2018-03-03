@@ -168,14 +168,14 @@ PACKETPP_TEST(EthPacketCreation) {
 	PayloadLayer payloadLayer(payload, 4, true);
 
 	Packet ethPacket(1);
-	PACKETPP_ASSERT(ethPacket.addLayer(&ethLayer), "Adding ethernet layer failed");
+	PACKETPP_ASSERT(ethPacket.addLayer(&ethLayer), "Adding Ethernet layer failed");
 	PACKETPP_ASSERT(ethPacket.addLayer(&payloadLayer), "Adding payload layer failed");
 
 	PACKETPP_ASSERT(ethPacket.isPacketOfType(Ethernet), "Packet is not of type Ethernet");
 	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>() != NULL, "Ethernet layer doesn't exist");
 	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>() == &ethLayer, "Ethernet layer doesn't equal to inserted layer");
-	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>()->getDestMac() == dstMac, "Packet dest mac isn't equal to intserted dest mac");
-	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>()->getSourceMac() == srcMac, "Packet src mac isn't equal to intserted src mac");
+	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>()->getDestMac() == dstMac, "Packet dest mac isn't equal to inserted dest mac");
+	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>()->getSourceMac() == srcMac, "Packet src mac isn't equal to inserted src mac");
 	PACKETPP_ASSERT(ethPacket.getLayerOfType<EthLayer>()->getEthHeader()->etherType == ntohs(PCPP_ETHERTYPE_IP), "Packet ether type isn't equal to PCPP_ETHERTYPE_IP");
 
 	RawPacket* rawPacket = ethPacket.getRawPacket();
@@ -197,7 +197,7 @@ PACKETPP_TEST(EthAndArpPacketParsing) {
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet ethPacket(&rawPacket);
 	PACKETPP_ASSERT(ethPacket.isPacketOfType(Ethernet), "Packet is not of type Ethernet");
@@ -206,8 +206,8 @@ PACKETPP_TEST(EthAndArpPacketParsing) {
 	MacAddress expectedSrcMac(0x30, 0x46, 0x9a, 0x23, 0xfb, 0xfa);
 	MacAddress expectedDstMac(0x6c, 0xf0, 0x49, 0xb2, 0xde, 0x6e);
 	EthLayer* ethLayer = ethPacket.getLayerOfType<EthLayer>();
-	PACKETPP_ASSERT(ethLayer->getDestMac() == expectedDstMac, "Packet dest mac isn't equal to intserted dest mac");
-	PACKETPP_ASSERT(ethLayer->getSourceMac() == expectedSrcMac, "Packet src mac isn't equal to intserted src mac");
+	PACKETPP_ASSERT(ethLayer->getDestMac() == expectedDstMac, "Packet dest mac isn't equal to inserted dest mac");
+	PACKETPP_ASSERT(ethLayer->getSourceMac() == expectedSrcMac, "Packet src mac isn't equal to inserted src mac");
 	PACKETPP_ASSERT(ethLayer->getEthHeader()->etherType == ntohs(PCPP_ETHERTYPE_ARP), "Packet ether type isn't equal to PCPP_ETHERTYPE_ARP, it's 0x%x", ethLayer->getEthHeader()->etherType);
 
 	PACKETPP_ASSERT(ethLayer->getNextLayer()->getProtocol() == ARP, "Next layer isn't of type 'ARP'");
@@ -262,7 +262,7 @@ PACKETPP_TEST(VlanParseAndCreation)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 	Packet arpWithVlan(&rawPacket);
 
 	VlanLayer* pFirstVlanLayer = NULL;
@@ -349,7 +349,7 @@ PACKETPP_TEST(Ipv4PacketParsing)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet ip4Packet(&rawPacket);
 	PACKETPP_ASSERT(ip4Packet.isPacketOfType(Ethernet), "Packet is not of type Ethernet");
@@ -390,9 +390,9 @@ PACKETPP_TEST(Ipv4FragmentationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
 
 	Packet frag1(&rawPacket1);
 	Packet frag2(&rawPacket2);
@@ -462,13 +462,13 @@ PACKETPP_TEST(Ipv4OptionsParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
-	RawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
-	RawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
-	RawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
+	DefaultRawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
 
 	Packet ipOpt1(&rawPacket1);
 	Packet ipOpt2(&rawPacket2);
@@ -670,13 +670,13 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
-	RawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
-	RawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
-	RawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
+	DefaultRawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
 
 	Packet ipOpt1(&rawPacket1);
 	Packet ipOpt2(&rawPacket2);
@@ -855,7 +855,7 @@ PACKETPP_TEST(Ipv4UdpChecksum)
 
 		timeval time;
 		gettimeofday(&time, NULL);
-		RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+		DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 		Packet udpPacket(&rawPacket);
 		UdpLayer* udpLayer = NULL;
@@ -876,7 +876,7 @@ PACKETPP_TEST(Ipv6UdpPacketParseAndCreate)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet ip6UdpPacket(&rawPacket);
 	PACKETPP_ASSERT(!ip6UdpPacket.isPacketOfType(IPv4), "Packet is of type IPv4 instead IPv6");
@@ -933,7 +933,7 @@ PACKETPP_TEST(TcpPacketNoOptionsParsing)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet tcpPaketNoOptions(&rawPacket);
 	PACKETPP_ASSERT(tcpPaketNoOptions.isPacketOfType(IPv4), "Packet isn't of type IPv4");
@@ -980,7 +980,7 @@ PACKETPP_TEST(TcpPacketWithOptionsParsing)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet tcpPaketWithOptions(&rawPacket);
 	PACKETPP_ASSERT(tcpPaketWithOptions.isPacketOfType(IPv4), "Packet isn't of type IPv4");
@@ -1020,7 +1020,7 @@ PACKETPP_TEST(TcpPacketWithOptionsParsing2)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet tcpPaketWithOptions(&rawPacket);
 
@@ -1344,7 +1344,7 @@ PACKETPP_TEST(InsertVlanToPacket)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet tcpPacket(&rawPacket);
 
@@ -1380,7 +1380,7 @@ PACKETPP_TEST(RemoveLayerTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet tcpPacket(&rawPacket);
 
@@ -1538,7 +1538,7 @@ PACKETPP_TEST(HttpRequestLayerParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet httpPacket(&rawPacket);
 
@@ -1567,7 +1567,7 @@ PACKETPP_TEST(HttpRequestLayerCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet sampleHttpPacket(&sampleRawPacket);
 
@@ -1651,7 +1651,7 @@ PACKETPP_TEST(HttpRequestLayerEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet httpRequest(&rawPacket);
 
@@ -1699,7 +1699,7 @@ PACKETPP_TEST(HttpResponseLayerParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet httpPacket(&rawPacket);
 
@@ -1730,7 +1730,7 @@ PACKETPP_TEST(HttpResponseLayerCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet sampleHttpPacket(&sampleRawPacket);
 
@@ -1798,7 +1798,7 @@ PACKETPP_TEST(HttpResponseLayerEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet httpPacket(&rawPacket);
 
@@ -1837,7 +1837,7 @@ PACKETPP_TEST(PPPoESessionLayerParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet pppoesPacket(&rawPacket);
 
@@ -1871,7 +1871,7 @@ PACKETPP_TEST(PPPoESessionLayerCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet samplePacket(&rawPacket);
 
@@ -1908,7 +1908,7 @@ PACKETPP_TEST(PPPoEDiscoveryLayerParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet pppoedPacket(&rawPacket);
 
@@ -1970,7 +1970,7 @@ PACKETPP_TEST(PPPoEDiscoveryLayerCreateTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet samplePacket(&rawPacket);
 
@@ -2060,7 +2060,7 @@ PACKETPP_TEST(DnsLayerParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet dnsPacket(&rawPacket);
 
@@ -2136,7 +2136,7 @@ PACKETPP_TEST(DnsLayerParsingTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/Dns1.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file Dns1.dat");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet dnsPacket2(&rawPacket2);
 
@@ -2191,7 +2191,7 @@ PACKETPP_TEST(DnsLayerParsingTest)
 	uint8_t* buffer3 = readFileIntoBuffer("PacketExamples/Dns2.dat", buffer3Length);
 	PACKETPP_ASSERT(!(buffer3 == NULL), "cannot read file Dns2.dat");
 
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
 
 	Packet dnsPacket3(&rawPacket3);
 
@@ -2214,7 +2214,7 @@ PACKETPP_TEST(DnsLayerQueryCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket raw2Packet((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket raw2Packet((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet dnsEdit2RefPacket(&raw2Packet);
 
@@ -2251,7 +2251,7 @@ PACKETPP_TEST(DnsLayerQueryCreationTest)
 	PACKETPP_ASSERT(!(buffer1 == NULL), "cannot read file DnsEdit1.dat");
 
 	gettimeofday(&time, NULL);
-	RawPacket raw1Packet((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket raw1Packet((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet dnsEdit1RefPacket(&raw1Packet);
 
@@ -2300,7 +2300,7 @@ PACKETPP_TEST(DnsLayerResourceCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket raw4Packet((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket raw4Packet((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	Packet dnsEdit4RefPacket(&raw4Packet);
 
@@ -2363,7 +2363,7 @@ PACKETPP_TEST(DnsLayerResourceCreationTest)
 	PACKETPP_ASSERT(!(buffer6 == NULL), "cannot read file DnsEdit6.dat");
 
 	gettimeofday(&time, NULL);
-	RawPacket raw6Packet((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket raw6Packet((const uint8_t*)buffer6, buffer6Length, time, true);
 
 	Packet dnsEdit6RefPacket(&raw6Packet);
 
@@ -2438,9 +2438,9 @@ PACKETPP_TEST(DnsLayerEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket raw3Packet((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket raw3PacketCopy(raw3Packet);
-	RawPacket raw5Packet((const uint8_t*)buffer5, buffer5Length, time, true);
+	DefaultRawPacket raw3Packet((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket raw3PacketCopy(raw3Packet);
+	DefaultRawPacket raw5Packet((const uint8_t*)buffer5, buffer5Length, time, true);
 
 	Packet dnsEdit3(&raw3Packet);
 	Packet dnsEdit5(&raw5Packet);
@@ -2476,7 +2476,7 @@ PACKETPP_TEST(DnsLayerRemoveResourceTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket raw6Packet((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket raw6Packet((const uint8_t*)buffer6, buffer6Length, time, true);
 
 	Packet dnsEdit6Packet(&raw6Packet);
 
@@ -2548,7 +2548,7 @@ PACKETPP_TEST(DnsLayerRemoveResourceTest)
 	PACKETPP_ASSERT(!(buffer4 == NULL), "cannot read file DnsEdit4.dat");
 
 	gettimeofday(&time, NULL);
-	RawPacket raw4Packet((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket raw4Packet((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	Packet dnsEdit4Packet(&raw4Packet);
 
@@ -2604,8 +2604,8 @@ PACKETPP_TEST(MplsLayerTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet mplsPacket1(&rawPacket1);
 	Packet mplsPacket2(&rawPacket2);
@@ -2673,17 +2673,17 @@ PACKETPP_TEST(CopyLayerAndPacketTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket sampleRawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet sampleHttpPacket(&sampleRawPacket);
 
-	//RawPacket copy c'tor / assignment operator test
+	//DefaultRawPacket copy c'tor / assignment operator test
 	//-----------------------------------------------
-	RawPacket copyRawPacket;
+	DefaultRawPacket copyRawPacket;
 	copyRawPacket = sampleRawPacket;
-	PACKETPP_ASSERT(copyRawPacket.getRawDataLen() == sampleRawPacket.getRawDataLen(), "Original and copy RawPacket data length differs");
-	PACKETPP_ASSERT(copyRawPacket.getRawData() != sampleRawPacket.getRawData(), "Original and copy RawPacket data pointers are the same");
-	PACKETPP_ASSERT(memcmp(copyRawPacket.getRawData(), sampleRawPacket.getRawData(), sampleRawPacket.getRawDataLen()) == 0, "Original and copy RawPacket data differs");
+	PACKETPP_ASSERT(copyRawPacket.getRawDataLen() == sampleRawPacket.getRawDataLen(), "Original and copy DefaultRawPacket data length differs");
+	PACKETPP_ASSERT(copyRawPacket.getRawData() != sampleRawPacket.getRawData(), "Original and copy DefaultRawPacket data pointers are the same");
+	PACKETPP_ASSERT(memcmp(copyRawPacket.getRawData(), sampleRawPacket.getRawData(), sampleRawPacket.getRawDataLen()) == 0, "Original and copy DefaultRawPacket data differs");
 
 	//EthLayer copy c'tor test
 	//------------------------
@@ -2700,7 +2700,7 @@ PACKETPP_TEST(CopyLayerAndPacketTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/TcpPacketWithOptions2.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file");
 
-	RawPacket sampleRawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket sampleRawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet sampleTcpPacketWithOptions(&sampleRawPacket2);
 	TcpLayer tcpLayer = *sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>();
@@ -2787,7 +2787,7 @@ PACKETPP_TEST(CopyLayerAndPacketTest)
 	uint8_t* buffer3 = readFileIntoBuffer("PacketExamples/Dns2.dat", buffer3Length);
 	PACKETPP_ASSERT(!(buffer3 == NULL), "cannot read file Dns2.dat");
 
-	RawPacket sampleRawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket sampleRawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
 
 	Packet sampleDnsPacket(&sampleRawPacket3);
 
@@ -2877,21 +2877,21 @@ PACKETPP_TEST(IcmpParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
-	RawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
-	RawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
-	RawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
-	RawPacket rawPacket8((const uint8_t*)buffer8, buffer8Length, time, true);
-	RawPacket rawPacket9((const uint8_t*)buffer9, buffer9Length, time, true);
-	RawPacket rawPacket10((const uint8_t*)buffer10, buffer10Length, time, true);
-	RawPacket rawPacket11((const uint8_t*)buffer11, buffer11Length, time, true);
-	RawPacket rawPacket12((const uint8_t*)buffer12, buffer12Length, time, true);
-	RawPacket rawPacket13((const uint8_t*)buffer13, buffer13Length, time, true);
-	RawPacket rawPacket14((const uint8_t*)buffer14, buffer14Length, time, true);
-	RawPacket rawPacket15((const uint8_t*)buffer15, buffer15Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
+	DefaultRawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
+	DefaultRawPacket rawPacket8((const uint8_t*)buffer8, buffer8Length, time, true);
+	DefaultRawPacket rawPacket9((const uint8_t*)buffer9, buffer9Length, time, true);
+	DefaultRawPacket rawPacket10((const uint8_t*)buffer10, buffer10Length, time, true);
+	DefaultRawPacket rawPacket11((const uint8_t*)buffer11, buffer11Length, time, true);
+	DefaultRawPacket rawPacket12((const uint8_t*)buffer12, buffer12Length, time, true);
+	DefaultRawPacket rawPacket13((const uint8_t*)buffer13, buffer13Length, time, true);
+	DefaultRawPacket rawPacket14((const uint8_t*)buffer14, buffer14Length, time, true);
+	DefaultRawPacket rawPacket15((const uint8_t*)buffer15, buffer15Length, time, true);
 
 
 	Packet icmpEchoRequest(&rawPacket1);
@@ -3341,8 +3341,8 @@ PACKETPP_TEST(IcmpEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	// convert router adv to echo request
 
@@ -3446,10 +3446,10 @@ PACKETPP_TEST(GreParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	Packet grev0Packet1(&rawPacket1);
 	Packet grev0Packet2(&rawPacket2);
@@ -3651,7 +3651,7 @@ PACKETPP_TEST(GreEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet grev0Packet(&rawPacket1);
 
@@ -3752,7 +3752,7 @@ PACKETPP_TEST(GreEditTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/GREv1_2.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file GREv1_2.dat");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet grev1Packet(&rawPacket2);
 
@@ -3844,7 +3844,7 @@ PACKETPP_TEST(SSLClientHelloParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet clientHelloPacket(&rawPacket);
 
@@ -3985,7 +3985,7 @@ PACKETPP_TEST(SSLAppDataParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet appDataPacket(&rawPacket);
 
@@ -4025,13 +4025,13 @@ PACKETPP_TEST(SSLAlertParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	int buffer2Length = 0;
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/SSL-AlertEnc.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet clearAlertPacket(&rawPacket1);
 	Packet encAlertPacket(&rawPacket2);
@@ -4073,7 +4073,7 @@ PACKETPP_TEST(SSLMultipleRecordParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet multipleRecordsPacket(&rawPacket);
 
@@ -4144,7 +4144,7 @@ PACKETPP_TEST(SSLMultipleRecordParsing2Test)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet multipleRecordsPacket(&rawPacket);
 
@@ -4176,7 +4176,7 @@ PACKETPP_TEST(SSLMultipleRecordParsing3Test)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet multipleRecordsPacket(&rawPacket);
 
@@ -4243,7 +4243,7 @@ PACKETPP_TEST(SSLMultipleRecordParsing4Test)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet multipleRecordsPacket(&rawPacket);
 
@@ -4281,7 +4281,7 @@ PACKETPP_TEST(SSLPartialCertificateParseTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet partialCertPacket(&rawPacket1);
 
@@ -4302,7 +4302,7 @@ PACKETPP_TEST(SSLPartialCertificateParseTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/SSL-PartialCertificate2.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet partialCertPacket2(&rawPacket2);
 
@@ -4330,7 +4330,7 @@ PACKETPP_TEST(SSLNewSessionTicketParseTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet sslPacket(&rawPacket);
 
@@ -4359,7 +4359,7 @@ PACKETPP_TEST(SllPacketParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true, LINKTYPE_LINUX_SLL);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true, LINKTYPE_LINUX_SLL);
 
 	Packet sllPacket(&rawPacket1);
 	PACKETPP_ASSERT(sllPacket.isPacketOfType(SLL) == true, "Packet isn't of type SLL");
@@ -4431,7 +4431,7 @@ PACKETPP_TEST(DhcpParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet dhcpPacket(&rawPacket1);
 	PACKETPP_ASSERT(dhcpPacket.isPacketOfType(DHCP) == true, "Packet isn't of type DHCP");
@@ -4495,7 +4495,7 @@ PACKETPP_TEST(DhcpParsingTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/Dhcp2.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file Dhcp2.dat");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet dhcpPacket2(&rawPacket2);
 
@@ -4647,7 +4647,7 @@ PACKETPP_TEST(DhcpEditTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet dhcpPacket(&rawPacket);
 
@@ -4724,8 +4724,8 @@ PACKETPP_TEST(NullLoopbackTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true, LINKTYPE_NULL);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true, LINKTYPE_NULL);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true, LINKTYPE_NULL);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true, LINKTYPE_NULL);
 
 	Packet nullPacket1(&rawPacket1);
 	Packet nullPacket2(&rawPacket2);
@@ -4786,8 +4786,8 @@ PACKETPP_TEST(IgmpParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet igmpv1Packet(&rawPacket1);
 	Packet igmpv2Packet(&rawPacket2);
@@ -4891,8 +4891,8 @@ PACKETPP_TEST(Igmpv3ParsingTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet igmpv3QueryPacket(&rawPacket1);
 	Packet igmpv3ReportPacket(&rawPacket2);
@@ -5164,13 +5164,13 @@ PACKETPP_TEST(ParsePartialPacketTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
-	RawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
-	RawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
-	RawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket5((const uint8_t*)buffer5, buffer5Length, time, true);
+	DefaultRawPacket rawPacket6((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
 
 	Packet sslPacket(&rawPacket1, TCP);
 	Packet igmpPacket(&rawPacket2, IP);
@@ -5263,7 +5263,7 @@ PACKETPP_TEST(VxlanParsingAndCreationTest)
 
 	timeval time;
 	gettimeofday(&time, NULL);
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet vxlanPacket(&rawPacket1);
 
@@ -5330,10 +5330,10 @@ PACKETPP_TEST(SipRequestLayerParsingTest)
 	uint8_t* buffer4 = readFileIntoBuffer("PacketExamples/sip_req4.dat", buffer4Length);
 	PACKETPP_ASSERT(!(buffer4 == NULL), "cannot read file sip_req4.dat");
 
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	Packet sipReqPacket1(&rawPacket1);
 	Packet sipReqPacket2(&rawPacket2);
@@ -5448,7 +5448,7 @@ PACKETPP_TEST(SipRequestLayerCreationTest)
 	uint8_t* buffer1 = readFileIntoBuffer("PacketExamples/sip_req1.dat", buffer1Length);
 	PACKETPP_ASSERT(!(buffer1 == NULL), "cannot read file sip_req1.dat");
 
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet sipReqSamplePacket(&rawPacket1);
 
@@ -5516,8 +5516,8 @@ PACKETPP_TEST(SipRequestLayerEditTest)
 	uint8_t* buffer3 = readFileIntoBuffer("PacketExamples/sip_req3.dat", buffer3Length);
 	PACKETPP_ASSERT(!(buffer3 == NULL), "cannot read file sip_req3.dat");
 
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
 
 	Packet secondSipPacket(&rawPacket2);
 	Packet editedPacket(&rawPacket3);
@@ -5594,11 +5594,11 @@ PACKETPP_TEST(SipResponseLayerParsingTest)
 	uint8_t* buffer7 = readFileIntoBuffer("PacketExamples/sip_resp7.dat", buffer7Length);
 	PACKETPP_ASSERT(!(buffer7 == NULL), "cannot read file sip_resp7.dat");
 
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
-	RawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket7((const uint8_t*)buffer7, buffer7Length, time, true);
 
 	Packet sipRespPacket1(&rawPacket1);
 	Packet sipRespPacket2(&rawPacket2);
@@ -5707,7 +5707,7 @@ PACKETPP_TEST(SipResponseLayerCreationTest)
 	uint8_t* buffer6 = readFileIntoBuffer("PacketExamples/sip_resp6.dat", buffer6Length);
 	PACKETPP_ASSERT(!(buffer6 == NULL), "cannot read file sip_resp6.dat");
 
-	RawPacket rawPacket((const uint8_t*)buffer6, buffer6Length, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer6, buffer6Length, time, true);
 
 	Packet sipRespSamplePacket(&rawPacket);
 
@@ -5763,8 +5763,8 @@ PACKETPP_TEST(SipResponseLayerEditTest)
 	uint8_t* buffer4 = readFileIntoBuffer("PacketExamples/sip_resp4.dat", buffer4Length);
 	PACKETPP_ASSERT(!(buffer4 == NULL), "cannot read file sip_resp4.dat");
 
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket4((const uint8_t*)buffer4, buffer4Length, time, true);
 
 	Packet editedPacket(&rawPacket3);
 	Packet secondSipPacket(&rawPacket4);
@@ -5832,8 +5832,8 @@ PACKETPP_TEST(SdpLayerParsingTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/sdp.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file sdp.dat");
 
-	RawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
-	RawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
+	DefaultRawPacket rawPacket1((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket2((const uint8_t*)buffer2, buffer2Length, time, true);
 
 	Packet sdpPacket(&rawPacket1);
 	Packet sdpPacket2(&rawPacket2);
@@ -5890,7 +5890,7 @@ PACKETPP_TEST(SdpLayerCreationTest)
 	uint8_t* buffer1 = readFileIntoBuffer("PacketExamples/sdp.dat", buffer1Length);
 	PACKETPP_ASSERT(!(buffer1 == NULL), "cannot read file sdp.dat");
 
-	RawPacket rawPacket((const uint8_t*)buffer1, buffer1Length, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer1, buffer1Length, time, true);
 
 	Packet sdpPacket(&rawPacket);
 
@@ -5966,8 +5966,8 @@ PACKETPP_TEST(SdpLayerEditTest)
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/sdp.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file sdp.dat");
 
-	RawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
-	RawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
+	DefaultRawPacket rawPacket3((const uint8_t*)buffer3, buffer3Length, time, true);
+	DefaultRawPacket rawPacket((const uint8_t*)buffer, bufferLength, time, true);
 
 	Packet sourceSdpPacket(&rawPacket3);
 	Packet targetSdpPacket(&rawPacket);

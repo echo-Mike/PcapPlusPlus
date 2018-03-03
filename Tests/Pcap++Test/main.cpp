@@ -186,7 +186,7 @@ void pfRingPacketsArriveMultiThread(RawPacket* packets, uint32_t numOfPackets, u
 			data[threadId].TcpCount++;
 			if (packet.isPacketOfType(IPv4))
 			{
-				RawPacket* newRawPacket = new RawPacket(packets[i]);
+				RawPacket* newRawPacket = new DefaultRawPacket(packets[i]);
 				data[threadId].FlowKeys[hash5Tuple(&packet)].pushBack(newRawPacket);
 			}
 		}
@@ -312,7 +312,7 @@ void dpdkPacketsArriveMultiThread(MBufRawPacket* packets, uint32_t numOfPackets,
 			data[threadId].TcpCount++;
 			if (packet.isPacketOfType(IPv4))
 			{
-				RawPacket* newRawPacket = new RawPacket(packets[i]);
+				RawPacket* newRawPacket = new DefaultRawPacket(packets[i]);
 				data[threadId].FlowKeys[hash5Tuple(&packet)].pushBack(newRawPacket);
 			}
 		}
@@ -321,7 +321,7 @@ void dpdkPacketsArriveMultiThread(MBufRawPacket* packets, uint32_t numOfPackets,
 			data[threadId].UdpCount++;
 			if (packet.isPacketOfType(IPv4))
 			{
-				RawPacket* newRawPacket = new RawPacket(packets[i]);
+				RawPacket* newRawPacket = new DefaultRawPacket(packets[i]);
 				data[threadId].FlowKeys[hash5Tuple(&packet)].pushBack(newRawPacket);
 			}
 		}
@@ -656,7 +656,7 @@ PCAPP_TEST(TestPcapFileReadWrite)
     PCAPP_ASSERT(readerDev.getFileName() == EXAMPLE_PCAP_PATH, "Reader file name different than expected");
     PCAPP_ASSERT(writerDev.getFileName() == EXAMPLE_PCAP_WRITE_PATH, "Writer file name different than expected");
     PCAPP_ASSERT(readerDev.getFileSize() == 3812643, "Reader file size different than expected. Expected: %d, got: %d", 3812643, (int)readerDev.getFileSize());
-    RawPacket rawPacket;
+    DefaultRawPacket rawPacket;
     int packetCount = 0;
     int ethCount = 0;
     int sllCount = 0;
@@ -711,7 +711,7 @@ PCAPP_TEST(TestPcapSllFileReadWrite)
     PcapFileWriterDevice writerDev(SLL_PCAP_WRITE_PATH, LINKTYPE_LINUX_SLL);
     PCAPP_ASSERT(readerDev.open(), "cannot open reader device");
     PCAPP_ASSERT(writerDev.open(), "cannot open writer device");
-    RawPacket rawPacket;
+    DefaultRawPacket rawPacket;
     int packetCount = 0;
     int sllCount = 0;
     int ethCount = 0;
@@ -772,7 +772,7 @@ PCAPP_TEST(TestPcapRawIPFileReadWrite)
     PCAPP_ASSERT(readerDev.open(), "cannot open reader device");
     PCAPP_ASSERT(writerDev.open(), "cannot open writer device");
     PCAPP_ASSERT(writerNgDev.open(), "cannot open writer-ng device");
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetCount = 0;
     int ethCount = 0;
     int ipv4Count = 0;
@@ -841,7 +841,7 @@ PCAPP_TEST(TestPcapFileAppend)
 		PCAPP_ASSERT(writerDev.open(true) == true, "Cannot open the pcap file in append mode, iteration #%d", i);
 		PCAPP_ASSERT(readerDev.open(), "cannot open reader device, iteration #%d", i);
 
-		RawPacket rawPacket;
+		DefaultRawPacket rawPacket;
 	    while (readerDev.getNextPacket(rawPacket))
 	    {
 	    	writerDev.writePacket(rawPacket);
@@ -854,7 +854,7 @@ PCAPP_TEST(TestPcapFileAppend)
 	PcapFileReaderDevice readerDev(EXAMPLE_PCAP_WRITE_PATH);
 	PCAPP_ASSERT(readerDev.open(), "cannot open reader device to read result file");
 	int counter = 0;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     while (readerDev.getNextPacket(rawPacket))
     	counter++;
 
@@ -881,7 +881,7 @@ PCAPP_TEST(TestPcapNgFileReadWrite)
     PCAPP_ASSERT(readerDev.getCaptureApplication() == "Dumpcap 1.12.6 (v1.12.6-0-gee1fce6 from master-1.12)", "User app read incorrectly");
     PCAPP_ASSERT(readerDev.getCaptureFileComment() == "", "File comment isn't empty");
     PCAPP_ASSERT(readerDev.getHardware() == "", "Hardware string isn't empty");
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetCount = 0;
     int ethLinkLayerCount = 0;
     int nullLinkLayerCount = 0;
@@ -969,7 +969,7 @@ PCAPP_TEST(TestPcapNgFileReadWriteAdv)
 
     PCAPP_ASSERT(writerDev.open(readerDev.getOS().c_str(), "My Hardware", readerDev.getCaptureApplication().c_str(), "This is a comment in a pcap-ng file") == true, "Couldn't open writer file");
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetCount = 0;
     int ethCount = 0;
     int sllCount = 0;
@@ -1057,7 +1057,7 @@ PCAPP_TEST(TestPcapNgFileReadWriteAdv)
     commentCount = 0;
 
 
-    RawPacket rawPacket2;
+	DefaultRawPacket rawPacket2;
 
     while (readerDev2.getNextPacket(rawPacket, pktComment))
     {
@@ -1521,7 +1521,7 @@ PCAPP_TEST(TestPcapFilters)
     PCAPP_ASSERT(liveDev->startCapture(capturedPackets), "Cannot start capture for filter '%s'", filterAsString.c_str());
     PcapFileReaderDevice fileReaderDev(EXAMPLE_PCAP_VLAN);
     PCAPP_ASSERT(fileReaderDev.open(), "Cannot open file reader device for filter '%s'", filterAsString.c_str());
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     while (fileReaderDev.getNextPacket(rawPacket))
     {
     	PCAPP_ASSERT(liveDev->sendPacket(rawPacket), "Could not send packet. Testing filter: '%s'", filterAsString.c_str());
@@ -1844,7 +1844,7 @@ PCAPP_TEST(TestSendPacket)
     memset(buff, 0, buffLen);
     PCAPP_ASSERT(!liveDev->sendPacket(buff, buffLen), "Defected packet was sent successfully");
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetsSent = 0;
     int packetsRead = 0;
     while(fileReaderDev.getNextPacket(rawPacket))
@@ -1885,7 +1885,7 @@ PCAPP_TEST(TestSendPackets)
     PcapFileReaderDevice fileReaderDev(EXAMPLE_PCAP_PATH);
     PCAPP_ASSERT(fileReaderDev.open(), "Cannot open file reader device");
 
-    RawPacket rawPacketArr[10000];
+	DefaultRawPacket rawPacketArr[10000];
     PointerVector<Packet> packetVec;
     Packet* packetArr[10000];
     int packetsRead = 0;
@@ -1996,7 +1996,7 @@ PCAPP_TEST(TestHttpRequestParsing)
     PcapFileReaderDevice readerDev(EXAMPLE_PCAP_HTTP_REQUEST);
     PCAPP_ASSERT(readerDev.open(), "cannot open reader device");
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetCount = 0;
 
     int httpPackets = 0;
@@ -2130,7 +2130,7 @@ PCAPP_TEST(TestHttpResponseParsing)
     PcapFileReaderDevice readerDev(EXAMPLE_PCAP_HTTP_RESPONSE);
     PCAPP_ASSERT(readerDev.open(), "cannot open reader device");
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetCount = 0;
     int httpResponsePackets = 0;
 
@@ -2232,7 +2232,7 @@ PCAPP_TEST(TestPrintPacketAndLayers)
 {
 	PcapFileReaderDevice reader(EXAMPLE2_PCAP_PATH);
 	PCAPP_ASSERT(reader.open(), "Cannot open reader device for '%s'", EXAMPLE2_PCAP_PATH);
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	ostringstream outputStream;
 	while (reader.getNextPacket(rawPacket))
 	{
@@ -2538,14 +2538,14 @@ PCAPP_TEST(TestPfRingSendPacket)
     //PCAPP_ASSERT(!dev->sendPacket(buff, buffLen), "Defected packet was sent successfully");
     //LoggerPP::getInstance().enableErrors();
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int packetsSent = 0;
     int packetsRead = 0;
     while(fileReaderDev.getNextPacket(rawPacket))
     {
     	packetsRead++;
 
-    	RawPacket origRawPacket = rawPacket;
+		DefaultRawPacket origRawPacket = rawPacket;
     	//send packet as RawPacket
     	PCAPP_ASSERT_AND_RUN_COMMAND(dev->sendPacket(rawPacket), dev->close(), "Sent %d packets. Could not send another raw packet", (packetsRead-1)*3);
 
@@ -2591,7 +2591,7 @@ PCAPP_TEST(TestPfRingSendPackets)
     PcapFileReaderDevice fileReaderDev(EXAMPLE_PCAP_PATH);
     PCAPP_ASSERT(fileReaderDev.open(), "Cannot open file reader device");
 
-    RawPacket rawPacketArr[10000];
+	DefaultRawPacket rawPacketArr[10000];
     PointerVector<Packet> packetVec;
     const Packet* packetArr[10000];
     int packetsRead = 0;
@@ -2671,7 +2671,7 @@ PCAPP_TEST(TestDnsParsing)
     PcapFileReaderDevice readerDev(EXAMPLE_PCAP_DNS);
     PCAPP_ASSERT(readerDev.open(), "cannot open reader device");
 
-    RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
     int dnsPackets = 0;
 
     int packetsContainingDnsQuery = 0;
@@ -3137,7 +3137,7 @@ PCAPP_TEST(TestDpdkDeviceSendPackets)
     PcapFileReaderDevice fileReaderDev(EXAMPLE_PCAP_PATH);
     PCAPP_ASSERT(fileReaderDev.open(), "Cannot open file reader device");
 
-    RawPacket rawPacketArr[10000];
+	DefaultRawPacket rawPacketArr[10000];
     PointerVector<Packet> packetVec;
     RawPacketVector rawPacketVec;
     const Packet* packetArr[10000];
@@ -3145,7 +3145,7 @@ PCAPP_TEST(TestDpdkDeviceSendPackets)
     while(fileReaderDev.getNextPacket(rawPacketArr[packetsRead]))
     {
     	packetVec.pushBack(new Packet(&rawPacketArr[packetsRead]));
-    	rawPacketVec.pushBack(new RawPacket(rawPacketArr[packetsRead]));
+    	rawPacketVec.pushBack(new DefaultRawPacket(rawPacketArr[packetsRead]));
       	packetsRead++;
     }
 
@@ -3443,7 +3443,7 @@ PCAPP_TEST(TestDpdkMbufRawPacket)
 
 	PcapFileReaderDevice reader2(DPDK_PCAP_WRITE_PATH);
 	PCAPP_ASSERT(reader2.open() == true, "Cannot open file '%s'", DPDK_PCAP_WRITE_PATH);
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	int readerPacketCount = 0;
 	while (reader2.getNextPacket(rawPacket))
 		readerPacketCount++;
@@ -3677,7 +3677,7 @@ void tcpReassemblyConnectionEndCallback(ConnectionData connectionData, TcpReasse
 	//printf("conn 0x%X ended\n", connectionData.flowKey);
 }
 
-bool tcpReassemblyReadPcapIntoPacketVec(std::string pcapFileName, std::vector<RawPacket>& packetStream, std::string& errMsg)
+bool tcpReassemblyReadPcapIntoPacketVec(std::string pcapFileName, std::vector<DefaultRawPacket>& packetStream, std::string& errMsg)
 {
 	errMsg = "";
 	packetStream.clear();
@@ -3689,7 +3689,7 @@ bool tcpReassemblyReadPcapIntoPacketVec(std::string pcapFileName, std::vector<Ra
 		return false;
 	}
 
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	while (reader.getNextPacket(rawPacket))
 	{
 		packetStream.push_back(rawPacket);
@@ -3698,7 +3698,7 @@ bool tcpReassemblyReadPcapIntoPacketVec(std::string pcapFileName, std::vector<Ra
 	return true;
 }
 
-RawPacket tcpReassemblyAddRetransmissions(RawPacket rawPacket, int beginning, int numOfBytes)
+DefaultRawPacket tcpReassemblyAddRetransmissions(DefaultRawPacket rawPacket, int beginning, int numOfBytes)
 {
 	Packet packet(&rawPacket);
 
@@ -3744,10 +3744,10 @@ RawPacket tcpReassemblyAddRetransmissions(RawPacket rawPacket, int beginning, in
 
 	delete [] newPayload;
 
-	return *(packet.getRawPacket());
+	return *dynamic_cast<DefaultRawPacket*>(packet.getRawPacket());
 }
 
-bool tcpReassemblyTest(std::vector<RawPacket>& packetStream, TcpReassemblyMultipleConnStats& results, bool monitorOpenCloseConns, bool closeConnsManually)
+bool tcpReassemblyTest(std::vector<DefaultRawPacket>& packetStream, TcpReassemblyMultipleConnStats& results, bool monitorOpenCloseConns, bool closeConnsManually)
 {
 	TcpReassembly* tcpReassembly = NULL;
 
@@ -3756,7 +3756,7 @@ bool tcpReassemblyTest(std::vector<RawPacket>& packetStream, TcpReassemblyMultip
 	else
 		tcpReassembly = new TcpReassembly(tcpReassemblyMsgReadyCallback, &results);
 
-	for (std::vector<RawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
+	for (std::vector<DefaultRawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
 	{
 		Packet packet(&(*iter));
 		tcpReassembly->ReassemblePacket(packet);
@@ -3786,7 +3786,7 @@ bool tcpReassemblyTest(std::vector<RawPacket>& packetStream, TcpReassemblyMultip
 PCAPP_TEST(TestTcpReassemblySanity)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/one_tcp_stream.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
@@ -3810,22 +3810,22 @@ PCAPP_TEST(TestTcpReassemblySanity)
 PCAPP_TEST(TestTcpReassemblyRetran)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/one_tcp_stream.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
 	// retransmission includes exact same data
-	RawPacket retPacket1 = tcpReassemblyAddRetransmissions(packetStream.at(4), 0, 0);
+	DefaultRawPacket retPacket1 = tcpReassemblyAddRetransmissions(packetStream.at(4), 0, 0);
 	// retransmission includes 10 bytes less than original data (missing bytes are from the beginning)
-	RawPacket retPacket2 =  tcpReassemblyAddRetransmissions(packetStream.at(10), 10, 0);
+	DefaultRawPacket retPacket2 =  tcpReassemblyAddRetransmissions(packetStream.at(10), 10, 0);
 	// retransmission includes 20 bytes less than original data (missing bytes are from the end)
-	RawPacket retPacket3 =  tcpReassemblyAddRetransmissions(packetStream.at(13), 0, 1340);
+	DefaultRawPacket retPacket3 =  tcpReassemblyAddRetransmissions(packetStream.at(13), 0, 1340);
 	// retransmission includes 10 bytes more than original data (original data + 10 bytes)
-	RawPacket retPacket4 =  tcpReassemblyAddRetransmissions(packetStream.at(21), 0, 1430);
+	DefaultRawPacket retPacket4 =  tcpReassemblyAddRetransmissions(packetStream.at(21), 0, 1430);
 	// retransmission includes 10 bytes less in the beginning and 20 bytes more at the end
-	RawPacket retPacket5 =  tcpReassemblyAddRetransmissions(packetStream.at(28), 10, 1370);
+	DefaultRawPacket retPacket5 =  tcpReassemblyAddRetransmissions(packetStream.at(28), 10, 1370);
 	// retransmission includes 10 bytes less in the beginning and 15 bytes less at the end
-	RawPacket retPacket6 =  tcpReassemblyAddRetransmissions(packetStream.at(34), 10, 91);
+	DefaultRawPacket retPacket6 =  tcpReassemblyAddRetransmissions(packetStream.at(34), 10, 91);
 
 	packetStream.insert(packetStream.begin() + 5, retPacket1);
 	packetStream.insert(packetStream.begin() + 12, retPacket2);
@@ -3851,17 +3851,17 @@ PCAPP_TEST(TestTcpReassemblyRetran)
 PCAPP_TEST(TestTcpReassemblyMissingData)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/one_tcp_stream.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
 	// remove 20 bytes from the beginning
-	RawPacket missPacket1 = tcpReassemblyAddRetransmissions(packetStream.at(3), 20, 0);
+	DefaultRawPacket missPacket1 = tcpReassemblyAddRetransmissions(packetStream.at(3), 20, 0);
 	packetStream.insert(packetStream.begin() + 4, missPacket1);
 	packetStream.erase(packetStream.begin() + 3);
 
 	// remove 30 bytes from the end
-	RawPacket missPacket2 = tcpReassemblyAddRetransmissions(packetStream.at(20), 0, 1390);
+	DefaultRawPacket missPacket2 = tcpReassemblyAddRetransmissions(packetStream.at(20), 0, 1390);
 	packetStream.insert(packetStream.begin() + 21, missPacket2);
 	packetStream.erase(packetStream.begin() + 20);
 
@@ -3909,7 +3909,7 @@ PCAPP_TEST(TestTcpReassemblyMissingData)
 PCAPP_TEST(TestTcpReassemblyOutOfOrder)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/one_tcp_stream.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
@@ -3917,14 +3917,14 @@ PCAPP_TEST(TestTcpReassemblyOutOfOrder)
 	std::swap(packetStream[9], packetStream[10]);
 
 	// swap 2 non-consequent packets
-	RawPacket oooPacket1 = packetStream[18];
+	DefaultRawPacket oooPacket1 = packetStream[18];
 	packetStream.erase(packetStream.begin() + 18);
 	packetStream.insert(packetStream.begin() + 23, oooPacket1);
 
 	// reverse order of all packets in message
 	for (int i = 0; i < 12; i++)
 	{
-		RawPacket oooPacketTemp = packetStream[35];
+		DefaultRawPacket oooPacketTemp = packetStream[35];
 		packetStream.erase(packetStream.begin() + 35);
 		packetStream.insert(packetStream.begin() + 24 + i, oooPacketTemp);
 	}
@@ -3955,7 +3955,7 @@ PCAPP_TEST(TestTcpReassemblyOutOfOrder)
 	// reverse order of all packets in message
 	for (int i = 0; i < 12; i++)
 	{
-		RawPacket oooPacketTemp = packetStream[35];
+		DefaultRawPacket oooPacketTemp = packetStream[35];
 		packetStream.erase(packetStream.begin() + 35);
 		packetStream.insert(packetStream.begin() + 24 + i, oooPacketTemp);
 	}
@@ -3983,7 +3983,7 @@ PCAPP_TEST(TestTcpReassemblyOutOfOrder)
 PCAPP_TEST(TestTcpReassemblyWithFIN_RST)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 	TcpReassemblyMultipleConnStats tcpReassemblyResults;
 	std::string expectedReassemblyData = "";
 
@@ -4045,7 +4045,7 @@ PCAPP_TEST(TestTcpReassemblyWithFIN_RST)
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/one_http_stream_fin2.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
 	// move second packet of server->client message to the end of the message (after FIN)
-	RawPacket oooPacketTemp = packetStream[6];
+	DefaultRawPacket oooPacketTemp = packetStream[6];
 	packetStream.erase(packetStream.begin() + 6);
 	packetStream.insert(packetStream.begin() + 12, oooPacketTemp);
 
@@ -4067,7 +4067,7 @@ PCAPP_TEST(TestTcpReassemblyWithFIN_RST)
 PCAPP_TEST(TestTcpReassemblyMalformedPkts)
 {
 	std::string errMsg;
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 	TcpReassemblyMultipleConnStats tcpReassemblyResults;
 	std::string expectedReassemblyData = "";
 
@@ -4083,7 +4083,7 @@ PCAPP_TEST(TestTcpReassemblyMalformedPkts)
 //	PcapFileWriterDevice writer("pasdasda.pcap");
 //	writer.open();
 //
-//	for (std::vector<RawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
+//	for (std::vector<DefaultRawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
 //	{
 //		writer.writePacket(*iter);
 //	}
@@ -4114,16 +4114,16 @@ PCAPP_TEST(TestTcpReassemblyMultipleConns)
 
 	TcpReassembly tcpReassembly(tcpReassemblyMsgReadyCallback, &results, tcpReassemblyConnectionStartCallback, tcpReassemblyConnectionEndCallback);
 
-	std::vector<RawPacket> packetStream;
+	std::vector<DefaultRawPacket> packetStream;
 	PCAPP_ASSERT(tcpReassemblyReadPcapIntoPacketVec("PcapExamples/three_http_streams.pcap", packetStream, errMsg) == true, "Error reading pcap file: %s", errMsg.c_str());
 
-	RawPacket finPacket1 = packetStream.at(13);
-	RawPacket finPacket2 = packetStream.at(15);
+	DefaultRawPacket finPacket1 = packetStream.at(13);
+	DefaultRawPacket finPacket2 = packetStream.at(15);
 
 	packetStream.erase(packetStream.begin() + 13);
 	packetStream.erase(packetStream.begin() + 14);
 
-	for (std::vector<RawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
+	for (std::vector<DefaultRawPacket>::iterator iter = packetStream.begin(); iter != packetStream.end(); iter++)
 	{
 		Packet packet(&(*iter));
 		tcpReassembly.ReassemblePacket(packet);
