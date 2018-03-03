@@ -2,6 +2,7 @@
 #define PCAPPP_OLDMEMORYMODELMEMORYPROXY
 
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 
 #include "CPP11.h"
@@ -42,6 +43,19 @@ namespace pcpp
 			 * Base type of this class.
 			 */
 			typedef MemoryProxyInterface< MemoryT > Base;
+
+			/* Base typedefs */
+
+			using typename Base::value_type;
+			using typename Base::pointer;
+			using typename Base::const_pointer;
+			using typename Base::reference;
+			using typename Base::const_reference;
+
+			using typename Base::size;
+			using typename Base::index;
+			using typename Base::memory_value;
+
 		protected:
 			/**
 			 * @brief Setups object to special null-state.
@@ -90,7 +104,7 @@ namespace pcpp
 					m_Ownership = true;
 					m_Data = new typename Base::value_type[other.m_Length];
 					// This check does not performed in original code
-					/* Put / before /* to uncomment (//*)
+					/*
 					if (!m_Data) {
 						// Expect nullptr/NULL returned when exception thrown on allocation
 						clear();

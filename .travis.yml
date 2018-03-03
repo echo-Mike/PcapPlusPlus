@@ -2,11 +2,6 @@ sudo: required
 language: cpp
 services:
   - docker
-  
-# safelist
-branches:
-  only:
-  - feature/rawpacket_memory_rework
 
 matrix:
   include:

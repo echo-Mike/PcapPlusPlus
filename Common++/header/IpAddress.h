@@ -1,9 +1,10 @@
 #ifndef PCAPPP_IPADDRESS
 #define PCAPPP_IPADDRESS
 
-#include <memory>
 #include <stdint.h>
 #include <string>
+#include <memory>
+#include <cstring>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -322,7 +323,7 @@ namespace pcpp
 		 * Overload of the comparison operator
 		 * @return true if 2 addresses are equal. False otherwise
 		 */
-		inline bool operator==(const IPv6Address& other) const;
+		bool operator==(const IPv6Address& other) const;
 
 		/**
 		 * Overload of the non-equal operator

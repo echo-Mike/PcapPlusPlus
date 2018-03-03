@@ -217,7 +217,7 @@ namespace pcpp
 		{
 			RawPacket* newObj = PCAPPP_NULLPTR;
 			try {
-				newObj = new GenericRawPacket;
+				newObj = new GenericRawPacket();
 			}
 			catch (const std::exception&)
 			{
@@ -545,7 +545,7 @@ namespace pcpp
 		{
 			RawPacket* newObj = PCAPPP_NULLPTR;
 			try {
-				newObj = new GenericRawPacket;
+				newObj = new GenericRawPacket();
 			}
 			catch (const std::exception&)
 			{

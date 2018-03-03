@@ -2,6 +2,7 @@
 #define PCAPPP_SIZEAWAREMEMORYPROXY
 
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 
 #include "CPP11.h"
@@ -43,6 +44,19 @@ namespace pcpp
 			 * Represents compressed pair of allocator adapter and data pointer.
 			 */
 			typedef Implementation::AllocatorPointerPair<Allocator> allocator_pointer_pair_t;
+
+			/* Base typedefs */
+
+			using typename Base::value_type;
+			using typename Base::pointer;
+			using typename Base::const_pointer;
+			using typename Base::reference;
+			using typename Base::const_reference;
+
+			using typename Base::size;
+			using typename Base::index;
+			using typename Base::memory_value;
+
 		protected:
 			/**
 			 * @brief Represents the read-write access facility to the underlying data pointer.
@@ -123,7 +137,7 @@ namespace pcpp
 					getPointer() = getAllocator().allocate(other.m_Length);
 					// Check if new buffer was allocated
 					if (m_Data == PCAPPP_NULLPTR) {// Expect nullptr/NULL returned when execption thrown on allocation
-						zeroFields();
+						initialize();
 						return false;
 					}
 					// Copy whole data to this object memory
@@ -321,7 +335,7 @@ namespace pcpp
 			/**
 			 * @brief Reallocates underlying data.
 			 * If m_Length is equal to newBufferLength - Immediately returns true.\n
-			 * newBufferLength set to 0 interpreted as clear operation a.e. deallocate data and call zeroFields member function.\n
+			 * newBufferLength set to 0 interpreted as clear operation a.e. deallocate data and call initialize member function.\n
 			 * In any other case firstly allocates memory for newBufferLength data entries. 
 			 * Then sets per-byte value of that memory to initialValue. After that copies old data to beginig of new memory.
 			 * At the end deallocates old data and sets data member fields to their corresponding values.\n

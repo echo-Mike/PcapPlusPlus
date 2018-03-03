@@ -42,7 +42,7 @@ Packet::Packet(size_t maxPacketLen)
 	// Create this object in null-state
 	initialize();
 	// Allocate new null-state RawPacket
-	m_RawPacket = new DefaultRawPacket;
+	m_RawPacket = new DefaultRawPacket();
 	// TODO: add warning message if result of reallocateData is false
 	m_RawPacket->reallocateData(maxPacketLen);
 	m_FreeRawPacket = true;

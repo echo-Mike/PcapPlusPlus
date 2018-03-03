@@ -2,7 +2,6 @@
 #define PCAPPP_MEMORYPROXYINTERFACE
 
 #include <cstdint>
-#include <exception>
 
 #include "CPP11.h"
 #include "MemoryUtils.h"
