@@ -19,8 +19,8 @@ namespace pcpp
 	 * @brief Represents a generic binding between RawPacket and MemoryProxy interfaces.
 	 * Supports automatic deduction of MemoryProxy type.
 	 * @tparam MemoryProxyTag One of the tag types defined in pcpp::memory::MemoryProxyTags namesapce. Used for auto deduction.
-	 * @tparam MemoryProxyT Type of memory proxy to bind. By default may be deduced from MemoryProxyTag (except for CustomTag).
-	 * @tparam unnamed Raises a compile-time error if provided MemoryProxyT do not implement memory::MemoryProxyInterface< Data_t > interface.
+	 * @tparam MemoryProxyT Type of memory proxy to bind. By default may be deduced from MemoryProxyTag (including CustomTag).
+	 * @tparam unnamed Raises a compile-time error if provided MemoryProxyT do not implement memory::MemoryProxyInterface< memory::Data_t > interface.
 	 */
 	template <
 		typename MemoryProxyTag = ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag,

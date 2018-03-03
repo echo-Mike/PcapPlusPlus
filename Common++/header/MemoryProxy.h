@@ -82,7 +82,7 @@ namespace pcpp
 		 * @brief Specialization of MemoryProxyDispatcher that deduces provided MemoryProxy type from CustomTag.
 		 */
 		template < typename MemoryProxy >
-		struct MemoryProxyDispatcher< MemoryProxyTags::CustomTag, MemoryProxy >
+		struct MemoryProxyDispatcher< MemoryProxyTags::CustomTag<MemoryProxy> >
 		{
 			typedef MemoryProxy memory_proxy_t;
 		};
