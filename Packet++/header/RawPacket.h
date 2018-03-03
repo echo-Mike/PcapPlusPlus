@@ -9,7 +9,7 @@
 #endif
 #include <stddef.h>
 
-#include <MemoryProxy.h>
+#include "MemoryProxy.h"
 
 /// @file
 
@@ -221,53 +221,53 @@ namespace pcpp
 	 */
 	class RawPacket
 	{
+		typedef ::pcpp::memory::DefaultMemoryProxyInterface TypeHelper;
 	public:
 		/**
 		 * Defines underlying memory type.
 		 */
-		typedef ::pcpp::memory::Data_t value_type;
+		typedef typename TypeHelper::value_type value_type;
 		/**
 		 * Defines type of pointer to underlying memory type.
 		 */
-		typedef value_type* pointer;
+		typedef typename TypeHelper::pointer pointer;
 		/**
 		 * Defines type of constant pointer to underlying memory type.
 		 */
-		typedef const value_type* const_pointer;
+		typedef typename TypeHelper::const_pointer const_pointer;
 		/**
 		 * Defines type of reference to element of underlying memory type.
 		 */
-		typedef value_type& reference;
+		typedef typename TypeHelper::reference reference;
 		/**
 		 * Defines type of constant reference to element of underlying memory type.
 		 */
-		typedef const value_type& const_reference;
+		typedef typename TypeHelper::const_reference const_reference;
 
 		/**
 		 * Defines type of variables that represents size values.
 		 */
-		typedef unsigned long long size;
+		typedef typename TypeHelper::size size;
 		/**
 		 * Defines type of variables that represents length values.
 		 */
-		typedef signed long long length;
+		typedef typename TypeHelper::length length;
 		/**
 		 * Defines type of variables that represents index values.
 		 */
-		typedef signed long long index;
+		typedef typename TypeHelper::index index;
 		/**
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
-		typedef int memory_value;
+		typedef typename TypeHelper::memory_value memory_value;
+
 		/**
 		 * Represents type of structure that holds time-stamp.
 		 */
 		typedef timeval time_t;
+
 	protected:
-		time_t m_TimeStamp;
-		length m_FrameLength;
-		LinkLayerType m_linkLayerType;
-	
+
 		/**
 		 * @brief Setups RawPacket object to a null-state.
 		 * Basically zeroes all fields.
@@ -524,6 +524,11 @@ namespace pcpp
 		 * @return true if operation finished successfully, false otherwise.
 		 */
 		virtual bool removeData(index atIndex, size numOfBytesToRemove) = 0;
+
+	protected:
+		time_t m_TimeStamp;
+		length m_FrameLength;
+		LinkLayerType m_linkLayerType;
 	};
 
 } // namespace pcpp

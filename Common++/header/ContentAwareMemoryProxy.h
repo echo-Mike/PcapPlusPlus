@@ -55,6 +55,7 @@ namespace pcpp
 			using typename Base::const_reference;
 
 			using typename Base::size;
+			using typename Base::length;
 			using typename Base::index;
 			using typename Base::memory_value;
 

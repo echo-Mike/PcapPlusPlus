@@ -20,14 +20,14 @@ namespace pcpp
 	 * Supports automatic deduction of MemoryProxy type.
 	 * @tparam MemoryProxyTag One of the tag types defined in pcpp::memory::MemoryProxyTags namesapce. Used for auto deduction.
 	 * @tparam MemoryProxyT Type of memory proxy to bind. By default may be deduced from MemoryProxyTag (including CustomTag).
-	 * @tparam unnamed Raises a compile-time error if provided MemoryProxyT do not implement memory::MemoryProxyInterface< memory::Data_t > interface.
+	 * @tparam unnamed Raises a compile-time error if provided MemoryProxyT do not implement memory::DefaultMemoryProxyInterface interface.
 	 */
 	template <
 		typename MemoryProxyTag = ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag,
 		typename MemoryProxyT = typename ::pcpp::memory::MemoryProxyDispatcher< MemoryProxyTag >::memory_proxy_t,
 		typename = typename ::pcpp::type_traits::enable_if<
 			::pcpp::type_traits::is_base_of<
-				::pcpp::memory::MemoryProxyInterface< ::pcpp::memory::Data_t >,
+				::pcpp::memory::DefaultMemoryProxyInterface,
 				MemoryProxyT
 			>::value
 		>::type

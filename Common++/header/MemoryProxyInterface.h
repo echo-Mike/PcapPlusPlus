@@ -53,17 +53,25 @@ namespace pcpp
 			/**
 			 * Defines type of variables that represents size values.
 			 */
-			typedef std::size_t size;
+			typedef unsigned long long size;
+			/**
+			 * Defines type of variables that represents length values.
+			 */
+			typedef signed long long length;
 			/**
 			 * Defines type of variables that represents index values.
 			 */
-			typedef int index;
+			typedef signed long long index;
 			/**
 			 * Defines type of variables that represents initial memory values for std::memset.
 			 */
 			typedef int memory_value;
 
-			/* Virtual interface */ // YES - virtual call may be inlined.
+			/* Virtual interface */
+
+			// XXX: What "inline virtual"?
+			// XXX: Can virtual call be inlined? 
+			// YYY: YES, when compiler knows type of underlying object.
 
 			/**
 			 * @brief Default virtual destructor.

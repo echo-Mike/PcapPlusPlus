@@ -27,7 +27,11 @@ namespace pcpp
 		/**
 		 * Represents type of default allocator used by the library. It allocates arrays of default data type Data_t.
 		 */
-		typedef default_allocator<Data_t[]> default_allocator_t;
+		typedef default_allocator< Data_t[] > default_allocator_t;
+		/**
+		 * Represents type of default library-wide MemoryProxyInterface that uses Data_t as memory type.
+		 */
+		typedef MemoryProxyInterface< Data_t > DefaultMemoryProxyInterface;
 		/**
 		 * Represents type of SizeAwareMemoryProxy that uses default_allocator_t as an allocator.
 		 */
