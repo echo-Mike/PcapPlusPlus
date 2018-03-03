@@ -21,5 +21,3 @@ MKDIR := mkdir
 INSTALL_SCRIPT := install.sh
 
 UNINSTALL_SCRIPT := uninstall.sh
-
-CXX_STANDARD := c++98

@@ -8,7 +8,6 @@ SOURCES := $(wildcard src/*.cpp)
 OBJS_FILENAMES := $(patsubst src/%.cpp,Obj/%.o,$(SOURCES))
 
 COMMONPP_HOME := ../Common++
-PCAPPP_HOME := ../Pcap++
 
 ifdef WIN32
 DEPS := -DWPCAP -DHAVE_REMOTE
@@ -25,8 +24,7 @@ endif
 
 INCLUDES := -I"./src" \
 			-I"./header" \
-			-I"$(COMMONPP_HOME)/header" \
-			-I"$(PCAPPP_HOME)/header"
+			-I"$(COMMONPP_HOME)/header"
 			
 ifdef WIN32
 INCLUDES += -I$(MINGW_HOME)/include/ddk \
@@ -38,7 +36,7 @@ endif
 			
 Obj/%.o: src/%.cpp
 	@echo 'Building file: $<'
-	@$(CXX) $(DEPS) $(INCLUDES) -std=$(CXX_STANDARD) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
+	@$(CXX) $(DEPS) $(INCLUDES) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
 
 CUR_TARGET := $(notdir $(shell pwd))
 

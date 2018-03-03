@@ -20,7 +20,7 @@ PCAPPP_INCLUDES += -I$(DEBUG_NEW_HOME)
 
 Obj/%.o: %.cpp
 	@echo 'Building file: $<'
-	@$(CXX) $(PCAPPP_INCLUDES) -std=$(CXX_STANDARD) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
+	@$(CXX) $(PCAPPP_INCLUDES) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
 
 
 UNAME := $(shell uname)

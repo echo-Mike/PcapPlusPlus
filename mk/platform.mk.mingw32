@@ -19,5 +19,3 @@ RM := rm.exe
 CP := cp.exe
 
 MKDIR := mkdir.exe
-
-CXX_STANDARD := c++98
