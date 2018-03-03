@@ -372,7 +372,7 @@ namespace pcpp
 		 * @brief Method to check if current object is in the null-state.
 		 * @return true if object is NOT in the null-state, false otherwise.
 		 */
-		virtual inline operator bool() const { return m_FrameLength || m_linkLayerType != LINKTYPE_ETHERNET; }
+		virtual operator bool() const { return m_FrameLength || m_linkLayerType != LINKTYPE_ETHERNET; }
 
 		/**
 		 * @brief Method to check if current object is in the null-state.
@@ -388,21 +388,21 @@ namespace pcpp
 		 * Object is constructed using default constructor.
 		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
 		 */
-		virtual inline RawPacket* newObject() = 0;
+		virtual RawPacket* newObject() = 0;
 
 		/**
 		 * @brief Special method that allocates new object of underlying type on a heap.
 		 * Object is constructed using copy constructor to which this object is passed as other instance.
 		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
 		 */
-		virtual inline RawPacket* copy() = 0;
+		virtual RawPacket* copy() = 0;
 
 		/**
 		 * @brief Special method that allocates new object of underlying type on a heap.
 		 * Object is constructed using move constructor to which this object is passed as other instance.
 		 * @return Pointer to the allocated object or PCAPPP_NULLPTR if allocation failed.
 		 */
-		virtual inline RawPacket* move() = 0;
+		virtual RawPacket* move() = 0;
 
 		/* Abstract API: Data acquisition */
 
@@ -411,27 +411,27 @@ namespace pcpp
 		 * This overload is called if object is not const-qualified.
 		 * @return A pointer to the raw data.
 		 */
-		virtual inline pointer getRawData() = 0;
+		virtual pointer getRawData() = 0;
 
 		/**
 		 * @brief Method to get raw data pointer.
 		 * This overload is called if object is const-qualified.
 		 * @return A pointer to the const-qualified raw data.
 		 */
-		virtual inline const_pointer getRawData() const = 0;
+		virtual const_pointer getRawData() const = 0;
 
 		/**
 		 * @brief Method to get raw data pointer.
 		 * Same as call to getRawData member function of const object.
 		 * @return A pointer to the const-qualified raw data.
 		 */
-		virtual inline const_pointer getRawDataReadOnly() const = 0;
+		virtual const_pointer getRawDataReadOnly() const = 0;
 
 		/**
 		 * @brief Method to get raw data length in bytes.
 		 * @return Raw data length in bytes.
 		 */
-		virtual inline length getRawDataLen() const = 0;
+		virtual length getRawDataLen() const = 0;
 
 		/**
 		 * @brief Method to get an indication whether raw data was already set for this instance.
@@ -439,13 +439,13 @@ namespace pcpp
 		 * the copy constructor or using the assignment operator.
 		 * @return True if raw data was set for this instance, false otherwise.
 		 */
-		virtual inline bool isPacketSet() const = 0;
+		virtual bool isPacketSet() const = 0;
 
 		/**
 		 * @brief Returns owning status of underlying data.
 		 * @return true if object owns it's underlying data, false otherwise.
 		 */
-		virtual inline bool isOwning() const = 0;
+		virtual bool isOwning() const = 0;
 
 		/* Abstract API: Data modification */
 

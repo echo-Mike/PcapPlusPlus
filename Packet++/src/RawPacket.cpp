@@ -17,7 +17,7 @@ RawPacket& RawPacket::operator=(const RawPacket& other)
 	return *this;
 }
 
-bool RawPacket::setRawData(const_pointer /* pRawData */, size rawDataLen, timeval timestamp, LinkLayerType layerType, length frameLength)
+bool RawPacket::setRawData(const_pointer /* pRawData */, size rawDataLen, time_t timestamp, LinkLayerType layerType, length frameLength)
 {
 	if(frameLength == -1)
 		frameLength = rawDataLen;

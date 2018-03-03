@@ -84,7 +84,7 @@ namespace pcpp
 			{
 				if (m_Data != PCAPPP_NULLPTR && m_Ownership)
 					delete[] m_Data;
-				m_Data = (typename Base::pointer)p;
+				m_Data = (pointer)p;
 				m_Length = length;
 				m_DataSet = true;
 				return true;
@@ -103,7 +103,7 @@ namespace pcpp
 				if (allocateData)
 				{
 					m_Ownership = true;
-					m_Data = new typename Base::value_type[other.m_Length];
+					m_Data = new value_type[other.m_Length];
 					// This check does not performed in original code
 					/*
 					if (!m_Data) {
@@ -114,7 +114,7 @@ namespace pcpp
 					//*/
 					m_Length = other.m_Length;
 				}
-				std::memcpy(m_Data, other.m_Data, other.m_Length * sizeof(typename Base::value_type));
+				std::memcpy(m_Data, other.m_Data, other.m_Length * sizeof(value_type));
 				m_DataSet = true;
 				return true;
 			}
@@ -212,7 +212,7 @@ namespace pcpp
 			pointer release() PCAPPP_OVERRIDE
 			{	// This function logic does not presented in original code
 				// Next code was created with common sense of release operation in mind.
-				typename Base::pointer old = m_Data;
+				pointer old = m_Data;
 				initialize();
 				return old;
 			}
@@ -274,9 +274,9 @@ namespace pcpp
 					return false;
 				}
 
-				typename Base::pointer newBuffer = new typename Base::value_type[newBufferLength];
-				std::memset(newBuffer, initialValue, newBufferLength * sizeof(typename Base::value_type));
-				std::memcpy(newBuffer, m_Data, m_Length * sizeof(typename Base::value_type));
+				pointer newBuffer = new value_type[newBufferLength];
+				std::memset(newBuffer, initialValue, newBufferLength * sizeof(value_type));
+				std::memcpy(newBuffer, m_Data, m_Length * sizeof(value_type));
 				if (m_Ownership)
 					delete[] m_Data;
 
@@ -316,7 +316,7 @@ namespace pcpp
 			 */
 			bool append(size dataToAppendLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
-				std::memset(m_Data + m_Length, initialValue, dataToAppendLen * sizeof(typename Base::value_type));
+				std::memset(m_Data + m_Length, initialValue, dataToAppendLen * sizeof(value_type));
 				m_Length += dataToAppendLen;
 				return true;
 			}
@@ -333,7 +333,7 @@ namespace pcpp
 			 */
 			bool append(const_pointer dataToAppend, size dataToAppendLen) PCAPPP_OVERRIDE
 			{
-				std::memcpy(m_Data + m_Length, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
+				std::memcpy(m_Data + m_Length, dataToAppend, dataToAppendLen * sizeof(value_type));
 				m_Length += dataToAppendLen;
 				return true;
 			}
@@ -351,14 +351,14 @@ namespace pcpp
 			 */
 			bool insert(index atIndex, size dataToInsertLen, memory_value initialValue = 0) PCAPPP_OVERRIDE
 			{
-				typename Base::index index = (typename Base::index)m_Length - 1;
-				while (index >= atIndex)
+				index index_ = (index)m_Length - 1;
+				while (index_ >= atIndex)
 				{
-					m_Data[index + dataToInsertLen] = m_Data[index];
-					--index;
+					m_Data[index_ + dataToInsertLen] = m_Data[index_];
+					--index_;
 				}
 
-				std::memset(m_Data + atIndex, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memset(m_Data + atIndex, initialValue, dataToInsertLen * sizeof(value_type));
 				m_Length += dataToInsertLen;
 				return true;
 			}
@@ -376,14 +376,14 @@ namespace pcpp
 			 */
 			bool insert(index atIndex, const_pointer dataToInsert, size dataToInsertLen) PCAPPP_OVERRIDE
 			{
-				typename Base::index index = (typename Base::index)m_Length - 1;
-				while (index >= atIndex)
+				index index_ = (index)m_Length - 1;
+				while (index_ >= atIndex)
 				{
-					m_Data[index + dataToInsertLen] = m_Data[index];
-					--index;
+					m_Data[index_ + dataToInsertLen] = m_Data[index_];
+					--index_;
 				}
 
-				std::memcpy(m_Data + atIndex, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memcpy(m_Data + atIndex, dataToInsert, dataToInsertLen * sizeof(value_type));
 				m_Length += dataToInsertLen;
 				return true;
 			}
@@ -399,18 +399,18 @@ namespace pcpp
 			bool remove(index atIndex, size numOfBytesToRemove) PCAPPP_OVERRIDE
 			{
 
-				if ((atIndex + (typename Base::index)numOfBytesToRemove) > m_Length)
+				if ((size)(atIndex + (index)numOfBytesToRemove) > m_Length)
 				{
 					// TODO: Add error msg
 					//LOG_ERROR("Remove section is out of raw packet bound");
 					return false;
 				}
 
-				typename Base::index index = atIndex;
-				while (index < (m_Length - numOfBytesToRemove))
+				index index_ = atIndex;
+				while (index_ < (index)(m_Length - numOfBytesToRemove))
 				{
-					m_Data[index] = m_Data[index + numOfBytesToRemove];
-					++index;
+					m_Data[index_] = m_Data[index_ + numOfBytesToRemove];
+					++index_;
 				}
 
 				m_Length -= numOfBytesToRemove;

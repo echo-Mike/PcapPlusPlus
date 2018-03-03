@@ -655,7 +655,7 @@ namespace pcpp
 
 		inline void realloc_impl(size new_size)
 		{
-			if (!Base::isPacketSet()) {
+			if (!isPacketSet()) {
 				reallocateData(new_size > m_MaxLength ? new_size : m_MaxLength );
 			} else if ( MPBase::getLength() + new_size > m_MaxLength ) {
 				// reallocate to maximum value of: twice the max size of the packet or max size + new required length

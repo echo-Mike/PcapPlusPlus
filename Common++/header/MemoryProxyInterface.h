@@ -72,6 +72,8 @@ namespace pcpp
 			// XXX: What "inline virtual"?
 			// XXX: Can virtual call be inlined? 
 			// YYY: YES, when compiler knows type of underlying object.
+			// ZZZ: Apparently the "inline virtual" specifier makes some compiles go insane about that fact. 
+			//      Especially a C++98 compilers.
 
 			/**
 			 * @brief Default virtual destructor.
@@ -85,27 +87,27 @@ namespace pcpp
 			 * The length member field may represent anything but most commonly it is a length of data helded by derived class.
 			 * @return Length value specified by derived class.
 			 */
-			inline virtual size getLength() const = 0;
+			virtual size getLength() const = 0;
 			/**
 			 * @brief Represents the access facility to a common member field that represents current owning status of underlying data used in derived classes.
 			 * Derived class must overload this function to add read access to it's owning member field.\n
 			 * The owning member field may represent anything but most commonly it is an owning status of underlying data helded by derived class.
 			 * @return Mostly common: true if object owns it's underlying data, false otherwise.
 			 */
-			inline virtual bool isOwning() const = 0;
+			virtual bool isOwning() const = 0;
 			/**
 			 * @brief Represents the access facility to the beginning of underlying data in derived classes.
 			 * Derived class must overload this function to add access to it's underlying data.
 			 * @return Mostly common: Pointer to beginning of underlying data.
 			 */
-			inline virtual pointer get() = 0;
+			virtual pointer get() = 0;
 			/**
 			 * @brief Represents the access facility to the beginning of underlying data in derived classes.
 			 * This is an overload selected by compiler if object is const-qualified.\n
 			 * Derived class must overload this function to add read-only access to it's underlying data.
 			 * @return Mostly common: Pointer to beginning of const-qualified underlying data.
 			 */
-			inline virtual const_pointer get() const = 0;
+			virtual const_pointer get() const = 0;
 			/**
 			 * @brief Represents the facility to release the ownership of underlying data.
 			 * Derived class must overload this function if they can release ownership of data and set their self to some null-state.

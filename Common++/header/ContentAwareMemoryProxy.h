@@ -144,7 +144,7 @@ namespace pcpp
 						return false;
 					};
 					// Copy whole data to this object memory
-					std::memcpy(getPointer(), other.getPointer(), other.m_Capacity * sizeof(typename Base::value_type));
+					std::memcpy(getPointer(), other.getPointer(), other.m_Capacity * sizeof(value_type));
 					// We definitely own data now
 					m_Ownership = true;
 					// Copy length and capacity values
@@ -303,7 +303,7 @@ namespace pcpp
 			 */
 			pointer release() PCAPPP_OVERRIDE
 			{
-				typename Base::pointer old = getPointer();
+				pointer old = getPointer();
 				initialize();
 				return old;
 			}
@@ -373,17 +373,17 @@ namespace pcpp
 					return true;
 				// Allocate new buffer of requested 
 				// It is allocator's responsibility to handle memory allocation exceptions
-				typename Base::pointer newBuffer = getAllocator().allocate(newBufferLength);
+				pointer newBuffer = getAllocator().allocate(newBufferLength);
 				// Check if new buffer was allocated
 				if (!newBuffer) // Expect nullptr/NULL returned when exception thrown on allocation
 					return false;
 				// Clear new buffer
-				std::memset(newBuffer, initialValue, newBufferLength * sizeof(typename Base::value_type));
+				std::memset(newBuffer, initialValue, newBufferLength * sizeof(value_type));
 				// Copy data from previous storage
 				// If new storage length is smaller than previous -> copy only data that fits new storage size
 				// else -> copy only old data
 				if (SafeToCopyCondition())
-					std::memcpy(newBuffer, getPointer(), (newBufferLength < m_Length ? newBufferLength : m_Length) * sizeof(typename Base::value_type));
+					std::memcpy(newBuffer, getPointer(), (newBufferLength < m_Length ? newBufferLength : m_Length) * sizeof(value_type));
 				// Deallocate old data
 				if (!deallocateData())
 				{
@@ -425,7 +425,7 @@ namespace pcpp
 				if (!reallocate(m_Length + dataToAppendLen))
 					return false;
 				// Set new data space to zero
-				std::memset(getPointer() + m_Length, initialValue, dataToAppendLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + m_Length, initialValue, dataToAppendLen * sizeof(value_type));
 				// Increase current data length by new data length
 				m_Length += dataToAppendLen;
 				return true;
@@ -455,8 +455,8 @@ namespace pcpp
 					return false;
 				// Copy memory from source data
 				// dataToAppend may (if reallocate call does not allocate) point to some byte in current data so use std::memmove
-				// m_Data + m_Length is points to where the old data past-the-end byte is
-				std::memmove(getPointer() + m_Length, dataToAppend, dataToAppendLen * sizeof(typename Base::value_type));
+				// getPointer() + m_Length is points to where the old data past-the-end byte is
+				std::memmove(getPointer() + m_Length, dataToAppend, dataToAppendLen * sizeof(value_type));
 				// Increase current data length by new data length
 				m_Length += dataToAppendLen;
 				return true;
@@ -494,18 +494,18 @@ namespace pcpp
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
 				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
-				if (m_Length < (typename Base::size)(-atIndex))
-					atIndex = -((typename Base::index)m_Length);
+				if (m_Length < (size)(-atIndex))
+					atIndex = -((index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
-				const typename Base::index index = ((typename Base::index)m_Length) + atIndex;
+				const index index_ = ((index)m_Length) + atIndex;
 				// Here index must be in bound [0, m_Length)
 				// Ensure that we have enough place to hold new data
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory
-				std::memmove(getPointer() + index + dataToInsertLen, getPointer() + index, (-atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + index_ + dataToInsertLen, getPointer() + index_, (-atIndex) * sizeof(value_type));
 				// Fill new data with zeros
-				std::memset(getPointer() + index, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + index_, initialValue, dataToInsertLen * sizeof(value_type));
 				// Set new data length
 				m_Length += dataToInsertLen;
 				return true;
@@ -533,16 +533,16 @@ namespace pcpp
 				// At this point atIndex must be in bound [0, m_Length]
 				// where 0 correspond to "insert before first byte of current data"
 				// and m_Length to "insert after last byte of current data" (a.e. append)
-				if ((typename Base::size)atIndex >= m_Length)
+				if ((size)atIndex >= m_Length)
 					return append(dataToInsertLen);
 				// Here atIndex must be in bound [0, m_Length)
 				// Ensure that we have enough place to hold new data
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (m_Length - atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (m_Length - atIndex) * sizeof(value_type));
 				// Fill new data with zeros
-				std::memset(getPointer() + atIndex, initialValue, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memset(getPointer() + atIndex, initialValue, dataToInsertLen * sizeof(value_type));
 				// Set new data length
 				m_Length += dataToInsertLen;
 				return true;
@@ -556,18 +556,18 @@ namespace pcpp
 				// Index at this point must be in bound [-m_Length, -1]
 				// where -1 correspond to "insert before last byte of current data"
 				// and -m_Length to "insert before first byte of current data" (a.e. at the beginning)
-				if (m_Length < (typename Base::size)(-atIndex))
-					atIndex = -((typename Base::index)m_Length);
+				if (m_Length < (size)(-atIndex))
+					atIndex = -((index)m_Length);
 				// Compute normal index position that correspond to negative atIndex value
-				const typename Base::index index = ((typename Base::index)m_Length) + atIndex;
+				const index index_ = ((index)m_Length) + atIndex;
 				// Here index must be in bound [0, m_Length)
 				// Ensure that we have enough place to hold new data
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(getPointer() + index + dataToInsertLen, getPointer() + index, (-atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + index_ + dataToInsertLen, getPointer() + index_, (-atIndex) * sizeof(value_type));
 				// Insert new data to it's place
-				std::memcpy(getPointer() + index, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memcpy(getPointer() + index_, dataToInsert, dataToInsertLen * sizeof(value_type));
 				// Set new data length
 				m_Length += dataToInsertLen;
 				return true;
@@ -601,16 +601,16 @@ namespace pcpp
 				// At this point atIndex must be in bound [0, m_Length]
 				// where 0 correspond to "insert before first byte of current data"
 				// and m_Length to "insert after last byte of current data" (a.e. append)
-				if ((typename Base::size)atIndex >= m_Length)
+				if ((size)atIndex >= m_Length)
 					return append(dataToInsert, dataToInsertLen);
 				// Here atIndex must be in bound [0, m_Length)
 				// Ensure that we have enough place to hold new data
 				if (!reallocate(m_Length + dataToInsertLen))
 					return false;
 				// Move old data from where new data will be inserted to the end of memory 
-				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (m_Length - atIndex) * sizeof(typename Base::value_type));
+				std::memmove(getPointer() + atIndex + dataToInsertLen, getPointer() + atIndex, (m_Length - atIndex) * sizeof(value_type));
 				// Insert new data to it's place
-				std::memcpy(getPointer() + atIndex, dataToInsert, dataToInsertLen * sizeof(typename Base::value_type));
+				std::memcpy(getPointer() + atIndex, dataToInsert, dataToInsertLen * sizeof(value_type));
 				// Set new data length
 				m_Length += dataToInsertLen;
 				return true;
@@ -625,19 +625,19 @@ namespace pcpp
 				// where -1 correspond to "clear last byte of data"
 				// and -m_Length to "clear from beginning of data"
 				// Don't handle the cases when atIndex is in (-Inf,-m_Length)
-				if (m_Length < (typename Base::size)(-atIndex))
+				if (m_Length < (size)(-atIndex))
 					return true;
 				// Compute normal index position that correspond to negative atIndex value
-				const typename Base::index index = ((typename Base::index)m_Length) + atIndex;
+				const index index_ = ((index)m_Length) + atIndex;
 				// Here index must be in bound [0, m_Length)
 				// End of data to clear must be in (atIndex, m_Length]
-				if ((typename Base::size)index + numOfBytesToRemove >= m_Length) // There is no tail memory to move
+				if ((size)index_ + numOfBytesToRemove >= m_Length) // There is no tail memory to move
 				{	// Just shrink current length to remaining data
-					m_Length = index;
+					m_Length = index_;
 				}
 				else // There is tail memory to move
 				{	// Move tail memory to new place
-					std::memmove(getPointer() + index, getPointer() + index + numOfBytesToRemove, (m_Length - index - numOfBytesToRemove) * sizeof(typename Base::value_type));
+					std::memmove(getPointer() + index_, getPointer() + index_ + numOfBytesToRemove, (m_Length - index_ - numOfBytesToRemove) * sizeof(value_type));
 					m_Length -= numOfBytesToRemove;
 				}
 				return true;
@@ -665,13 +665,13 @@ namespace pcpp
 				if (atIndex >= m_Length)
 					return true;
 				// End of data to clear must be in (atIndex, m_Length]
-				if ((typename Base::size)atIndex + numOfBytesToRemove >= m_Length) // There is no tail memory to move
+				if ((size)atIndex + numOfBytesToRemove >= m_Length) // There is no tail memory to move
 				{	// Just shrink current length to remaining data
 					m_Length = atIndex;
 				}
 				else // There is tail memory to move
 				{	// Move tail memory to new place
-					std::memmove(getPointer() + atIndex, getPointer() + atIndex + numOfBytesToRemove, (m_Length - atIndex - numOfBytesToRemove) * sizeof(typename Base::value_type));
+					std::memmove(getPointer() + atIndex, getPointer() + atIndex + numOfBytesToRemove, (m_Length - atIndex - numOfBytesToRemove) * sizeof(value_type));
 					m_Length -= numOfBytesToRemove;
 				}
 				return true;

@@ -3,8 +3,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "ProtocolType.h"
 #include <string>
+#include "CPP11.h"
+#include "ProtocolType.h"
 
 /// @file
 
@@ -100,7 +101,7 @@ namespace pcpp
 		 *
 		 * @return Returns true if the data was allocated by an external source (a packet) or false if it was allocated by the layer itself
 		 */
-		inline bool isAllocatedToPacket() { return static_cast<bool>(m_Packet); }
+		inline bool isAllocatedToPacket() { return m_Packet != PCAPPP_NULLPTR; }
 
 		/**
 		 * Copy the raw data of this layer to another array
