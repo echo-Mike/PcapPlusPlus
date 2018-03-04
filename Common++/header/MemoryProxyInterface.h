@@ -204,38 +204,38 @@ namespace pcpp
 			 */
 			virtual bool remove(index atIndex, size numOfBytesToRemove) = 0;
 		};
-		
-		/**
-		 * \namespace MemoryProxyTags
-		 * \brief Wrapper namespace over the predefined set of tags used in template class tag dispatch.
-		 */
-		namespace MemoryProxyTags
-		{
-			/**
-			 * Signifies that template specialization uses DPDKMemoryProxy as a memory handling facility.
-			 */
-			struct DpdkTag {};
-			/**
-			 * Signifies that template specialization uses custom MemoryProxy implementation as a memory handling facility.
-			 * @tparam MemoryProxy MemoryProxy implementation type to be used.
-			 */
-			template < typename MemoryProxy >
-			struct CustomTag { typedef MemoryProxy mem_proxy_t; };
-			/**
-			 * Signifies that template specialization uses SizeAwareMemoryProxy as a memory handling facility.
-			 */
-			struct SizeAwareTag {};
-			/**
-			 * Signifies that template specialization uses ContentAwareMemoryProxy as a memory handling facility.
-			 */
-			struct ContentAwareTag {};
-			/**
-			 * Signifies that template specialization uses OldMemoryModelMemoryProxy as a memory handling facility.
-			 */
-			struct OldMemoryModelTag {};
-		} // namespace pcpp::memory::MemoryProxyTags
 
 	} // namespace pcpp::memory
+
+	/**
+	 * \namespace MemoryProxyTags
+	 * \brief Wrapper namespace over the predefined set of tags used in template class tag dispatch.
+	 */
+	namespace MemoryProxyTags
+	{
+		/**
+		 * Signifies that template specialization uses DPDKMemoryProxy as a memory handling facility.
+		 */
+		struct DpdkTag {};
+		/**
+		 * Signifies that template specialization uses custom MemoryProxy implementation as a memory handling facility.
+		 * @tparam MemoryProxy MemoryProxy implementation type to be used.
+		 */
+		template < typename MemoryProxy >
+		struct CustomTag { typedef MemoryProxy mem_proxy_t; };
+		/**
+		 * Signifies that template specialization uses SizeAwareMemoryProxy as a memory handling facility.
+		 */
+		struct SizeAwareTag {};
+		/**
+		 * Signifies that template specialization uses ContentAwareMemoryProxy as a memory handling facility.
+		 */
+		struct ContentAwareTag {};
+		/**
+		 * Signifies that template specialization uses OldMemoryModelMemoryProxy as a memory handling facility.
+		 */
+		struct OldMemoryModelTag {};
+	} // namespace pcpp::MemoryProxyTags
 
 } // namespace pcpp
 
