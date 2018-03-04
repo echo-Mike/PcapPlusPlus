@@ -1,5 +1,7 @@
 #include <Logger.h>
 #include <PcapPlusPlusVersion.h>
+#include <MemoryProxy.h>
+#include <GenericRawPacket.h>
 #include <Packet.h>
 #include <EthLayer.h>
 #include <SllLayer.h>
@@ -26,6 +28,7 @@
 #include <IpAddress.h>
 #include <fstream>
 #include <stdlib.h>
+#include <cstring>
 #include <debug_new.h>
 #include <iostream>
 #include <sstream>
@@ -52,6 +55,11 @@ using namespace pcpp;
 		printf("%-30s: FAILED. assertion failed: " assertFailedFormat "\n", __FUNCTION__, ## __VA_ARGS__); \
 		return false; \
 	}
+
+#define PACKETPP_PASS_AS_BLOCK(expression) \
+	do { \
+		expression \
+	} while(false)
 
 #define PACKETPP_ASSERT_AND_RUN_COMMAND(exp, command, assertFailedFormat, ...) \
 	if (!(exp)) \
@@ -157,6 +165,1038 @@ void printBufferDifferences(const uint8_t* buffer1, size_t buffer1Len, const uin
 //    pcap_dump_close(d);
 //    return;
 //}
+
+
+namespace TestCompressedPairNS
+{
+	struct EmptyCalss { static int foo() { return 1; } };
+	struct NonEmptyCalss { int i; NonEmptyCalss(int i_ = 1) : i(i_) {} };
+	typedef pcpp::memory::Implementation::CompressedPair<EmptyCalss, NonEmptyCalss> comp_t;
+	typedef pcpp::memory::Implementation::CompressedPair<NonEmptyCalss, NonEmptyCalss> not_comp_t;
+}
+
+PACKETPP_TEST(TestCompressedPair) 
+{
+	using namespace TestCompressedPairNS;
+	
+	PACKETPP_ASSERT(sizeof(comp_t) == sizeof(NonEmptyCalss), "Compression of empty class does not work.");
+	PACKETPP_ASSERT(sizeof(not_comp_t) == 2 * sizeof(NonEmptyCalss), "Compression of non empty classes are not work as expected.");
+
+	comp_t comp_p = comp_t(EmptyCalss(), NonEmptyCalss());
+	not_comp_t not_comp_p = not_comp_t(NonEmptyCalss(), NonEmptyCalss());
+	
+	PACKETPP_ASSERT(comp_p.get_first().foo() == 1, "Methods of empty class are not reachable in compressed pair.");
+	PACKETPP_ASSERT(comp_p.get_second().i == 1, "Values of non empty class are not reachable in compressed pair.");
+	
+	PACKETPP_ASSERT(not_comp_p.get_first().i == 1, "Values of first non empty class are not reachable in not compressed pair.");
+	PACKETPP_ASSERT(not_comp_p.get_second().i == 1, "Values of second non empty class are not reachable in not compressed pair.");
+
+	PACKETPP_TEST_PASSED;
+}
+
+namespace TestSizeAwareMPNS
+{
+	typedef typename pcpp::memory::MemoryProxyDispatcher<pcpp::MemoryProxyTags::SizeAwareTag>::memory_proxy_t mem_proxy_t;
+	typedef typename mem_proxy_t::value_type value_type;
+	typedef typename mem_proxy_t::pointer pointer;
+	typedef typename mem_proxy_t::const_pointer const_pointer;
+	typedef typename mem_proxy_t::index index;
+	typedef typename mem_proxy_t::size size_type;
+}
+
+PACKETPP_TEST(TestCreateSizeAwareMP)
+{
+	using namespace TestSizeAwareMPNS;
+	
+	size_type defaultSize = 128;
+	
+	pointer data_1 = new value_type[defaultSize];
+	std::memset(data_1, 0xAC, defaultSize * sizeof(value_type));
+
+	{
+		mem_proxy_t defConstructedMP;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.getLength() == 0, 
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have non zero length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.isOwning() == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have non nullptr data pointer");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy is not in null-state");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.release() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have returned non nullptr on release");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy is not in null-state after release");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.reset(data_1, defaultSize, false) == true,
+			delete[] data_1,
+			"Reset operation failed");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after explicitly specified non-owning semantics in reset operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address to data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after reset operation with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t constructedFromPtrNotOwnMP(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data when non-owning semantics was explicitly specified on construction");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after construction with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrNotOwnMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t constructedFromPtrOwnMP(data_1, defaultSize, true);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data when owning semantics was explicitly specified on construction");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after construction with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrOwnMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrOwnMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
+		mem_proxy_t constructedByCopyFromNotOwnMP(dummyNotOwn);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being copy constructed from other instance");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.get() != PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByCopyFromNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after copy construction from other instance");
+		
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(constructedByCopyFromNotOwnMP.get(), dummyNotOwn.get(), defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during copy construction");
+	}
+
+	{
+		mem_proxy_t dummyOwn(data_1, defaultSize, true);
+		mem_proxy_t constructedByCopyFromOwnMP(dummyOwn);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being copy constructed from other instance");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.get() != PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByCopyFromOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after copy construction from other instance");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(constructedByCopyFromOwnMP.get(), dummyOwn.get(), defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during copy construction");
+
+		dummyOwn.release();
+	}
+
+	{
+		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
+		mem_proxy_t constructedByMoveFromNotOwnMP(PCAPPP_MOVE(dummyNotOwn));
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after being move constructed from other instance that do not owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.getLength() == 0,
+			delete[] data_1,
+			"Instance from which move was made have non-zero length filed value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.isOwning() == false,
+			delete[] data_1,
+			"Instance from which move was made owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Instance from which move was made have non nullptr address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByMoveFromNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after move construction from other instance");
+	}
+
+	{
+		mem_proxy_t dummyOwn(data_1, defaultSize, true);
+		mem_proxy_t constructedByMoveFromOwnMP(PCAPPP_MOVE(dummyOwn));
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being move constructed from other instance that does own its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.getLength() == 0,
+			delete[] data_1,
+			"Instance from which move was made have non-zero length filed value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.isOwning() == false,
+			delete[] data_1,
+			"Instance from which move was made owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Instance from which move was made have non nullptr address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByMoveFromOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after move construction from other instance");
+
+		constructedByMoveFromOwnMP.release();
+	}
+
+	delete[] data_1;
+
+	PACKETPP_TEST_PASSED;
+}
+
+PACKETPP_TEST(TestModifySizeAwareMP)
+{
+	using namespace TestSizeAwareMPNS;
+	
+	size_type defaultSize = 128;
+	pointer data_1 = new value_type[defaultSize];
+	std::memset(data_1, 0xAC, defaultSize * sizeof(value_type));
+
+	// If all tests in this section are pass for not owning MP then they must pass for owning MP
+
+	{	// Reallocate, clear test
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.reallocate(defaultSize * 2, 0xFF) == true,
+			delete[] data_1,
+			"Reallocate operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after reallocation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during reallocate operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[defaultSize] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during reallocate operation");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.clear() == true,
+			delete[] data_1,
+			"Clear operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+	}
+
+	{	// Append test : Algorithm for append with data and append without data is the same --> so only one set of tests needed
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.append(defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Append operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[defaultSize] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during append operation");
+
+		mp.clear();
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.append(defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Append operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during append operation");
+	}
+
+	{	// Insert front test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
+		index toInsertInd = defaultSize / 2 - 1;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toInsertInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[toInsertInd] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+		
+		mp.clear();
+
+		// Must be equal to append
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+	}
+
+	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
+		index toInsertInd = -(defaultSize / 2);
+		index realIndex = defaultSize + toInsertInd;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[realIndex] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+
+		mp.clear();
+
+		// Must be equal to append
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+	}
+
+	{	// Remove front test
+		index toRemoveInd = defaultSize / 2 - 1;
+		size_type toRemoveSize = 10;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		// Remove with carry
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toRemoveInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+		// Moved part
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[toRemoveInd] == data_1[toRemoveInd + toRemoveSize],
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+
+		mp.clear();
+
+		// Must do nothing
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy must not own its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		mp.reset(data_1, defaultSize, false);
+
+		// Remove without carry
+
+		toRemoveInd = defaultSize - toRemoveSize / 2;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize / 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toRemoveInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+	}
+
+	{	// Remove back test
+		index toRemoveInd = -(defaultSize / 2);
+		index realIndex = defaultSize + toRemoveInd;
+		size_type toRemoveSize = 10;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		// Remove with carry
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+		// Moved part
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[realIndex] == data_1[realIndex + toRemoveSize],
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+
+		mp.clear();
+
+		// Must do nothing
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy must not own its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		mp.reset(data_1, defaultSize, false);
+
+		// Remove without carry
+
+		toRemoveInd = -(toRemoveSize / 2);
+		realIndex = defaultSize + toRemoveInd;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize / 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+	}
+
+	PACKETPP_TEST_PASSED;
+}
+
+namespace TestContentAwareMPNS
+{
+	typedef typename pcpp::memory::MemoryProxyDispatcher<pcpp::MemoryProxyTags::ContentAwareTag>::memory_proxy_t mem_proxy_t;
+	typedef typename mem_proxy_t::value_type value_type;
+	typedef typename mem_proxy_t::pointer pointer;
+	typedef typename mem_proxy_t::const_pointer const_pointer;
+	typedef typename mem_proxy_t::index index;
+	typedef typename mem_proxy_t::size size_type;
+}
+
+PACKETPP_TEST(TestCreateContentAwareMP)
+{
+	using namespace TestContentAwareMPNS;
+	
+	size_type defaultSize = 128;
+	
+	pointer data_1 = new value_type[defaultSize];
+	std::memset(data_1, 0xAC, defaultSize * sizeof(value_type));
+
+	{
+		mem_proxy_t defConstructedMP;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.getLength() == 0, 
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have non zero length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.isOwning() == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have non nullptr data pointer");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy is not in null-state");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.release() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy have returned non nullptr on release");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Default constructed SizeAwareMemoryProxy is not in null-state after release");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.reset(data_1, defaultSize, false) == true,
+			delete[] data_1,
+			"Reset operation failed");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after explicitly specified non-owning semantics in reset operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address to data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after reset operation with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(defConstructedMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(defConstructedMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t constructedFromPtrNotOwnMP(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected length field value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data when non-owning semantics was explicitly specified on construction");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after construction with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrNotOwnMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrNotOwnMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t constructedFromPtrOwnMP(data_1, defaultSize, true);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data when owning semantics was explicitly specified on construction");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after construction with data provided");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedFromPtrOwnMP.release() == data_1,
+			delete[] data_1,
+			"Unexpected result of release operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedFromPtrOwnMP) == false,
+			delete[] data_1,
+			"Memory proxy is not in null-state after release operation");
+	}
+
+	{
+		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
+		mem_proxy_t constructedByCopyFromNotOwnMP(dummyNotOwn);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being copy constructed from other instance");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.get() != PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByCopyFromNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after copy construction from other instance");
+		
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(constructedByCopyFromNotOwnMP.get(), dummyNotOwn.get(), defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during copy construction");
+	}
+
+	{
+		mem_proxy_t dummyOwn(data_1, defaultSize, true);
+		mem_proxy_t constructedByCopyFromOwnMP(dummyOwn);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being copy constructed from other instance");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.get() != PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByCopyFromOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after copy construction from other instance");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(constructedByCopyFromOwnMP.get(), dummyOwn.get(), defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during copy construction");
+
+		dummyOwn.release();
+	}
+
+	{
+		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
+		mem_proxy_t constructedByMoveFromNotOwnMP(PCAPPP_MOVE(dummyNotOwn));
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after being move constructed from other instance that do not owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromNotOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.getLength() == 0,
+			delete[] data_1,
+			"Instance from which move was made have non-zero length filed value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.isOwning() == false,
+			delete[] data_1,
+			"Instance from which move was made owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyNotOwn.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Instance from which move was made have non nullptr address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByMoveFromNotOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after move construction from other instance");
+	}
+
+	{
+		mem_proxy_t dummyOwn(data_1, defaultSize, true);
+		mem_proxy_t constructedByMoveFromOwnMP(PCAPPP_MOVE(dummyOwn));
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy does not own its data after being move constructed from other instance that does own its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByMoveFromOwnMP.get() == data_1,
+			delete[] data_1,
+			"Unexpected address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.getLength() == 0,
+			delete[] data_1,
+			"Instance from which move was made have non-zero length filed value");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.isOwning() == false,
+			delete[] data_1,
+			"Instance from which move was made owns its data");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(dummyOwn.get() == PCAPPP_NULLPTR,
+			delete[] data_1,
+			"Instance from which move was made have non nullptr address of data array");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(static_cast<bool>(constructedByMoveFromOwnMP) == true,
+			delete[] data_1,
+			"Memory proxy is not in non-null state after move construction from other instance");
+
+		constructedByMoveFromOwnMP.release();
+	}
+
+	delete[] data_1;
+
+	PACKETPP_TEST_PASSED;
+}
+
+PACKETPP_TEST(TestModifyContentAwareMP)
+{
+	using namespace TestContentAwareMPNS;
+	
+	size_type defaultSize = 128;
+	pointer data_1 = new value_type[defaultSize];
+	std::memset(data_1, 0xAC, defaultSize * sizeof(value_type));
+
+	// If all tests in this section are pass for not owning MP then they must pass for owning MP
+
+	{	// Reallocate, clear test
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.reallocate(defaultSize * 2, 0xFF) == true,
+			delete[] data_1,
+			"Reallocate operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after reallocation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during reallocate operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[defaultSize] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during reallocate operation");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.clear() == true,
+			delete[] data_1,
+			"Clear operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy owns its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+	}
+
+	{	// Append test : Algorithm for append with data and append without data is the same --> so only one set of tests needed
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.append(defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Append operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, defaultSize * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[defaultSize] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during append operation");
+
+		mp.clear();
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.append(defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Append operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after append operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during append operation");
+	}
+
+	{	// Insert front test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
+		index toInsertInd = defaultSize / 2 - 1;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toInsertInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[toInsertInd] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+		
+		mp.clear();
+
+		// Must be equal to append
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+	}
+
+	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
+		index toInsertInd = -(defaultSize / 2);
+		index realIndex = defaultSize + toInsertInd;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize * 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[realIndex] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+
+		mp.clear();
+
+		// Must be equal to append
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
+			delete[] data_1,
+			"Insertion operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == true,
+			delete[] data_1,
+			"Memory proxy must own its data after insertion operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[0] == 0xFF,
+			delete[] data_1,
+			"New memory was not set to provided value during insertion operation");
+	}
+
+	{	// Remove front test
+		index toRemoveInd = defaultSize / 2 - 1;
+		size_type toRemoveSize = 10;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		// Remove with carry
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"This type of memory proxy must not own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toRemoveInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+		// Moved part
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[toRemoveInd] == data_1[toRemoveInd + toRemoveSize],
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+
+		mp.clear();
+
+		// Must do nothing
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy must not own its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		mp.reset(data_1, defaultSize, false);
+
+		// Remove without carry
+
+		toRemoveInd = defaultSize - toRemoveSize / 2;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"This type of memory proxy must not own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize / 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, toRemoveInd * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+	}
+
+	{	// Remove back test
+		index toRemoveInd = -(defaultSize / 2);
+		index realIndex = defaultSize + toRemoveInd;
+		size_type toRemoveSize = 10;
+		mem_proxy_t mp(data_1, defaultSize, false);
+
+		// Remove with carry
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"This type of memory proxy must not own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+		// Moved part
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.get()[realIndex] == data_1[realIndex + toRemoveSize],
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+
+		mp.clear();
+
+		// Must do nothing
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"Memory proxy must not own its data after clear operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == 0,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		mp.reset(data_1, defaultSize, false);
+
+		// Remove without carry
+
+		toRemoveInd = -(toRemoveSize / 2);
+		realIndex = defaultSize + toRemoveInd;
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
+			delete[] data_1,
+			"Removal operation failed");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.isOwning() == false,
+			delete[] data_1,
+			"This type of memory proxy must not own its data after removal operation");
+		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.getLength() == defaultSize - toRemoveSize / 2,
+			delete[] data_1,
+			"Unexpected value of length field");
+
+		PACKETPP_ASSERT_AND_RUN_COMMAND(!std::memcmp(mp.get(), data_1, realIndex * sizeof(value_type)) == true,
+			delete[] data_1,
+			"Data handled by memory proxy was corrupted during removal operation");
+	}
+
+	PACKETPP_TEST_PASSED;
+}
 
 
 PACKETPP_TEST(EthPacketCreation) {
@@ -6028,6 +7068,11 @@ int main(int argc, char* argv[]) {
 
 	PACKETPP_START_RUNNING_TESTS;
 
+	PACKETPP_RUN_TEST(TestCompressedPair);
+	PACKETPP_RUN_TEST(TestCreateSizeAwareMP);
+	PACKETPP_RUN_TEST(TestModifySizeAwareMP);
+	PACKETPP_RUN_TEST(TestCreateContentAwareMP);
+	PACKETPP_RUN_TEST(TestModifyContentAwareMP);
 	PACKETPP_RUN_TEST(EthPacketCreation);
 	PACKETPP_RUN_TEST(EthAndArpPacketParsing);
 	PACKETPP_RUN_TEST(ArpPacketCreation);
