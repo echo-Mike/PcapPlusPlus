@@ -1,6 +1,8 @@
 #ifndef PCAPPP_GENERIC_RAW_PACKET
 #define PCAPPP_GENERIC_RAW_PACKET
 
+#include <cstring>
+
 #include "CPP11.h"
 #include "TypeUtils.h"
 #include "MoveSemantics.h"
@@ -102,6 +104,15 @@ namespace pcpp
 		 * Internally calls initialize member functions of both base classes (via their constructors).
 		 */
 		GenericRawPacket() {}
+
+		/**
+		 * @brief Constructor that preallocates certain amount of storage to be used.
+		 * @param[in] preallocatedLength Size of storage to be preallocated.
+		 */
+		GenericRawPacket(size preallocatedLength)
+		{
+			MPBase::reallocate(preallocatedLength);
+		}
 
 		/**
 		 * A constructor that receives a pointer to the raw data. 
@@ -486,7 +497,16 @@ namespace pcpp
 		 */
 		typedef Base::time_t time_t;
 
-		GenericRawPacket() : m_MaxLength(0) {}
+		GenericRawPacket(size preallocatedLength = 1) :
+			m_MaxLength(preallocatedLength)
+		{
+			if (preallocatedLength)
+			{	// Mimic the behavior of default constructor of previous Packet class implementation.
+				pointer data = new value_type[m_MaxLength];
+				std::memset(data, 0, m_MaxLength);
+				MPBase::reset(data, 0, true);
+			}
+		}
 
 		GenericRawPacket(const_pointer pRawData, size rawDataLen, time_t timestamp, bool ownership, LinkLayerType layerType = LINKTYPE_ETHERNET) :
 			Base(timestamp, layerType, rawDataLen), MPBase()

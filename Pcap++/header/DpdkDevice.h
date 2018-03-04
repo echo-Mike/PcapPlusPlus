@@ -7,6 +7,10 @@
 #include "MBufRawPacket.h"
 #include "PcapLiveDevice.h"
 
+#ifndef RX_BURST_SIZE
+#	define RX_BURST_SIZE 64
+#endif
+
 /**
  * @file
  * This file and DpdkDeviceList.h provide PcapPlusPlus C++ wrapper for DPDK (stands for data-plan development kit). What is
@@ -243,8 +247,8 @@ namespace pcpp
 			 */
 			DpdkDeviceConfiguration(uint16_t receiveDescriptorsNumber = 128, uint16_t transmitDescriptorsNumber = 512)
 			{
-				this->receiveDescriptorsNumber = receiveDescriptorsNumber;
-				this->transmitDescriptorsNumber = transmitDescriptorsNumber;
+				DpdkDeviceConfiguration::receiveDescriptorsNumber = receiveDescriptorsNumber;
+				DpdkDeviceConfiguration::transmitDescriptorsNumber = transmitDescriptorsNumber;
 			}
 		};
 

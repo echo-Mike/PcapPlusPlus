@@ -21,8 +21,6 @@
 
 #define MBUF_SIZE (MBUF_DATA_SIZE + sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 
-#define RX_BURST_SIZE 64
-
 namespace pcpp
 {
 
