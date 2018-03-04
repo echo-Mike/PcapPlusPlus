@@ -343,12 +343,13 @@ namespace pcpp
 		 */
 		inline time_t& resetPacketTimeStamp(time_t& timestamp) { std::swap(m_TimeStamp, timestamp); return timestamp; }
 
+#ifdef ENABLE_CPP11_MOVE_SEMANTICS
 		/**
 		 * @brief Method to reset raw data time-stamp.
 		 * Compiler calls this overload if time-stamp directly returned from function call or explicitly moved
 		 */
 		inline void resetPacketTimeStamp(time_t&& timestamp) { m_TimeStamp = timestamp; }
-
+#endif
 		/* Virtual API */
 
 		/**
