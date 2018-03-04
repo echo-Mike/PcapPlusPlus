@@ -364,7 +364,7 @@ bool DPDKMemoryProxy::insert(index atIndex, size dataToInsertLen, memory_value i
 	}
 	// If object has no data insert is equal to append
 	if (!getLength())
-		return append(dataToInsertLen);
+		return append(dataToInsertLen, initialValue);
 	// Handle cases when insertion must start from the back
 	if (atIndex < 0)
 		return insert_back(atIndex, dataToInsertLen, initialValue);

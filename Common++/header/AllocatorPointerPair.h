@@ -48,6 +48,10 @@ namespace pcpp
 				 */
 				typedef typename traits::pointer pointer;
 				/**
+				 * Defines type of pointer to memory.
+				 */
+				typedef typename traits::const_pointer const_pointer;
+				/**
 				 * Defines type of pair that stores allocator and pointer compressed if it is possible.
 				 */
 				typedef CompressedPair<Adapter, typename traits::pointer> allocator_pointer_pair_t;
@@ -73,7 +77,7 @@ namespace pcpp
 				 * Requires that Allocator is DefaultConstructible.
 				 * @param[in] p Pointer to memory.
 				 */
-				explicit AllocatorPointerPair(pointer p) : m_Pair(Adapter(), p) {}
+				explicit AllocatorPointerPair(const_pointer p) : m_Pair(Adapter(), const_cast<pointer>(p)) {}
 
 				/**
 				 * @brief General constructor.
@@ -83,7 +87,7 @@ namespace pcpp
 				 * @param[in] alloc Pointer to memory.
 				 * @param[in] p Pointer to memory.
 				 */
-				AllocatorPointerPair(Allocator& alloc, pointer p) : m_Pair(Adapter(alloc), p) {}
+				AllocatorPointerPair(Allocator& alloc, const_pointer p) : m_Pair(Adapter(alloc), const_cast<pointer>(p)) {}
 
 				/**
 				 * @brief Copy constructor.
@@ -141,25 +145,25 @@ namespace pcpp
 				 * @brief Method to access the stored allocator object.
 				 * @return Reference to the allocator object.
 				 */
-				inline Adapter& get_allocator() { return (m_Pair.get_first()); }
+				inline Adapter& get_allocator() { return m_Pair.get_first(); }
 				/**
 				 * @brief Method to access the stored allocator object.
 				 * This overload is selected by compiler if object is const-qualified.
 				 * @return Reference to the const-qualified allocator object.
 				 */
-				inline const Adapter& get_allocator() const { return (m_Pair.get_first()); }
+				inline const Adapter& get_allocator() const { return m_Pair.get_first(); }
 
 				/**
 				 * @brief Method to access the stored pointer.
 				 * @return Reference to stored the pointer.
 				 */
-				inline typename traits::pointer& get_pointer() { return (m_Pair.get_second()); }
+				inline pointer& get_pointer() { return m_Pair.get_second(); }
 				/**
 				 * @brief Method to access the stored pointer.
 				 * This overload is selected by compiler if object is const-qualified.
 				 * @return Copy of stored pointer.
 				 */
-				inline typename traits::pointer get_pointer() const { return (m_Pair.get_second()); }
+				inline pointer get_pointer() const { return m_Pair.get_second(); }
 			protected:
 				allocator_pointer_pair_t m_Pair;    //<! Pair of allocator and pointer.
 			};

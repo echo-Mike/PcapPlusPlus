@@ -25,7 +25,7 @@ namespace pcpp
 	 * @tparam unnamed Raises a compile-time error if provided MemoryProxyT do not implement memory::DefaultMemoryProxyInterface interface.
 	 */
 	template <
-		typename MemoryProxyTag = ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag,
+		typename MemoryProxyTag = ::pcpp::MemoryProxyTags::OldMemoryModelTag,
 		typename MemoryProxyT = typename ::pcpp::memory::MemoryProxyDispatcher< MemoryProxyTag >::memory_proxy_t,
 		typename = typename ::pcpp::type_traits::enable_if<
 			::pcpp::type_traits::is_base_of<
@@ -432,7 +432,7 @@ namespace pcpp
 	 * @brief Specialization for DefaultOldMemoryModelMemoryProxy.
 	 */
 	template <>
-	class GenericRawPacket< ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag, ::pcpp::memory::DefaultOldMemoryModelMemoryProxy, void > :
+	class GenericRawPacket< ::pcpp::MemoryProxyTags::OldMemoryModelTag, ::pcpp::memory::DefaultOldMemoryModelMemoryProxy, void > :
 		public RawPacket,
 		protected ::pcpp::memory::DefaultOldMemoryModelMemoryProxy
 	{
@@ -447,7 +447,7 @@ namespace pcpp
 		/**
 		 * Defines type of tag used to deduce memory proxy type.
 		 */
-		typedef ::pcpp::memory::MemoryProxyTags::OldMemoryModelTag tag_t;
+		typedef ::pcpp::MemoryProxyTags::OldMemoryModelTag tag_t;
 
 		/* RawPacket typedefs */
 

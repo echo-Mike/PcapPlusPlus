@@ -74,12 +74,12 @@ namespace pcpp
 			 * @brief Checks the condition in which underlying data may be safely deallocated.
 			 * @return true if condition is satisfied, false otherwise.
 			 */
-			inline bool SafeToDeleteCondition() { return m_Ownership && getPointer(); }
+			inline bool SafeToDeleteCondition() const { return m_Ownership && getPointer(); }
 			/**
 			 * @brief Checks the condition in which underlying data may be safely copied to another object.
 			 * @return true if condition is satisfied, false otherwise.
 			 */
-			inline bool SafeToCopyCondition() { return getPointer() && m_Length > 0; }
+			inline bool SafeToCopyCondition() const { return getPointer() && m_Length > 0; }
 			/**
 			 * @brief Data deallocation routine.
 			 * @return true if deallocation ended without exceptions, false otherwise.
@@ -412,10 +412,8 @@ namespace pcpp
 				// Save old length
 				const size oldLength = m_Length;
 				// Ensure that we have enough place to hold new data
-				if (!reallocate(m_Length + dataToAppendLen))
+				if (!reallocate(m_Length + dataToAppendLen, initialValue))
 					return false;
-				// Set new data space to zero
-				std::memset(getPointer() + oldLength, initialValue, dataToAppendLen * sizeof(value_type));
 				return true;
 			}
 			/**
@@ -487,7 +485,7 @@ namespace pcpp
 					return true;
 				// If object has no data insert is equal to append
 				if (!m_Length)
-					return append(dataToInsertLen);
+					return append(dataToInsertLen, initialValue);
 				// Handle cases when insertion must start from the back
 				if (atIndex < 0)
 					return insert_back(atIndex, dataToInsertLen, initialValue);

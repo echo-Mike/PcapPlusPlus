@@ -422,10 +422,8 @@ namespace pcpp
 				if (!dataToAppendLen)
 					return true;
 				// Ensure that we have enough place to hold new data
-				if (!reallocate(m_Length + dataToAppendLen))
+				if (!reallocate(m_Length + dataToAppendLen, initialValue))
 					return false;
-				// Set new data space to zero
-				std::memset(getPointer() + m_Length, initialValue, dataToAppendLen * sizeof(value_type));
 				// Increase current data length by new data length
 				m_Length += dataToAppendLen;
 				return true;
@@ -526,7 +524,7 @@ namespace pcpp
 					return true;
 				// If object has no data insert is equal to append
 				if (!m_Length)
-					return append(dataToInsertLen);
+					return append(dataToInsertLen, initialValue);
 				// Handle cases when insertion must start from the back
 				if (atIndex < 0)
 					return insert_back(atIndex, dataToInsertLen, initialValue);

@@ -328,11 +328,11 @@ namespace pcpp
 	 *      access the mbufs linked to the mbuf wrapped by MBufRawPacket instance. I hope I'll be able to add this support in the future
 	 */
 	class MBufRawPacket :
-		public GenericRawPacket< ::pcpp::memory::MemoryProxyTags::DpdkTag >
+		public GenericRawPacket< ::pcpp::MemoryProxyTags::DpdkTag >
 	{
 	public:
 
-		typedef GenericRawPacket< ::pcpp::memory::MemoryProxyTags::DpdkTag > Base;
+		typedef GenericRawPacket< ::pcpp::MemoryProxyTags::DpdkTag > Base;
 
 		/**
 		 * @brief Initialize an instance of this class. 

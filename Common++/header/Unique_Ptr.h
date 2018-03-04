@@ -495,6 +495,10 @@ namespace pcpp
  * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
  */
 #define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::auto_ptr<Type_>
+/**
+ * This macro defined only if library implementation of unique_ptr is used.
+ */
+#define PCAPPP_LIB_BASED_UNIQUE_PTR
 #else
 
 #include <memory>
