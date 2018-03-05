@@ -20,4 +20,4 @@ CP := cp.exe
 
 MKDIR := mkdir.exe
 
-CXXFLAGS += -std=c++0x
+CXXFLAGS += -std=c++11

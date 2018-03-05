@@ -22,4 +22,4 @@ INSTALL_SCRIPT := install.sh
 
 UNINSTALL_SCRIPT := uninstall.sh
 
-CXXFLAGS += -std=c++0x
+CXXFLAGS += -std=c++11

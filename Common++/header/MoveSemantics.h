@@ -90,7 +90,7 @@ namespace pcpp
 		 * @return MoveProxy that represents rvalue reference to provided object.
 		 */
 		template < typename T >
-		MoveProxy<const T> move(const T& ref) { return ref; }
+		const MoveProxy<const T> move(const T& ref) { return ref; }
 
 		/**
 		 * @brief This function serve similar purpose as std::forward.
@@ -126,7 +126,7 @@ namespace pcpp
 /**
  * Generates a type to be used as a move-reference.
  */
-#define PCAPPP_MOVE_TYPE(Type_name) ::pcpp::move_semantics::MoveProxy<const Type_name>
+#define PCAPPP_MOVE_TYPE(Type_name) const ::pcpp::move_semantics::MoveProxy<const Type_name>
 /**
  * Returns name of variable declared as a parameter that represents other instance of same type 
  * in move-constructor or move-assignment operator generated using PCAPPP_MOVE_CONSTRUCTOR or 
