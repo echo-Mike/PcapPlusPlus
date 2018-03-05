@@ -84,12 +84,12 @@ namespace pcpp
 			 * This function is basically the unique_ptr_base(unique_ptr_base&& other) move constructor.
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
 			 */
-			unique_ptr_base(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy) :
-				m_Pair(proxy.ref.m_Pair.get_first(), proxy.ref.m_Pair.get_second())
+			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr_base) :
+				m_Pair(PCAPPP_MOVE_OTHER.m_Pair.get_first(), PCAPPP_MOVE_OTHER.m_Pair.get_second())
 			{
 				// Nullify provided object
-				proxy.ref.m_Pair.get_first() = Deleter();
-				proxy.ref.m_Pair.get_second() = pointer();
+				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
+				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
 			}
 
 			/**
@@ -99,20 +99,20 @@ namespace pcpp
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
 			 * @return Reference to this object.
 			 */
-			unique_ptr_base& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr_base> proxy)
+			PCAPPP_MOVE_ASSIGNMENT(unique_ptr_base)
 			{
 				// Handle self assignment case
-				if (this == &proxy.ref)
+				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
 				// This member may optimized with move semantics but this case is to hard to handle in client side.
 				// So we don't make any assumptions and just copy it.
 				// For zero-size object this operation is costless.
-				m_Pair.get_first() = proxy.ref.m_Pair.get_first();
+				m_Pair.get_first() = PCAPPP_MOVE_OTHER.m_Pair.get_first();
 				// Second is definitely a pointer
-				m_Pair.get_second() = proxy.ref.m_Pair.get_second();
+				m_Pair.get_second() = PCAPPP_MOVE_OTHER.m_Pair.get_second();
 				// Nullify provided object
-				proxy.ref.m_Pair.get_first() = Deleter();
-				proxy.ref.m_Pair.get_second() = pointer();
+				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
+				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
 				return *this;
 			}
 
@@ -223,8 +223,8 @@ namespace pcpp
 			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 */
-			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
-				Base(PCAPPP_MOVE(dynamic_cast<Base&>(proxy.ref))) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
+			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr) :
+				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
 			
 			/**
 			 * @brief Move assignment operator.
@@ -233,12 +233,12 @@ namespace pcpp
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 * @return Reference to this object.
 			 */
-			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
+			PCAPPP_MOVE_ASSIGNMENT(unique_ptr)
 			{
-				if (this == &proxy.ref)
+				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
 				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
-				Base::operator=(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) ));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
 
@@ -381,8 +381,8 @@ namespace pcpp
 			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 */
-			unique_ptr(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy) :
-				Base(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) )) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
+			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr) :
+				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
 
 			/**
 			 * @brief Move assignment operator.
@@ -391,12 +391,12 @@ namespace pcpp
 			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
 			 * @return Reference to this object.
 			 */
-			unique_ptr& operator=(::pcpp::move_semantics::MoveProxy<unique_ptr> proxy)
+			PCAPPP_MOVE_ASSIGNMENT(unique_ptr)
 			{
-				if (this == &proxy.ref)
+				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
 				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
-				Base::operator=(PCAPPP_MOVE( dynamic_cast<Base&>(proxy.ref) ));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
 

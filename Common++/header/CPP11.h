@@ -269,7 +269,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 	#else
 		// Try to check C++11 features based on standard macros:
 		// See : http://en.cppreference.com/w/cpp/experimental/feature_test
-		// We currentry have interest only in:
+		// We currently have interest only in:
 		#ifndef __cpp_constexpr
 			#define PCAPPP_CONSTEXPR const
 		#else

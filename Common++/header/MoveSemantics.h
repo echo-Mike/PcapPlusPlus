@@ -31,17 +31,33 @@ namespace pcpp
 			 */
 			typedef T value_type;
 			/**
+			 * Real type to be proxied.
+			 */
+			typedef typename ::pcpp::type_traits::remove_cv< typename ::pcpp::type_traits::remove_reference<T>::type >::type real_type;
+			/**
 			 * Type of reference to proxied type.
 			 */
-			typedef typename ::pcpp::type_traits::remove_reference<T>::type& reference;
+			typedef real_type& reference;
+			/**
+			 * Type of const reference to proxied type.
+			 */
+			typedef const real_type& const_reference;
+			/**
+			 * Type of pointer to proxied type.
+			 */
+			typedef real_type* pointer;
+			/**
+			 * Type of const pointer to proxied type.
+			 */
+			typedef const real_type* const_pointer;
 
-			reference ref;
+			const_pointer ref;
 			/**
 			 * @brief Main constructor.
 			 * Sets up internal reference to provided one.
 			 * @param[in] ref Reference to object to be proxied.
 			 */
-			MoveProxy(reference ref_) : ref(ref_) {}
+			MoveProxy(const_reference ref_) : ref(&ref_) {}
 			/**
 			 * @brief Basic copy constructor.
 			 * @param[in] other Instance to make copy of.
@@ -54,11 +70,16 @@ namespace pcpp
 			MoveProxy& operator=(const MoveProxy& other) { ref = other.ref; return *this; }
 			/**
 			 * @brief Converts object to handled reference.
+			 * @retur Reference to proxied object.
+			 */
+			reference get() const { return const_cast<reference>(*ref); }
+			/**
+			 * @brief Converts object to handled reference.
 			 * This function is called by compiler when object is moved but it have no special constructor that
 			 * implements our move semantics. The object is copied in that case.
 			 * @retur Reference to proxied object.
 			 */
-			operator reference() const { return ref; }
+			operator reference() const { return const_cast<reference>(*ref); }
 		};
 
 		/**
@@ -69,7 +90,7 @@ namespace pcpp
 		 * @return MoveProxy that represents rvalue reference to provided object.
 		 */
 		template < typename T >
-		MoveProxy<T> move(T& ref) { return ref; }
+		MoveProxy<const T> move(const T& ref) { return ref; }
 
 		/**
 		 * @brief This function serve similar purpose as std::forward.
@@ -105,13 +126,13 @@ namespace pcpp
 /**
  * Generates a type to be used as a move-reference.
  */
-#define PCAPPP_MOVE_TYPE(Type_name) ::pcpp::move_semantics::MoveProxy<Type_name>
+#define PCAPPP_MOVE_TYPE(Type_name) ::pcpp::move_semantics::MoveProxy<const Type_name>
 /**
  * Returns name of variable declared as a parameter that represents other instance of same type 
  * in move-constructor or move-assignment operator generated using PCAPPP_MOVE_CONSTRUCTOR or 
  * PCAPPP_MOVE_ASSIGNMENT macro.
  */
-#define PCAPPP_MOVE_OTHER proxy.ref
+#define PCAPPP_MOVE_OTHER proxy.get()
 /**
  * Generates declaration of function parameter to be used by PCAPPP_MOVE_OTHER.
  */

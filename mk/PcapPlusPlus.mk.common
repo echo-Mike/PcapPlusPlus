@@ -7,18 +7,12 @@ PCAPPP_INCLUDES := -I$(PCAPPLUSPLUS_HOME)/Dist/header
 PCAPPP_LIBS_DIR := -L$(PCAPPLUSPLUS_HOME)/Dist
 
 # libs
-ifdef USE_DPDK
-
-PCAPPP_LIBS := -Wl,--whole-archive -lPcap++ -lPacket++ -Wl,--no-whole-archive -lCommon++
-
-else
-
 PCAPPP_LIBS := -lPcap++ -lPacket++ -lCommon++
-
-endif
 
 # post build
 PCAPPP_POST_BUILD :=
 
 # build flags
 PCAPPP_BUILD_FLAGS :=
+
+CXXFLAGS= -std=c++0x
