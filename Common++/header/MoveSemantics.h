@@ -79,7 +79,7 @@ namespace pcpp
 			 * implements our move semantics. The object is copied in that case.
 			 * @retur Reference to proxied object.
 			 */
-			operator reference() const { return const_cast<reference>(*ref); }
+			//operator reference() const { return const_cast<reference>(*ref); }
 		};
 
 		/**
@@ -90,7 +90,22 @@ namespace pcpp
 		 * @return MoveProxy that represents rvalue reference to provided object.
 		 */
 		template < typename T >
-		const MoveProxy<const T> move(const T& ref) { return ref; }
+		typename ::pcpp::type_traits::enable_if<
+			::pcpp::type_traits::is_constructible<
+				T, 
+				const MoveProxy<const T>
+			>::value,
+			const MoveProxy<const T>
+		>::type move(const T& ref) { return ref; }
+		
+		template < typename T >
+		typename ::pcpp::type_traits::enable_if<
+			!::pcpp::type_traits::is_constructible<
+				T, 
+				const MoveProxy<const T>
+			>::value,
+			const T&
+		>::type move(const T& ref) { return ref; }
 
 		/**
 		 * @brief This function serve similar purpose as std::forward.
@@ -117,7 +132,7 @@ namespace pcpp
  * If move semantics is supported return Value_ , 
  * otherwise return internal implementation ::pcpp::move_semantics::move( Value_ )
  */
-#define PCAPPP_MOVE_OR_RVO(Value_) ::pcpp::move_semantics::move( Value_ )
+#define PCAPPP_MOVE_OR_RVO(Value_) { ::pcpp::move_semantics::move( Value_ ) }
 /**
  * If move semantics is supported return std::forward( Value_ ), 
  * otherwise return internal implementation ::pcpp::move_semantics::forward( Value_ )
@@ -136,7 +151,27 @@ namespace pcpp
 /**
  * Generates declaration of function parameter to be used by PCAPPP_MOVE_OTHER.
  */
-#define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) proxy
+#define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) proxy, const Type_name*
+
+/**
+ * Generates declaration of move-constructor with correct move-reference type.
+ */
+#define PCAPPP_MOVE_CONSTRUCTOR(Type_name) Type_name(PCAPPP_MOVE_TYPE(Type_name) proxy)
+/**
+ * Generates declaration of move-assignment operator with correct move-reference type.
+ */
+#define PCAPPP_MOVE_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_MOVE_TYPE(Type_name) proxy)
+
+/**
+ * Generates definition of move-constructor with correct move-reference type.
+ * Use this macro in .cpp files.
+ */
+#define PCAPPP_MOVE_CONSTRUCTOR_IMPL(Type_name) Type_name::Type_name(PCAPPP_MOVE_TYPE(Type_name) proxy)
+/**
+ * Generates definition of move-assignment operator with correct move-reference type.
+ * Use this macro in .cpp files.
+ */
+#define PCAPPP_MOVE_ASSIGNMENT_IMPL(Type_name) Type_name& Type_name::operator=(PCAPPP_MOVE_TYPE(Type_name) proxy)
 
 #else
 
@@ -177,8 +212,6 @@ namespace pcpp
  */
 #define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER
 
-#endif
-
 /**
  * Generates declaration of move-constructor with correct move-reference type.
  */
@@ -198,5 +231,7 @@ namespace pcpp
  * Use this macro in .cpp files.
  */
 #define PCAPPP_MOVE_ASSIGNMENT_IMPL(Type_name) Type_name& Type_name::operator=(PCAPPP_MOVE_PARAMETER(Type_name))
+
+#endif
 
 #endif /* PCAPPP_MOVE_SEMANTICS */

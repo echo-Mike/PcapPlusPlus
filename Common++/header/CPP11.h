@@ -292,7 +292,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 		#define PCAPPP_CONSTEXPR constexpr
 	#endif
 	#ifdef __cpp_rvalue_references
-		#define ENABLE_CPP11_MOVE_SEMANTICS
+		//#define ENABLE_CPP11_MOVE_SEMANTICS
 	#endif
 	#define PCAPPP_NOEXCEPT
 	#define PCAPPP_FINAL

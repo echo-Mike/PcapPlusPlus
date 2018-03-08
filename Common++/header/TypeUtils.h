@@ -1,8 +1,6 @@
 #ifndef PCAPPP_TYPE_UTILS
 #define PCAPPP_TYPE_UTILS
 
-#include <cstdint>
-
 #include "CPP11.h"
 
 /// @file
@@ -155,7 +153,7 @@ namespace pcpp
 		 * @brief Standard type traits remove_extent trait replacement for C++98.
 		 * Contains type "type" if provided T is not an array of some size.
 		 */
-		template<class T, std::size_t N>
+		template<class T, unsigned long N>
 		struct remove_extent<T[N]> { typedef T type; };
 
 		/**
@@ -180,7 +178,7 @@ namespace pcpp
 		 * @brief Standard type traits remove_all_extents trait replacement for C++98.
 		 * Contains type "type" if provided T is an array of some size.
 		 */
-		template<class T, std::size_t N>
+		template<class T, unsigned long N>
 		struct remove_all_extents<T[N]> {
 			typedef typename remove_all_extents<T>::type type;
 		};
@@ -271,7 +269,7 @@ namespace pcpp
 		 * @brief Standard type traits is_array trait replacement for C++98.
 		 * Contains static constant boolean "value" which is true if T is an type of array of some size.
 		 */
-		template<class T, std::size_t N>
+		template<class T, unsigned long N>
 		struct is_array<T[N]> : true_type {};
 
 		/* Template argument checkers */
@@ -362,6 +360,125 @@ namespace pcpp
 		template<class T>
 		struct enable_if<true, T> { typedef T type; };
 
+		namespace detail
+		{
+			template< typename T, typename AT_1 = void, typename AT_2 = void, typename AT_3 = void, typename AT_4 = void >
+			class is_constructible_impl
+			{
+			private:
+				template< typename T_T, typename T_AT_1, typename T_AT_2, typename T_AT_3, typename T_AT_4 >
+				static char test(
+					typename enable_if<
+						sizeof( T_T ) ==
+						sizeof( T_T(
+							static_cast< T_AT_1 >( *static_cast< typename remove_reference< T_AT_1 >::type* >( NULL ) ),
+							static_cast< T_AT_2 >( *static_cast< typename remove_reference< T_AT_2 >::type* >( NULL ) ),
+							static_cast< T_AT_3 >( *static_cast< typename remove_reference< T_AT_3 >::type* >( NULL ) ),
+							static_cast< T_AT_4 >( *static_cast< typename remove_reference< T_AT_4 >::type* >( NULL ) )
+						) )
+					>::type*
+				);
+
+				template< typename, typename, typename, typename, typename >
+				static int test( ... );
+
+			public:
+				static const bool value = ( sizeof( test< T, AT_1, AT_2, AT_3, AT_4 >( NULL ) ) == sizeof( char ) );
+			};
+
+			template< typename T, typename AT_1, typename AT_2, typename AT_3 >
+			class is_constructible_impl< T, AT_1, AT_2, AT_3, void >
+			{
+			private:
+				template< typename T_T, typename T_AT_1, typename T_AT_2, typename T_AT_3 >
+				static char test(
+					typename enable_if<
+						sizeof( T_T ) ==
+						sizeof( T_T(
+							static_cast< T_AT_1 >( *static_cast< typename remove_reference< T_AT_1 >::type* >( NULL ) ),
+							static_cast< T_AT_2 >( *static_cast< typename remove_reference< T_AT_2 >::type* >( NULL ) ),
+							static_cast< T_AT_3 >( *static_cast< typename remove_reference< T_AT_3 >::type* >( NULL ) )
+						) )
+					>::type*
+				);
+
+				template< typename, typename, typename, typename >
+				static int test( ... );
+
+			public:
+				static const bool value = ( sizeof( test< T, AT_1, AT_2, AT_3 >( NULL ) ) == sizeof( char ) );
+			};
+
+			template< typename T, typename AT_1, typename AT_2 >
+			class is_constructible_impl< T, AT_1, AT_2, void, void >
+			{
+			private:
+
+				template< typename T_T, typename T_AT_1, typename T_AT_2 >
+				static char test(
+					typename enable_if<
+						sizeof( T_T ) ==
+						sizeof( T_T(
+							static_cast< T_AT_1 >( *static_cast< typename remove_reference< T_AT_1 >::type* >( NULL ) ),
+							static_cast< T_AT_2 >( *static_cast< typename remove_reference< T_AT_2 >::type* >( NULL ) )
+						) )
+					>::type*
+				);
+
+				template< typename, typename, typename >
+				static int test( ... );
+
+			public:
+				static const bool value = ( sizeof( test< T, AT_1, AT_2 >( NULL ) ) == sizeof( char ) );
+			};
+
+			template< typename T, typename AT_1 >
+			class is_constructible_impl< T, AT_1, void, void, void >
+			{
+			private:
+				template< typename T_T, typename T_AT_1 >
+				static char test(
+					typename enable_if<
+						sizeof( T_T ) ==
+						sizeof( T_T(
+							static_cast< T_AT_1 >( *static_cast< typename remove_reference< T_AT_1 >::type* >( NULL ) )
+						) )
+					>::type*
+				);
+
+				template< typename, typename >
+				static int test( ... );
+
+			public:
+				static const bool value = ( sizeof( test< T, AT_1 >( NULL ) ) == sizeof( char ) );
+			};
+
+			template< typename T >
+			class is_constructible_impl< T, void, void, void, void >
+			{
+			private:
+				template< typename T_T >
+				static T_T testFun( T_T );
+
+				template< typename T_T >
+				static char test( typename enable_if< sizeof( T_T ) == sizeof( testFun( T_T() ) ) >::type* );
+
+				template< typename >
+				static int test( ... );
+
+			public:
+				static const bool value = ( sizeof( test< T >( NULL ) ) == sizeof( char ) );
+			};
+		}
+
+		template< typename T, typename AT_1 = void, typename AT_2 = void, typename AT_3 = void, typename AT_4 = void >
+		struct is_constructible : 
+			public integral_constant< 
+				bool, 
+				detail::is_constructible_impl<T, AT_1, AT_2, AT_3, AT_4>::value
+			> 
+		{};
+
 		/* Arrays miscellaneous */
 
 		/**
@@ -370,13 +487,13 @@ namespace pcpp
 		 */
 
 		template<class T>
-		struct rank : public integral_constant<std::size_t, 0> {};
+		struct rank : public integral_constant<unsigned long, 0> {};
 
 		template<class T>
-		struct rank<T[]> : public integral_constant<std::size_t, rank<T>::value + 1> {};
+		struct rank<T[]> : public integral_constant<unsigned long, rank<T>::value + 1> {};
 
-		template<class T, std::size_t N>
-		struct rank<T[N]> : public integral_constant<std::size_t, rank<T>::value + 1> {};
+		template<class T, unsigned long N>
+		struct rank<T[N]> : public integral_constant<unsigned long, rank<T>::value + 1> {};
 
 		/**
 		 * Implementations of next classes were copied from:
@@ -384,18 +501,18 @@ namespace pcpp
 		 */
 
 		template<class T, unsigned N = 0>
-		struct extent : integral_constant<std::size_t, 0> {};
+		struct extent : integral_constant<unsigned long, 0> {};
 
 		template<class T>
-		struct extent<T[], 0> : integral_constant<std::size_t, 0> {};
+		struct extent<T[], 0> : integral_constant<unsigned long, 0> {};
 
 		template<class T, unsigned N>
 		struct extent<T[], N> : extent<T, N - 1> {};
 
-		template<class T, std::size_t I>
-		struct extent<T[I], 0> : integral_constant<std::size_t, I> {};
+		template<class T, unsigned long I>
+		struct extent<T[I], 0> : integral_constant<unsigned long, I> {};
 
-		template<class T, std::size_t I, unsigned N>
+		template<class T, unsigned long I, unsigned N>
 		struct extent<T[I], N> : extent<T, N - 1> {};
 
 	} // namespace pcpp::type_traits

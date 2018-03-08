@@ -274,7 +274,7 @@ namespace pcpp
 			 * @brief Checks whether *this owns an object, i.e. whether get() != nullptr.
 			 * @return true if *this owns an object, false otherwise.
 			 */
-			explicit operator bool() const { return (get() != pointer()); }
+			operator bool() const { return (get() != pointer()); }
 
 			/**
 			 * @brief Releases the ownership of the managed object if any. get() returns nullptr after the call.
@@ -428,7 +428,7 @@ namespace pcpp
 			 * @brief Checks whether *this owns an object, i.e. whether get() != nullptr.
 			 * @return true if *this owns an object, false otherwise.
 			 */
-			explicit operator bool() const { return (get() != pointer()); }
+			operator bool() const { return (get() != pointer()); }
 
 			/**
 			 * @brief Replaces the managed object.

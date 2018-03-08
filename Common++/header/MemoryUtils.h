@@ -116,7 +116,7 @@ namespace pcpp
 			 * @param[in] l Some allocators (array allocator for example) need this parameter to determine how much memory must be allocated.
 			 * @return Pointer to newly allocated memory (as an interface function) or nullptr (as not interface function).
 			 */
-			pointer allocate(std::size_t l) { return nullptr; }
+			pointer allocate(std::size_t l) { return PCAPPP_NULLPTR; }
 			/**
 			 * @brief Represents the facility responsible for memory deallocation.
 			 * This function may be an interface method. Depends on PCAPPP_NON_VIRTUAL_DEF_ALLOCATOR macro def. More information may be found @ref memory_predef_mem_system_state "here".
