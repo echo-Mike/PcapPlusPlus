@@ -360,6 +360,11 @@ namespace pcpp
 		template<class T>
 		struct enable_if<true, T> { typedef T type; };
 
+		/**
+		 * Implementations of next classes were copied from:
+		 * https://stackoverflow.com/questions/40439909/c98-03-stdis-constructible-implementation
+		 * Author: https://stackoverflow.com/users/4115625/danh
+		 */
 		namespace detail
 		{
 			template< typename T, typename AT_1 = void, typename AT_2 = void, typename AT_3 = void, typename AT_4 = void >
@@ -471,6 +476,10 @@ namespace pcpp
 			};
 		}
 
+		/**
+		 * @brief Standard type traits is_constructible trait replacement for C++98.
+		 * Contains static constant boolean "value" which is true if T is constructible from 0 to 5 arguments of provided types.
+		 */
 		template< typename T, typename AT_1 = void, typename AT_2 = void, typename AT_3 = void, typename AT_4 = void >
 		struct is_constructible : 
 			public integral_constant< 
@@ -485,7 +494,6 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/rank
 		 */
-
 		template<class T>
 		struct rank : public integral_constant<unsigned long, 0> {};
 
@@ -499,7 +507,6 @@ namespace pcpp
 		 * Implementations of next classes were copied from:
 		 * http://en.cppreference.com/w/cpp/types/extent
 		 */
-
 		template<class T, unsigned N = 0>
 		struct extent : integral_constant<unsigned long, 0> {};
 
