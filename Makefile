@@ -75,9 +75,9 @@ endif
 libs:
 	@$(RM) -rf Dist
 ifdef SUPPRESS_CPP11
-	@export CXXFLAGS += -DSUPPRESS_CPP11_DETECTION
+	@ $(shell export CXXFLAGS=-DSUPPRESS_CPP11_DETECTION)
 else
-	@export CXXFLAGS += -std=c++0x
+	@ $(shell export CXXFLAGS=-std=c++0x)
 endif
 	@cd $(COMMONPP_HOME)             && $(MAKE) all
 	@cd $(PACKETPP_HOME)             && $(MAKE) all
