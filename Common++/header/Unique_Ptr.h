@@ -142,17 +142,6 @@ namespace pcpp
 			 * Pair that stores deleter and pointer compressed if it is possible.
 			 */
 			Implementation::CompressedPair<Deleter, pointer> m_Pair;
-		private:
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr_base is not copyable
-			 */
-			unique_ptr_base(const unique_ptr_base&) {}
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr_base is not copyable
-			 */
-			unique_ptr_base& operator=(const unique_ptr_base& a) { return *this; }
 		};
 
 		/**
@@ -303,17 +292,6 @@ namespace pcpp
 				if (old != pointer())
 					this->get_deleter()(old);
 			}
-		private:
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr is not copyable
-			 */
-			unique_ptr(const unique_ptr&) {}
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr is not copyable
-			 */
-			unique_ptr& operator=(const unique_ptr& a) { return *this; }
 		};
 
 		/**
@@ -463,17 +441,6 @@ namespace pcpp
 				if (old != pointer())
 					this->get_deleter()(old);
 			}
-		private:
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr is not copyable
-			 */
-			unique_ptr(const unique_ptr&) {}
-			/**
-			 * This function is explicitly hidden (there is no delete keyword for functions in C++98). 
-			 * unique_ptr is not copyable
-			 */
-			unique_ptr& operator=(const unique_ptr& a) { return *this; }
 		};
 
 /**

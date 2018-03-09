@@ -534,7 +534,8 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 	}
 
 	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
-		index toInsertInd = -(defaultSize / 2);
+		
+		index toInsertInd = -(index)(defaultSize / 2);
 		index realIndex = defaultSize + toInsertInd;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -633,7 +634,7 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 	}
 
 	{	// Remove back test
-		index toRemoveInd = -(defaultSize / 2);
+		index toRemoveInd = -(index)(defaultSize / 2);
 		index realIndex = defaultSize + toRemoveInd;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
@@ -675,7 +676,7 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 
 		// Remove without carry
 
-		toRemoveInd = -(toRemoveSize / 2);
+		toRemoveInd = -(index)(toRemoveSize / 2);
 		realIndex = defaultSize + toRemoveInd;
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
@@ -1036,7 +1037,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
-		index toInsertInd = -(defaultSize / 2);
+		index toInsertInd = -(index)(defaultSize / 2);
 		index realIndex = defaultSize + toInsertInd;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -1135,7 +1136,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Remove back test
-		index toRemoveInd = -(defaultSize / 2);
+		index toRemoveInd = -(index)(defaultSize / 2);
 		index realIndex = defaultSize + toRemoveInd;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
@@ -1177,7 +1178,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 
 		// Remove without carry
 
-		toRemoveInd = -(toRemoveSize / 2);
+		toRemoveInd = -(index)(toRemoveSize / 2);
 		realIndex = defaultSize + toRemoveInd;
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
