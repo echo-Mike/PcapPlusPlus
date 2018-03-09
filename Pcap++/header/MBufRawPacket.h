@@ -35,10 +35,17 @@ namespace pcpp
 		{
 			friend class DpdkDevice;
 		public:
-
+			/**
+			 * Represents type of pointer to DPDK mBuf structure.
+			 */
 			typedef struct rte_mbuf* mbuf_ptr;
 
+			/**
+			 * Convenient typedef of base class.
+			 */
 			typedef MemoryProxyInterface< ::pcpp::memory::Data_t > Base;
+
+			// Type propagation from interface
 
 			using Base::value_type;
 			using Base::pointer;
@@ -117,6 +124,11 @@ namespace pcpp
 			 */
 			DPDKMemoryProxy() { initialize(); }
 
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_MOVABLE(DPDKMemoryProxy)
+
 			/**
 			 * @brief A copy constructor for this class. 
 			 * The copy constructor allocates a new mbuf from the same pool the original mbuf was allocated from, 
@@ -124,7 +136,7 @@ namespace pcpp
 			 * and copies the data from the original mbuf to the new mbuf.
 			 * @param[in] other The MBufRawPacket instance to make copy of.
 			 */
-			DPDKMemoryProxy(const DPDKMemoryProxy& other);
+			PCAPPP_COPY_CONSTRUCTOR(DPDKMemoryProxy);
 
 			/**
 			 * @brief An copy assignment operator for this class. 
@@ -133,11 +145,11 @@ namespace pcpp
 			 * instance will remain uninitialized (also, an error will be printed).
 			 * @param[in] other The MBufRawPacket instance to make copy of.
 			 */
-			DPDKMemoryProxy& operator=(const DPDKMemoryProxy& other);
+			PCAPPP_COPY_ASSIGNMENT(DPDKMemoryProxy);
 
 			/**
 			 * @brief A move constructor for this class.
-			 * Moves all data from another instance. Internaly calls RawPacket move c'tor to move base class data.\n
+			 * Moves all data from another instance. Internally calls RawPacket move c'tor to move base class data.\n
 			 * other object is set in not-initialized state.
 			 * other.m_MBuf is set to NULL but other.m_Device isn't touched.
 			 * @param[in] other The MBufRawPacket instance to move from.
@@ -152,6 +164,8 @@ namespace pcpp
 			 * @param[in] other The MBufRawPacket instance to move from.
 			 */
 			PCAPPP_MOVE_ASSIGNMENT(DPDKMemoryProxy);
+
+			///@endcond
 
 			/**
 			 * @brief Destructor for this class. 
@@ -353,6 +367,11 @@ namespace pcpp
 		 */
 		MBufRawPacket() {}
 
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
+
+		PCAPPP_DECLARE_MOVABLE(MBufRawPacket)
+
 		/**
 		 * @brief A copy c'tor for this class. 
 		 * The copy c'tor allocates a new mbuf from the same pool the original mbuf was allocated from, 
@@ -360,7 +379,8 @@ namespace pcpp
 		 * and copies the data from the original mbuf to the new mbuf.
 		 * @param[in] other The MBufRawPacket instance to make copy of.
 		 */
-		MBufRawPacket(const MBufRawPacket& other) : Base(other) {}
+		PCAPPP_COPY_CONSTRUCTOR(MBufRawPacket) :
+			Base(PCAPPP_COPY_WITH_CAST(Base&, PCAPPP_COPY_OTHER)) {}
 
 		/**
 		 * @brief An copy assignment operator for this class. 
@@ -369,11 +389,11 @@ namespace pcpp
 		 * instance will remain uninitialized (also, an error will be printed).
 		 * @param[in] other The MBufRawPacket instance to make copy of.
 		 */
-		MBufRawPacket& operator=(const MBufRawPacket& other)
+		PCAPPP_COPY_ASSIGNMENT(MBufRawPacket)
 		{
-			if (this == &other)
+			if (this == &PCAPPP_COPY_OTHER)
 				return *this;
-			Base::operator=(other);
+			Base::operator=(PCAPPP_COPY_WITH_CAST(Base&, PCAPPP_COPY_OTHER));
 			return *this;
 		}
 
@@ -396,11 +416,13 @@ namespace pcpp
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(MBufRawPacket)
 		{
-			if (this == &other)
+			if (this == &PCAPPP_MOVE_OTHER)
 				return *this;
 			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 			return *this;
 		}
+
+		///@endcond
 	};
 
 } // namespace pcpp

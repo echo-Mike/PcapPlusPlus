@@ -145,11 +145,11 @@ bool DPDKMemoryProxy::allocateAndResize(mbuf_ptr& mBuf, rte_mempool* pool, std::
 	return true;
 }
 
-DPDKMemoryProxy::DPDKMemoryProxy(const DPDKMemoryProxy& other) :
-	m_Device(other.m_Device)
+PCAPPP_COPY_CONSTRUCTOR_IMPL(DPDKMemoryProxy) :
+	m_Device(PCAPPP_COPY_OTHER.m_Device)
 {
 	// Check that other have a mBuf
-	if (other.m_MBuf == PCAPPP_NULLPTR)
+	if (PCAPPP_COPY_OTHER.m_MBuf == PCAPPP_NULLPTR)
 	{
 		LOG_DEBUG("Copy construction form object in the not-initialized state.");
 		// This object now is in proper not-initialized state - base class instance is in null-state
@@ -162,19 +162,19 @@ DPDKMemoryProxy::DPDKMemoryProxy(const DPDKMemoryProxy& other) :
 	//		Creates a "clone" of the given packet mbuf
 	//		http://dpdk.org/doc/api-17.02/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
 	//		http://dpdk.org/doc/api-16.04/rte__mbuf_8h.html#a1d26cc982f6363cd7492dd70cc5c287c
-	rte_mbuf* newMbuf = rte_pktmbuf_clone(other.m_MBuf, other.m_MBuf->pool);
+	rte_mbuf* newMbuf = rte_pktmbuf_clone(PCAPPP_COPY_OTHER.m_MBuf, PCAPPP_COPY_OTHER.m_MBuf->pool);
 	if (newMbuf == NULL)
 		return; // If exit here then object is in not-initialized state
 	// Set newly allocated packet
 	m_MBuf = newMbuf;
 	// Copy data from other
-	std::memcpy(get(), other.get(), other.getLength());
+	std::memcpy(get(), PCAPPP_COPY_OTHER.get(), PCAPPP_COPY_OTHER.getLength());
 }
 
-DPDKMemoryProxy& DPDKMemoryProxy::operator=(const DPDKMemoryProxy& other)
+PCAPPP_COPY_ASSIGNMENT_IMPL(DPDKMemoryProxy)
 {
 	// Do nothing in case of self assignment
-	if (this == &other)
+	if (this == &PCAPPP_COPY_OTHER)
 		return *this;
 
 	if (m_MBuf == PCAPPP_NULLPTR)
@@ -184,16 +184,16 @@ DPDKMemoryProxy& DPDKMemoryProxy::operator=(const DPDKMemoryProxy& other)
 		return *this;
 	}
 
-	if (other.m_MBuf == PCAPPP_NULLPTR)
+	if (PCAPPP_COPY_OTHER.m_MBuf == PCAPPP_NULLPTR)
 	{
 		LOG_ERROR("Provided DPDKMemoryProxy isn't initialized.");
 		return *this;
 	}
 
-	if (!adjust(m_MBuf, getLength(), other.getLength()))
+	if (!adjust(m_MBuf, getLength(), PCAPPP_COPY_OTHER.getLength()))
 		return *this;
 	// Copy data from other
-	std::memcpy(get(), other.get(), other.getLength());
+	std::memcpy(get(), PCAPPP_COPY_OTHER.get(), PCAPPP_COPY_OTHER.getLength());
 	return *this;
 }
 
