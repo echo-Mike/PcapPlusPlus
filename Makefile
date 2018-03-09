@@ -77,7 +77,7 @@ libs:
 ifdef SUPPRESS_CPP11
 	@ $(shell export CXXFLAGS=-DSUPPRESS_CPP11_DETECTION)
 else
-	@ $(shell export CXXFLAGS=-std=c++0x)
+	@ $(shell export CXXFLAGS=-std=c++11)
 endif
 	@cd $(COMMONPP_HOME)             && $(MAKE) all
 	@cd $(PACKETPP_HOME)             && $(MAKE) all
