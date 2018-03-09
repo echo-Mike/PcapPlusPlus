@@ -75,7 +75,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 				// CLANG
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 				#if (__clang_VERSION__ < 30100)
-					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_CONSTEXPR
 				#else
 					#define PCAPPP_CONSTEXPR constexpr
 				#endif
@@ -107,7 +107,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 				#if (__GNUC_VERSION__ < 40600)
 					#define PCAPPP_NOEXCEPT
 					#define PCAPPP_NULLPTR NULL
-					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_CONSTEXPR
 				#else
 					#define PCAPPP_NOEXCEPT noexcept
 					#define PCAPPP_HAVE_NULLPTR_T
@@ -128,7 +128,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 			// See : https://msdn.microsoft.com/en-us/library/hh567368.aspx#featurelist
 			#if (_MSC_VER < 1900)				
 				#define PCAPPP_NOEXCEPT
-				#define PCAPPP_CONSTEXPR const
+				#define PCAPPP_CONSTEXPR 
 			#else
 				#define PCAPPP_CONSTEXPR constexpr
 				#define PCAPPP_NOEXCEPT noexcept
@@ -153,7 +153,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 		#elif defined(__INTEL_COMPILER) || defined(__ICC)
 			// ICC
 			#if (__ICC_VERSION__ < 1400)				
-				#define PCAPPP_CONSTEXPR const
+				#define PCAPPP_CONSTEXPR 
 				#define PCAPPP_NOEXCEPT
 				#define PCAPPP_FINAL
 				#define PCAPPP_OVERRIDE
@@ -180,7 +180,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 			// There may be CLANG or GCC
 			// TODO: Add information sources about CLANG and GCC C++11 compatibility on Apple platforms
 			#ifndef __cpp_constexpr
-				#define PCAPPP_CONSTEXPR const
+				#define PCAPPP_CONSTEXPR 
 			#else
 				#define PCAPPP_CONSTEXPR constexpr
 			#endif
@@ -197,7 +197,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 				// CLANG
 				#define ENABLE_CPP11_MOVE_SEMANTICS
 				#if (__clang_VERSION__ < 30100)
-					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_CONSTEXPR 
 				#else
 					#define PCAPPP_CONSTEXPR constexpr
 				#endif
@@ -229,7 +229,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 				#if (__GNUC_VERSION__ < 40600)
 					#define PCAPPP_NOEXCEPT
 					#define PCAPPP_NULLPTR NULL
-					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_CONSTEXPR 
 				#else
 					#define PCAPPP_NOEXCEPT noexcept
 					#define PCAPPP_HAVE_NULLPTR_T
@@ -244,7 +244,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 			#elif defined(__INTEL_COMPILER) || defined(__ICC)
 				// ICC
 				#if (__ICC_VERSION__ < 1400)				
-					#define PCAPPP_CONSTEXPR const
+					#define PCAPPP_CONSTEXPR 
 					#define PCAPPP_NOEXCEPT
 					#define PCAPPP_FINAL
 					#define PCAPPP_OVERRIDE
@@ -271,7 +271,7 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 		// See : http://en.cppreference.com/w/cpp/experimental/feature_test
 		// We currently have interest only in:
 		#ifndef __cpp_constexpr
-			#define PCAPPP_CONSTEXPR const
+			#define PCAPPP_CONSTEXPR 
 		#else
 			#define PCAPPP_CONSTEXPR constexpr
 		#endif
@@ -286,17 +286,10 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 	#endif
 
 #else
-	#ifndef __cpp_constexpr
-		#define PCAPPP_CONSTEXPR const
-	#else
-		#define PCAPPP_CONSTEXPR constexpr
-	#endif
-	#ifdef __cpp_rvalue_references
-		//#define ENABLE_CPP11_MOVE_SEMANTICS
-	#endif
-	#define PCAPPP_NOEXCEPT
 	#define PCAPPP_FINAL
 	#define PCAPPP_OVERRIDE
+	#define PCAPPP_NOEXCEPT
+	#define PCAPPP_CONSTEXPR
 	#define PCAPPP_NULLPTR NULL
 	#define NO_TEMPLATE_FUNCTION_DEF_ARGS
 #endif /* SUPPRESS_CPP11_DETECTION */
