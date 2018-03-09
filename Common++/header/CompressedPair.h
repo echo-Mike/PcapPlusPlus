@@ -73,39 +73,44 @@ namespace pcpp
 				CompressedPair(const Base, const T2& val2) :
 					Base(), m_Val2(val2) {}
 
+				///@cond
+				// Doxygen do not generate proper documentation for functions defined by macro.
+
+				PCAPPP_DECLARE_MOVABLE(CompressedPair)
+
 				/**
 				 * @brief Copy constructor.
 				 * @param[in] other The instance to make copy of.
 				 */
-				CompressedPair(const CompressedPair& other) :
-					m_Val2(other.m_Val2) {}
+				PCAPPP_COPY_CONSTRUCTOR(CompressedPair) :
+					m_Val2(PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val2)) {}
 
 				/**
 				 * @brief Copy assignment operator.
-				 * Don't allows self assignment.\n
+				 * Don't allows self assignment.
 				 * @param[in] other The instance to make copy of.
+				 * @return Reference to this object.
 				 */
-				CompressedPair& operator=(const CompressedPair& other)
+				PCAPPP_COPY_ASSIGNMENT(CompressedPair)
 				{
 					// Handle self assignment case
-					if (this == &other)
+					if (this == &PCAPPP_COPY_OTHER)
 						return *this;
-					m_Val2 = other.m_Val2;
+					m_Val2 = PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val2);
 					return *this;
 				}
 
 				/**
 				 * @brief Move constructor.
-				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
 					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
 
 				/**
 				 * @brief Move assignment operator.
-				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * Don't allows self assignment.
+				 * @param[in:out] other The instance to move from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
@@ -116,6 +121,8 @@ namespace pcpp
 					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
 					return *this;
 				}
+
+				///@endcond
 
 				/**
 				 * @brief Method to access the compressed base value.
@@ -182,41 +189,47 @@ namespace pcpp
 				CompressedPair(const T1& val1, const T2& val2) :
 					m_Val1(val1), m_Val2(val2) {}
 
+				///@cond
+				// Doxygen do not generate proper documentation for functions defined by macro.
+
+				PCAPPP_DECLARE_MOVABLE(CompressedPair)
+
 				/**
 				 * @brief Copy constructor.
 				 * @param[in] other The instance to make copy of.
 				 */
-				CompressedPair(const CompressedPair& other) :
-					m_Val1(other.m_Val1), m_Val2(other.m_Val2) {}
-				
+				PCAPPP_COPY_CONSTRUCTOR(CompressedPair) :
+					m_Val1(PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val1)),
+					m_Val2(PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val2)) {}
+
 				/**
 				 * @brief Copy assignment operator.
-				 * Don't allows self assignment.\n
+				 * Don't allows self assignment.
 				 * @param[in] other The instance to make copy of.
+				 * @return Reference to this object.
 				 */
-				CompressedPair& operator=(const CompressedPair& other)
+				PCAPPP_COPY_ASSIGNMENT(CompressedPair)
 				{
 					// Handle self assignment case
-					if (this == &other)
+					if (this == &PCAPPP_COPY_OTHER)
 						return *this;
-					m_Val1 = other.m_Val1;
-					m_Val2 = other.m_Val2;
+					m_Val1 = PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val1);
+					m_Val2 = PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Val2);
 					return *this;
 				}
-				
+
 				/**
 				 * @brief Move constructor.
-				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
 					m_Val1(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1)),
 					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
-				
+
 				/**
 				 * @brief Move assignment operator.
-				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * Don't allows self assignment.
+				 * @param[in:out] other The instance to move from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
@@ -228,6 +241,8 @@ namespace pcpp
 					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
 					return *this;
 				}
+
+				///@endcond
 
 				/**
 				 * @brief Method to access the first stored value.

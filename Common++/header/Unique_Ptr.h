@@ -78,14 +78,17 @@ namespace pcpp
 			 */
 			explicit unique_ptr_base(pointer p) : m_Pair(Deleter(), p) {}
 
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_NOT_COPYABLE(unique_ptr_base)
+
 			/**
 			 * @brief Move constructor.
-			 * This is the move constructor which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr_base(unique_ptr_base&& other) move constructor.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr_base) :
-				m_Pair(PCAPPP_MOVE_OTHER.m_Pair.get_first(), PCAPPP_MOVE_OTHER.m_Pair.get_second())
+			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr_base) :
+				m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
 			{
 				// Nullify provided object
 				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
@@ -94,27 +97,22 @@ namespace pcpp
 
 			/**
 			 * @brief Move assignment operator.
-			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr_base& operator=(unique_ptr_base&& other) move assignment operator.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr_base instance.
-			 * @return Reference to this object.
+			 * Don't allows self assignment.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_ASSIGNMENT(unique_ptr_base)
+			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr_base)
 			{
 				// Handle self assignment case
 				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
-				// This member may optimized with move semantics but this case is to hard to handle in client side.
-				// So we don't make any assumptions and just copy it.
-				// For zero-size object this operation is costless.
-				m_Pair.get_first() = PCAPPP_MOVE_OTHER.m_Pair.get_first();
-				// Second is definitely a pointer
-				m_Pair.get_second() = PCAPPP_MOVE_OTHER.m_Pair.get_second();
+				m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair);
 				// Nullify provided object
 				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
 				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
 				return *this;
 			}
+
+			///@endcond
 
 			/**
 			 * @brief Method to access the stored deleter object.
@@ -217,30 +215,33 @@ namespace pcpp
 			 */
 			explicit unique_ptr(pointer p) : Base(p) {}
 
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_NOT_COPYABLE(unique_ptr)
+
 			/**
 			 * @brief Move constructor.
-			 * This is the move constructor which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr) :
-				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
-			
+			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr) :
+				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+
 			/**
 			 * @brief Move assignment operator.
-			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
-			 * @return Reference to this object.
+			 * Don't allows self assignment.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_ASSIGNMENT(unique_ptr)
+			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr)
 			{
+				// Handle self assignment case
 				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
-				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
 				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
+
+			///@endcond
 
 			/**
 			 * @brief Destructor.
@@ -375,30 +376,33 @@ namespace pcpp
 			 */
 			explicit unique_ptr(pointer p) : Base(p) {}
 
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_NOT_COPYABLE(unique_ptr)
+
 			/**
 			 * @brief Move constructor.
-			 * This is the move constructor which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr(unique_ptr&& other) move constructor.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_CONSTRUCTOR(unique_ptr) :
-				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {} // This is basically the Base(std::move(other)) expression but cast must be specified explicitly.
+			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr) :
+				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
 
 			/**
 			 * @brief Move assignment operator.
-			 * This is the move assignment operator which is based on library implementation of C++11 move semantics.
-			 * This function is basically the unique_ptr& operator=(unique_ptr&& other) move assignment operator.
-			 * @param[in:out] proxy Special object which represents rvalue reference to other unique_ptr instance.
-			 * @return Reference to this object.
+			 * Don't allows self assignment.
+			 * @param[in:out] other The instance to move from.
 			 */
-			PCAPPP_MOVE_ASSIGNMENT(unique_ptr)
+			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr)
 			{
+				// Handle self assignment case
 				if (this == &PCAPPP_MOVE_OTHER)
 					return *this;
-				// This is basically the Base::operator=(std::move(other)) expression but cast must be specified explicitly.
 				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
+
+			///@endcond
 
 			/**
 			 * @brief Destructor.

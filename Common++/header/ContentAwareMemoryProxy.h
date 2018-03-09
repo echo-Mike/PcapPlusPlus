@@ -202,6 +202,12 @@ namespace pcpp
 			 */
 			explicit ContentAwareMemoryProxy(const_pointer p, size length = 0, bool ownership = true, Allocator alloc = Allocator()) :
 				m_Pair(alloc, p), m_Length(length), m_Capacity(length), m_Ownership(ownership) {}
+			
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_MOVABLE(ContentAwareMemoryProxy)
+
 			/**
 			 * @brief Copy constructor.
 			 * Object is set to a null-state first. Then other allocator object is copied.
@@ -211,11 +217,12 @@ namespace pcpp
 			 * If allocator can't allocate new memory object will be set in null-state.
 			 * @param[in] other The instance to make copy of.
 			 */
-			ContentAwareMemoryProxy(const ContentAwareMemoryProxy& other)
-			{ 
+			PCAPPP_COPY_CONSTRUCTOR(ContentAwareMemoryProxy)
+			{
 				initialize();
-				copyDataFrom(other);
+				copyDataFrom(PCAPPP_COPY_OTHER);
 			}
+
 			/**
 			 * @brief Copy assignment operator.
 			 * Don't allows self assignment.\n
@@ -226,14 +233,15 @@ namespace pcpp
 			 * If allocator can't allocate new memory object will be set in null-state.
 			 * @param[in] other The instance to make copy of.
 			 */
-			ContentAwareMemoryProxy& operator=(const ContentAwareMemoryProxy& other)
+			PCAPPP_COPY_ASSIGNMENT(ContentAwareMemoryProxy)
 			{
 				// Handle self assignment case
-				if (this == &other)
+				if (this == &PCAPPP_COPY_OTHER)
 					return *this;
-				copyDataFrom(other);
+				copyDataFrom(PCAPPP_COPY_OTHER);
 				return *this;
 			}
+
 			/**
 			 * @brief Move constructor.
 			 * Object is set to a null-state first. Then other allocator object is moved.
@@ -245,6 +253,7 @@ namespace pcpp
 				initialize();
 				moveDataFrom(PCAPPP_MOVE_OTHER);
 			}
+
 			/**
 			 * @brief Move assignment operator.
 			 * Don't allows self assignment.\n
@@ -260,6 +269,9 @@ namespace pcpp
 				moveDataFrom(PCAPPP_MOVE_OTHER);
 				return *this;
 			}
+
+			///@endcond
+			
 			/**
 			 * @brief Destructor.
 			 * Deallocates underlying data if SafeToDeleteCondition is satisfied.

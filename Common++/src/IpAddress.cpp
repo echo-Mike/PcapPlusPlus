@@ -86,18 +86,18 @@ IPv4Address::IPv4Address(std::string addressAsString)
 	initialize((char*)addressAsString.c_str());
 }
 
-IPv4Address::IPv4Address(const IPv4Address& other) :
+PCAPPP_COPY_CONSTRUCTOR_IMPL(IPv4Address) :
 	m_pInAddr(new in_addr)
 {
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 }
 
-IPv4Address& IPv4Address::operator=(const IPv4Address& other)
+PCAPPP_COPY_ASSIGNMENT_IMPL(IPv4Address)
 {
 	// Handle self assignment case
-	if (this == &other) 
+	if (this == &PCAPPP_COPY_OTHER)
 		return *this;
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 	return *this;
 }
 
@@ -248,18 +248,18 @@ IPv6Address::IPv6Address(std::string addressAsString)
 	initialize((char*)addressAsString.c_str());
 }
 
-IPv6Address::IPv6Address(const IPv6Address& other) :
+PCAPPP_COPY_CONSTRUCTOR_IMPL(IPv6Address) :
 	m_pInAddr(new in6_addr)
 {
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 }
 
-IPv6Address& IPv6Address::operator=(const IPv6Address& other)
+PCAPPP_COPY_ASSIGNMENT_IMPL(IPv6Address)
 {
 	// Handle self assignment case
-	if (this == &other)
+	if (this == &PCAPPP_COPY_OTHER)
 		return *this;
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 	return *this;
 }
 

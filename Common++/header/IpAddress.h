@@ -145,25 +145,40 @@ namespace pcpp
 		 */
 		IPv4Address(in_addr* inAddr);
 
-		/**
-		 * A copy constructor for this class
-		 */
-		IPv4Address(const IPv4Address& other);
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
+
+		PCAPPP_DECLARE_MOVABLE(IPv4Address)
 
 		/**
-		 * Overload of the copy assignment operator
+		 * @brief Copy constructor.
+		 * @param[in] other The instance to make copy of.
 		 */
-		IPv4Address& operator=(const IPv4Address& other);
+		PCAPPP_COPY_CONSTRUCTOR(IPv4Address);
 
 		/**
-		 * A move constructor for this class.
+		 * @brief Copy assignment operator.
+		 * Don't allows self assignment.
+		 * @param[in] other The instance to make copy of.
+		 * @return Reference to this object.
+		 */
+		PCAPPP_COPY_ASSIGNMENT(IPv4Address);
+
+		/**
+		 * @brief Move constructor.
+		 * @param[in:out] other The instance to move from.
 		 */
 		PCAPPP_MOVE_CONSTRUCTOR(IPv4Address);
 
 		/**
-		 * Overload of the move assignment operator
+		 * @brief Move assignment operator.
+		 * Don't allows self assignment.
+		 * @param[in:out] other The instance to move from.
+		 * @return Reference to this object.
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(IPv4Address);
+
+		///@endcond
 
 		~IPv4Address();
 
@@ -263,25 +278,40 @@ namespace pcpp
 		 */
 		IPv6Address(std::string addressAsString);
 
-		/**
-		 * A copy constructor for this class
-		 */
-		IPv6Address(const IPv6Address& other);
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
+
+		PCAPPP_DECLARE_MOVABLE(IPv6Address)
 
 		/**
-		 * Overload of the assignment operator
+		 * @brief Copy constructor.
+		 * @param[in] other The instance to make copy of.
 		 */
-		IPv6Address& operator=(const IPv6Address& other);
+		PCAPPP_COPY_CONSTRUCTOR(IPv6Address);
 
 		/**
-		 * A move constructor for this class.
+		 * @brief Copy assignment operator.
+		 * Don't allows self assignment.
+		 * @param[in] other The instance to make copy of.
+		 * @return Reference to this object.
+		 */
+		PCAPPP_COPY_ASSIGNMENT(IPv6Address);
+
+		/**
+		 * @brief Move constructor.
+		 * @param[in:out] other The instance to move from.
 		 */
 		PCAPPP_MOVE_CONSTRUCTOR(IPv6Address);
 
 		/**
-		 * Overload of the move assignment operator
+		 * @brief Move assignment operator.
+		 * Don't allows self assignment.
+		 * @param[in:out] other The instance to move from.
+		 * @return Reference to this object.
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(IPv6Address);
+
+		///@endcond
 
 		~IPv6Address();
 

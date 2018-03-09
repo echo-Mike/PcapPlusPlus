@@ -89,31 +89,36 @@ namespace pcpp
 				 */
 				AllocatorPointerPair(Allocator& alloc, const_pointer p) : m_Pair(Adapter(alloc), const_cast<pointer>(p)) {}
 
+				///@cond
+				// Doxygen do not generate proper documentation for functions defined by macro.
+
+				PCAPPP_DECLARE_MOVABLE(AllocatorPointerPair)
+
 				/**
 				 * @brief Copy constructor.
-				 * @param[in] other Instance to be copied.
+				 * @param[in] other The instance to make copy of.
 				 */
-				AllocatorPointerPair(const AllocatorPointerPair& other) :
-					m_Pair(other.m_Pair) {}
+				PCAPPP_COPY_CONSTRUCTOR(AllocatorPointerPair) :
+					m_Pair(PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Pair)) {}
 
 				/**
 				 * @brief Copy assignment operator.
-				 * @param[in] other Instance to be copied.
+				 * Don't allows self assignment.
+				 * @param[in] other The instance to make copy of.
 				 * @return Reference to this object.
 				 */
-				AllocatorPointerPair& operator=(const AllocatorPointerPair& other)
+				PCAPPP_COPY_ASSIGNMENT(AllocatorPointerPair)
 				{
 					// Handle self assignment case
-					if (this == &other)
+					if (this == &PCAPPP_COPY_OTHER)
 						return *this;
-					m_Pair = other.m_Pair;
+					m_Pair = PCAPPP_COPY(PCAPPP_COPY_OTHER.m_Pair);
 					return *this;
 				}
 
 				/**
 				 * @brief Move constructor.
-				 * This is the move constructor which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(AllocatorPointerPair) :
 					m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
@@ -125,8 +130,8 @@ namespace pcpp
 
 				/**
 				 * @brief Move assignment operator.
-				 * This is the move assignment operator which is automatically selects between library implementation of C++11 move semantics and C++11 move semantics.
-				 * @param[in:out] other Instance to be moved from.
+				 * Don't allows self assignment.
+				 * @param[in:out] other The instance to move from.
 				 * @return Reference to this object.
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(AllocatorPointerPair)
@@ -140,6 +145,8 @@ namespace pcpp
 					PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
 					return *this;
 				}
+
+				///@endcond
 
 				/**
 				 * @brief Method to access the stored allocator object.

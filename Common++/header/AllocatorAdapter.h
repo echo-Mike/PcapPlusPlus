@@ -51,29 +51,36 @@ namespace pcpp
 			 * @brief Default constructor.
 			 */
 			AllocatorAdapter() : Base() {}
-
+			
 			/**
 			 * @brief Basic constructor.
 			 * Constructs allocator via copy-construction.
 			 */
 			AllocatorAdapter(Allocator& alloc) : Base(alloc) {}
 
+			///@cond
+			// Doxygen do not generate proper documentation for functions defined by macro.
+
+			PCAPPP_DECLARE_MOVABLE(AllocatorAdapter)
+
 			/**
 			 * @brief Copy constructor.
 			 * @param[in] other The instance to make copy of.
 			 */
-			AllocatorAdapter(const AllocatorAdapter& other) : Base(other) {}
+			PCAPPP_COPY_CONSTRUCTOR(AllocatorAdapter) : 
+				Base(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER)) {}
 
 			/**
 			 * @brief Copy assignment operator.
 			 * Don't allows self assignment.
 			 * @param[in] other The instance to make copy of.
+			 * @return Reference to this object.
 			 */
-			AllocatorAdapter& operator=(const AllocatorAdapter& other) 
-			{ 
-				if (this == &other)
+			PCAPPP_COPY_ASSIGNMENT(AllocatorAdapter)
+			{
+				if (this == &PCAPPP_COPY_OTHER)
 					return *this;
-				Base::operator=(other);
+				Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER));
 				return *this;
 			}
 
@@ -88,6 +95,7 @@ namespace pcpp
 			 * @brief Move assignment operator.
 			 * Don't allows self assignment.
 			 * @param[in:out] other The instance to move from.
+			 * @return Reference to this object.
 			 */
 			PCAPPP_MOVE_ASSIGNMENT(AllocatorAdapter)
 			{
@@ -97,6 +105,8 @@ namespace pcpp
 				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
 				return *this;
 			}
+
+			///@endcond
 
 			/**
 			 * @brief Destructor.
