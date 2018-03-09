@@ -144,13 +144,18 @@ namespace pcpp
 		 */
 		Packet(RawPacket* rawPacket, OsiModelLayer parseUntilLayer);
 
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
+
+		PCAPPP_DECLARE_MOVABLE(Packet)
+
 		/**
 		 * @brief Copy constructor that copies all data from another instance.
 		 * Copies the raw data and re-creates all layers. So when the original Packet
 		 * is being freed, no data will be lost in the copied instance.
 		 * @param[in] other The instance to make copy of.
 		 */
-		Packet(const Packet& other);
+		PCAPPP_COPY_CONSTRUCTOR(Packet);
 
 		/**
 		 * @brief Copy assignment operator of this class.
@@ -160,8 +165,8 @@ namespace pcpp
 		 * Afterwards it copies the data from the other packet in the same way used in the copy constructor.
 		 * @param[in] other The instance to make copy of.
 		 */
-		Packet& operator=(const Packet& other);
-		
+		PCAPPP_COPY_ASSIGNMENT(Packet);
+
 		/**
 		 * @brief Move constructor that moves all data from another instance.
 		 * Notice no raw data is copied all other data members are copied.\n
@@ -179,6 +184,8 @@ namespace pcpp
 		 * @param[in] other The instance to move from.
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(Packet);
+
+		///@endcond
 
 		/**
 		 * @brief Destructor for this class. 

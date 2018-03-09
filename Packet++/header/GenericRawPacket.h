@@ -130,13 +130,19 @@ namespace pcpp
 			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, ownership);
 		}
 		
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
+
+		PCAPPP_DECLARE_MOVABLE(GenericRawPacket)
+
 		/**
 		 * @brief Default copy constructor.
 		 * Internally calls copy constructors of base types.
 		 * @param[in] other The instance to make copy of.
 		 */
-		GenericRawPacket(const GenericRawPacket& other) :
-			Base(other), MPBase(other) {}
+		PCAPPP_COPY_CONSTRUCTOR(GenericRawPacket) :
+			Base(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER)),
+			MPBase(PCAPPP_COPY_WITH_CAST(const MPBase&, PCAPPP_COPY_OTHER)) {}
 
 		/**
 		 * @brief Default copy assignment operator.
@@ -144,12 +150,12 @@ namespace pcpp
 		 * Correctly handles self assignment case.
 		 * @param[in] other The instance to make copy of.
 		 */
-		GenericRawPacket& operator=(const GenericRawPacket& other)
+		PCAPPP_COPY_ASSIGNMENT(GenericRawPacket)
 		{
-			if (this == &other)
+			if (this == &PCAPPP_COPY_OTHER)
 				return *this;
-			Base::operator=(other);
-			MPBase::operator=(other);
+			Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER));
+			MPBase::operator=(PCAPPP_COPY_WITH_CAST(const MPBase&, PCAPPP_COPY_OTHER));
 			return *this;
 		}
 
@@ -163,8 +169,7 @@ namespace pcpp
 		 */
 		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
 			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
-			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER))
-		{}
+			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER)) {}
 
 		/**
 		 * @brief Default auto-generated move assignment operator.
@@ -182,6 +187,8 @@ namespace pcpp
 			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER));
 			return *this;
 		}
+
+		///@endcond
 
 		/**
 		 * @brief Default destructor.
@@ -515,24 +522,30 @@ namespace pcpp
 			MPBase::reset(const_cast<pointer>(pRawData), rawDataLen, ownership);
 		}
 		
-		GenericRawPacket(const GenericRawPacket& other) :
-			Base(other), MPBase(other), m_MaxLength(other.m_MaxLength) {}
+		///@cond
+		// Doxygen do not generate proper documentation for functions defined by macro.
 
-		GenericRawPacket& operator=(const GenericRawPacket& other)
+		PCAPPP_DECLARE_MOVABLE(GenericRawPacket)
+
+		PCAPPP_COPY_CONSTRUCTOR(GenericRawPacket) :
+			Base(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER)),
+			MPBase(PCAPPP_COPY_WITH_CAST(const MPBase&, PCAPPP_COPY_OTHER)),
+			m_MaxLength(PCAPPP_COPY_OTHER.m_MaxLength) {}
+
+		PCAPPP_COPY_ASSIGNMENT(GenericRawPacket)
 		{
-			if (this == &other)
+			if (this == &PCAPPP_COPY_OTHER)
 				return *this;
-			Base::operator=(other);
-			MPBase::operator=(other);
-			m_MaxLength = other.m_MaxLength;
+			Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER));
+			MPBase::operator=(PCAPPP_COPY_WITH_CAST(const MPBase&, PCAPPP_COPY_OTHER));
+			m_MaxLength = PCAPPP_COPY_OTHER.m_MaxLength;
 			return *this;
 		}
 
 		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
 			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
 			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER)),
-			m_MaxLength(PCAPPP_MOVE_OTHER.m_MaxLength)
-		{}
+			m_MaxLength(PCAPPP_MOVE_OTHER.m_MaxLength) {}
 
 		PCAPPP_MOVE_ASSIGNMENT(GenericRawPacket)
 		{
@@ -543,6 +556,8 @@ namespace pcpp
 			m_MaxLength = PCAPPP_MOVE_OTHER.m_MaxLength;
 			return *this;
 		}
+
+		///@endcond
 
 		~GenericRawPacket() {}
 

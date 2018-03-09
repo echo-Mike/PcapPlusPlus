@@ -71,19 +71,19 @@ Packet::Packet(RawPacket* rawPacket, OsiModelLayer parseUntilLayer)
 	setRawPacket(rawPacket, false, UnknownProtocol, parseUntilLayer);
 }
 
-Packet::Packet(const Packet& other)
+PCAPPP_COPY_CONSTRUCTOR_IMPL(Packet)
 {
 	// Create this object in null-state
 	initialize();
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 }
 
-Packet& Packet::operator=(const Packet& other)
+PCAPPP_COPY_ASSIGNMENT_IMPL(Packet)
 {
-	// Will not copy if assigned to itself
-	if (this == &other) 
+	// Handle self assignment case
+	if (this == &PCAPPP_COPY_OTHER)
 		return *this;
-	copyDataFrom(other);
+	copyDataFrom(PCAPPP_COPY_OTHER);
 	return *this;
 }
 
