@@ -19,3 +19,9 @@ RM := rm.exe
 CP := cp.exe
 
 MKDIR := mkdir.exe
+
+ifndef PCAPPP_LIBRARY_WIDE_CXXFLAGS
+
+PCAPPP_LIBRARY_WIDE_CXXFLAGS :=
+
+endif

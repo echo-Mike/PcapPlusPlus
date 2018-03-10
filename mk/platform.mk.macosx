@@ -21,3 +21,9 @@ MKDIR := mkdir
 INSTALL_SCRIPT := install.sh
 
 UNINSTALL_SCRIPT := uninstall.sh
+
+ifndef PCAPPP_LIBRARY_WIDE_CXXFLAGS
+
+PCAPPP_LIBRARY_WIDE_CXXFLAGS :=
+
+endif

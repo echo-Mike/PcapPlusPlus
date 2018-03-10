@@ -4,6 +4,12 @@ endif
 
 include mk/platform.mk
 
+ifdef SUPPRESS_CPP11
+PCAPPP_LIBRARY_WIDE_CXXFLAGS += -DSUPPRESS_CPP11_DETECTION
+else
+PCAPPP_LIBRARY_WIDE_CXXFLAGS += -std=c++11
+endif
+
 COMMONPP_HOME        := Common++
 PACKETPP_HOME        := Packet++
 PCAPPP_HOME          := Pcap++
@@ -74,11 +80,6 @@ endif
 # PcapPlusPlus libs only
 libs:
 	@$(RM) -rf Dist
-ifdef SUPPRESS_CPP11
-	@ $(shell export CXXFLAGS=-DSUPPRESS_CPP11_DETECTION)
-else
-	@ $(shell export CXXFLAGS=-std=c++11)
-endif
 	@cd $(COMMONPP_HOME)             && $(MAKE) all
 	@cd $(PACKETPP_HOME)             && $(MAKE) all
 	@cd $(PCAPPP_HOME)               && $(MAKE) all
