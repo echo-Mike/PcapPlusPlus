@@ -123,7 +123,7 @@ namespace pcpp
 				PCAPPP_MOVE_CONSTRUCTOR(AllocatorPointerPair) :
 					m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Pair))
 				{
-					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorAdapter)
+					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorPointerPair)
 					// Nullify provided object
 					PCAPPP_MOVE_OTHER_I.m_Pair.get_first() = Adapter();
 					PCAPPP_MOVE_OTHER_I.m_Pair.get_second() = pointer();
@@ -133,11 +133,11 @@ namespace pcpp
 				 * @brief Move assignment operator.
 				 * Don't allows self assignment.
 				 * @param[in:out] other The instance to move from.
-				 * @return Reference to this object.
+				 * @return Reference to this object.s
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(AllocatorPointerPair)
 				{
-					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorAdapter)
+					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorPointerPair)
 					// Handle self assignment case
 					if (this == &PCAPPP_MOVE_OTHER_I)
 						return *this;

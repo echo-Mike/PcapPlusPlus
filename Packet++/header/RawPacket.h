@@ -226,40 +226,40 @@ namespace pcpp
 		/**
 		 * Defines underlying memory type.
 		 */
-		typedef typename TypeHelper::value_type value_type;
+		typedef TypeHelper::value_type value_type;
 		/**
 		 * Defines type of pointer to underlying memory type.
 		 */
-		typedef typename TypeHelper::pointer pointer;
+		typedef TypeHelper::pointer pointer;
 		/**
 		 * Defines type of constant pointer to underlying memory type.
 		 */
-		typedef typename TypeHelper::const_pointer const_pointer;
+		typedef TypeHelper::const_pointer const_pointer;
 		/**
 		 * Defines type of reference to element of underlying memory type.
 		 */
-		typedef typename TypeHelper::reference reference;
+		typedef TypeHelper::reference reference;
 		/**
 		 * Defines type of constant reference to element of underlying memory type.
 		 */
-		typedef typename TypeHelper::const_reference const_reference;
+		typedef TypeHelper::const_reference const_reference;
 
 		/**
 		 * Defines type of variables that represents size values.
 		 */
-		typedef typename TypeHelper::size size;
+		typedef TypeHelper::size size;
 		/**
 		 * Defines type of variables that represents length values.
 		 */
-		typedef typename TypeHelper::length length;
+		typedef TypeHelper::length length;
 		/**
 		 * Defines type of variables that represents index values.
 		 */
-		typedef typename TypeHelper::index index;
+		typedef TypeHelper::index index;
 		/**
 		 * Defines type of variables that represents initial memory values for std::memset.
 		 */
-		typedef typename TypeHelper::memory_value memory_value;
+		typedef TypeHelper::memory_value memory_value;
 
 		/**
 		 * Represents type of structure that holds time-stamp.
