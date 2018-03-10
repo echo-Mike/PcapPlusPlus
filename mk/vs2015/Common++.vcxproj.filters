@@ -78,6 +78,9 @@
     <ClInclude Include="..\..\Common++\header\AllocatorPointerPair.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Common++\header\MacroUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Common++\src\IpAddress.cpp">
