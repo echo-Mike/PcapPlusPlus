@@ -6,7 +6,7 @@
 
 /// @file
 
-#if !defined(SUPPRESS_CPP11_DETECTION)
+#if !defined(PCAPPP_SUPPRESS_CPP11_DETECTION)
 
 	// C++11 auto-detect feature is supported for: GCC/G++, ICC, CLANG(Xcode partially), VS(MSVC) 
 
@@ -292,6 +292,6 @@ And if You can please add issue to https://github.com/seladb/PcapPlusPlus
 	#define PCAPPP_CONSTEXPR
 	#define PCAPPP_NULLPTR NULL
 	#define NO_TEMPLATE_FUNCTION_DEF_ARGS
-#endif /* SUPPRESS_CPP11_DETECTION */
+#endif /* PCAPPP_SUPPRESS_CPP11_DETECTION */
 
 #endif /* PCAPPP_CPP11DETECTION */

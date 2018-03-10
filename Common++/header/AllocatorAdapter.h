@@ -89,7 +89,7 @@ namespace pcpp
 			 * @param[in:out] other The instance to move from.
 			 */
 			PCAPPP_MOVE_CONSTRUCTOR(AllocatorAdapter) :
-				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+				Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)) {}
 
 			/**
 			 * @brief Move assignment operator.
@@ -99,10 +99,11 @@ namespace pcpp
 			 */
 			PCAPPP_MOVE_ASSIGNMENT(AllocatorAdapter)
 			{
+				PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorAdapter)
 				// Handle self assignment case
-				if (this == &PCAPPP_MOVE_OTHER)
+				if (this == &PCAPPP_MOVE_OTHER_I)
 					return *this;
-				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 				return *this;
 			}
 

@@ -242,42 +242,46 @@ namespace pcpp
 /**
  * Internal macro. NOT TO BE USED ANYWHERE!!!
  */
-#	define PCAPPP_MOVE_TYPE(Type_name) Type_name&
+#	define PCAPPP_MOVE_TYPE(Type_name) const Type_name&
+
+#	define PCAPPP_PREPARE_MOVE_OTHER_I(Type_name) Type_name& other_ = const_cast<Type_name&>(other);
+
 /**
  * Returns reference to other instance of same type in move-constructor or 
  * move-assignment operator that was generated using PCAPPP_MOVE_CONSTRUCTOR, 
  * PCAPPP_MOVE_ASSIGNMENT, PCAPPP_MOVE_CONSTRUCTOR_NC, PCAPPP_MOVE_ASSIGNMENT_NC macro.
  */
-#	define PCAPPP_MOVE_OTHER other
+#	define PCAPPP_MOVE_OTHER_O other
+#	define PCAPPP_MOVE_OTHER_I other_
 
 /**
  * Generates declaration of move-constructor with correct move-reference type for NOT COPYABLE (_NC) objects.
  */
-#	define PCAPPP_MOVE_CONSTRUCTOR_NC(Type_name) Type_name(PCAPPP_MOVE_TYPE(Type_name) other)
+#	define PCAPPP_MOVE_CONSTRUCTOR_NC(Type_name) Type_name(PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 /**
  * Generates declaration of move-assignment operator with correct move-reference type for NOT COPYABLE (_NC) objects.
  */
-#	define PCAPPP_MOVE_ASSIGNMENT_NC(Type_name) Type_name& operator=(PCAPPP_MOVE_TYPE(Type_name) other)
+#	define PCAPPP_MOVE_ASSIGNMENT_NC(Type_name) Type_name& operator=(PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 
 /**
  * Generates definition of move-constructor with correct move-reference type for NOT COPYABLE (_NC) objects.
  * Use this macro in .cpp files.
  */
-#	define PCAPPP_MOVE_CONSTRUCTOR_IMPL_NC(Type_name) Type_name::Type_name(PCAPPP_MOVE_TYPE(Type_name) other)
+#	define PCAPPP_MOVE_CONSTRUCTOR_IMPL_NC(Type_name) Type_name::Type_name(PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 /**
  * Generates definition of move-assignment operator with correct move-reference type for NOT COPYABLE (_NC) objects.
  * Use this macro in .cpp files.
  */
-#	define PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(Type_name) Type_name& Type_name::operator=(PCAPPP_MOVE_TYPE(Type_name) other)
+#	define PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(Type_name) Type_name& Type_name::operator=(PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 
 /**
  * Generates declaration of copy-constructor with correct copy-reference type for MOVABLE objects.
  */
-#	define PCAPPP_COPY_CONSTRUCTOR(Type_name) Type_name(PCAPPP_COPY_TYPE(Type_name) other)
+#	define PCAPPP_COPY_CONSTRUCTOR(Type_name) Type_name(PCAPPP_COPY_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 /**
  * Generates declaration of copy-assignment operator with correct copy-reference type for MOVABLE objects.
  */
-#	define PCAPPP_COPY_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_COPY_TYPE(Type_name) other)
+#	define PCAPPP_COPY_ASSIGNMENT(Type_name) Type_name& operator=(PCAPPP_COPY_TYPE(Type_name) PCAPPP_MOVE_OTHER_O)
 
 /**
  * Generates definition of copy-constructor with correct copy-reference type for MOVABLE objects.
@@ -441,12 +445,15 @@ namespace pcpp
  */
 #	define PCAPPP_COPY_TYPE(Type_name) const Type_name&
 
-/**
+#	define PCAPPP_PREPARE_MOVE_OTHER_I(Type_name)
+
+ /**
  * Returns reference to other instance of same type in move-constructor or 
  * move-assignment operator that was generated using PCAPPP_MOVE_CONSTRUCTOR, 
  * PCAPPP_MOVE_ASSIGNMENT, PCAPPP_MOVE_CONSTRUCTOR_NC, PCAPPP_MOVE_ASSIGNMENT_NC macro.
  */
-#	define PCAPPP_MOVE_OTHER other
+#	define PCAPPP_MOVE_OTHER_O other
+#	define PCAPPP_MOVE_OTHER_I PCAPPP_MOVE_OTHER_O
 /**
  * Returns reference to other instance of same type in copy-constructor or 
  * copy-assignment operator that was generated using PCAPPP_COPY_CONSTRUCTOR or 
@@ -457,7 +464,7 @@ namespace pcpp
 /**
  * Internal macro. NOT TO BE USED ANYWHERE!!!
  */
-#	define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER
+#	define PCAPPP_MOVE_PARAMETER(Type_name) PCAPPP_MOVE_TYPE(Type_name) PCAPPP_MOVE_OTHER_O
 /**
  * Internal macro. NOT TO BE USED ANYWHERE!!!
  */

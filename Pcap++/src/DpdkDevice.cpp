@@ -198,20 +198,22 @@ PCAPPP_COPY_ASSIGNMENT_IMPL(DPDKMemoryProxy)
 }
 
 PCAPPP_MOVE_CONSTRUCTOR_IMPL(DPDKMemoryProxy) :
-	m_MBuf(PCAPPP_MOVE_OTHER.m_MBuf),
-	m_Device(PCAPPP_MOVE_OTHER.m_Device)
+	m_MBuf(PCAPPP_MOVE_OTHER_O.m_MBuf),
+	m_Device(PCAPPP_MOVE_OTHER_O.m_Device)
 {	// Lave other in not-initialized state
-	PCAPPP_MOVE_OTHER.m_MBuf = PCAPPP_NULLPTR;
+	PCAPPP_PREPARE_MOVE_OTHER_I(DPDKMemoryProxy)
+	PCAPPP_MOVE_OTHER_I.m_MBuf = PCAPPP_NULLPTR;
 }
 
 PCAPPP_MOVE_ASSIGNMENT_IMPL(DPDKMemoryProxy)
 {
+	PCAPPP_PREPARE_MOVE_OTHER_I(DPDKMemoryProxy)
 	// Do nothing in case of self assignment
-	if (this == &PCAPPP_MOVE_OTHER)
+	if (this == &PCAPPP_MOVE_OTHER_I)
 		return *this;
-	setMBuf(PCAPPP_MOVE_OTHER.m_MBuf);
+	setMBuf(PCAPPP_MOVE_OTHER_I.m_MBuf);
 	// Lave other in not-initialized state
-	PCAPPP_MOVE_OTHER.m_MBuf = PCAPPP_NULLPTR;
+	PCAPPP_MOVE_OTHER_I.m_MBuf = PCAPPP_NULLPTR;
 	return *this;
 }
 

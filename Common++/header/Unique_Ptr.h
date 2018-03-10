@@ -2,6 +2,7 @@
 #define PCAPPP_UNIQUE_PTR_H
 
 #include "CPP11.h"
+#include "MacroUtils.h"
 #include "MemoryUtils.h"
 #include "CompressedPair.h"
 #include "MoveSemantics.h"
@@ -21,17 +22,6 @@ namespace pcpp
 	namespace memory
 	{
 
-/**
- * Special macro that can select between two functional-macro definitions based on count of arguments
- */
-#define PCAPPP_GET_MACRO_2(_1,_2,NAME,...) NAME
-/**
- * Next section represents a custom implementation of std::unique_ptr for this library.
- * The whole implementation is a corrected for C++98 copy from MSVC 16.0 (Microsoft Visual Studio 2015) standard library implementation.
- * About next 'ifndef': Basically every compiler that have move semantics support have it's own implementation of std::unique_ptr.
- * So we just provide a macro definition that swaps our implementation with standard one when it is possible.
- */
-#ifndef ENABLE_CPP11_MOVE_SEMANTICS
 		/**
 		 * @brief Base class for unique_ptr implementation.
 		 * @tparam T The type of values to be stored.
@@ -88,11 +78,12 @@ namespace pcpp
 			 * @param[in:out] other The instance to move from.
 			 */
 			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr_base) :
-				m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
+				m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Pair))
 			{
+				PCAPPP_PREPARE_MOVE_OTHER_I(unique_ptr_base)
 				// Nullify provided object
-				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
-				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+				PCAPPP_MOVE_OTHER_I.m_Pair.get_first() = Deleter();
+				PCAPPP_MOVE_OTHER_I.m_Pair.get_second() = pointer();
 			}
 
 			/**
@@ -102,13 +93,14 @@ namespace pcpp
 			 */
 			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr_base)
 			{
+				PCAPPP_PREPARE_MOVE_OTHER_I(unique_ptr_base)
 				// Handle self assignment case
-				if (this == &PCAPPP_MOVE_OTHER)
+				if (this == &PCAPPP_MOVE_OTHER_I)
 					return *this;
-				m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair);
+				m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER_I.m_Pair);
 				// Nullify provided object
-				PCAPPP_MOVE_OTHER.m_Pair.get_first() = Deleter();
-				PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+				PCAPPP_MOVE_OTHER_I.m_Pair.get_first() = Deleter();
+				PCAPPP_MOVE_OTHER_I.m_Pair.get_second() = pointer();
 				return *this;
 			}
 
@@ -214,7 +206,7 @@ namespace pcpp
 			 * @param[in:out] other The instance to move from.
 			 */
 			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr) :
-				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+				Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)) {}
 
 			/**
 			 * @brief Move assignment operator.
@@ -224,9 +216,9 @@ namespace pcpp
 			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr)
 			{
 				// Handle self assignment case
-				if (this == &PCAPPP_MOVE_OTHER)
+				if (this == &PCAPPP_MOVE_OTHER_O)
 					return *this;
-				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 				return *this;
 			}
 
@@ -364,7 +356,7 @@ namespace pcpp
 			 * @param[in:out] other The instance to move from.
 			 */
 			PCAPPP_MOVE_CONSTRUCTOR_NC(unique_ptr) :
-				Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+				Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)) {}
 
 			/**
 			 * @brief Move assignment operator.
@@ -374,9 +366,9 @@ namespace pcpp
 			PCAPPP_MOVE_ASSIGNMENT_NC(unique_ptr)
 			{
 				// Handle self assignment case
-				if (this == &PCAPPP_MOVE_OTHER)
+				if (this == &PCAPPP_MOVE_OTHER_O)
 					return *this;
-				Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+				Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 				return *this;
 			}
 
@@ -443,65 +435,67 @@ namespace pcpp
 			}
 		};
 
+		} // namespace pcpp::memory
+
+} // namespace pcpp
+
+#ifndef ENABLE_CPP11_MOVE_SEMANTICS
+
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
  */
-#define PCAPPP_UPTR_TYPE_ONLY(Type_) ::pcpp::memory::unique_ptr<Type_>
+#	define PCAPPP_UPTR_TYPE_ONLY(Type_) ::pcpp::memory::unique_ptr<Type_>
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
  */
-#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::pcpp::memory::unique_ptr<Type_, Deleter_>
+#	define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::pcpp::memory::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
  * If provided type is a template instantiation with "," in it this macro will not work. Use some type alias method (using or typedef).
  */
-#define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
+#	define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
  * Macro that handles the instantiation of currently used default_delete implementation.
  */
-#define PCAPPP_DEFAULT_DELETER(Type_) ::pcpp::memory::default_delete<Type_>
+#	define PCAPPP_DEFAULT_DELETER(Type_) ::pcpp::memory::default_delete<Type_>
 /**
  * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
  * In some cases we need to choose between unique_ptr and auto_ptr.
  * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
  */
-#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::auto_ptr<Type_>
+#	define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::auto_ptr<Type_>
 /**
  * This macro defined only if library implementation of unique_ptr is used.
  */
-#define PCAPPP_LIB_BASED_UNIQUE_PTR
-#else
+#	define PCAPPP_LIB_BASED_UNIQUE_PTR
 
-#include <memory>
+#else // ENABLE_CPP11_MOVE_SEMANTICS
 
+#	include <memory>
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with single Type template argument.
  */
-#define PCAPPP_UPTR_TYPE_ONLY(Type_) ::std::unique_ptr<Type_>
+#	define PCAPPP_UPTR_TYPE_ONLY(Type_) ::std::unique_ptr<Type_>
 /**
  * Macro that handles the instantiation of currently used unique_ptr implementation with Type and Deleter template arguments.
  */
-#define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::std::unique_ptr<Type_, Deleter_>
+#	define PCAPPP_UPTR_TYPE_AND_DELETER(Type_, Deleter_) ::std::unique_ptr<Type_, Deleter_>
 /**
  * Macro that can choose between PCAPPP_UPTR_TYPE_ONLY and PCAPPP_UPTR_TYPE_AND_DELETER based on count of provided arguments.
  * If provided type is a template instantiation with "," in it this macro will not work. Use some type alias method (using or typedef).
  */
-#define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
+#	define PCAPPP_UNIQUE_PTR(...) PCAPPP_GET_MACRO_2(__VA_ARGS__, PCAPPP_UPTR_TYPE_AND_DELETER, PCAPPP_UPTR_TYPE_ONLY)(__VA_ARGS__)
 /**
  * Macro that handles the instantiation of currently used default_delete implementation.
  */
-#define PCAPPP_DEFAULT_DELETER(Type_) ::std::default_delete<Type_>
+#	define PCAPPP_DEFAULT_DELETER(Type_) ::std::default_delete<Type_>
 /**
  * Handles the choice between unique_ptr and auto_ptr pointer based on current environment.
  * In some cases we need to choose between unique_ptr and auto_ptr.
  * The case in which our implementation of unique_ptr cannot be used is when it is must be returned from function.
  */
-#define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::unique_ptr<Type_>
+#	define PCAPPP_UNIQUE_OR_AUTO_PTR(Type_) ::std::unique_ptr<Type_>
 
-#endif // !ENABLE_CPP11_MOVE_SEMANTICS
-
-	} // namespace pcpp::memory
-
-} // namespace pcpp
+#endif // ENABLE_CPP11_MOVE_SEMANTICS
 
 #endif /* PCAPPP_UNIQUE_PTR_H */

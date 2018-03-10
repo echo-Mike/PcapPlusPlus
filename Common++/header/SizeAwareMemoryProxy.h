@@ -245,8 +245,9 @@ namespace pcpp
 			 */
 			PCAPPP_MOVE_CONSTRUCTOR(SizeAwareMemoryProxy)
 			{
+				PCAPPP_PREPARE_MOVE_OTHER_I(SizeAwareMemoryProxy)
 				initialize();
-				moveDataFrom(PCAPPP_MOVE_OTHER);
+				moveDataFrom(PCAPPP_MOVE_OTHER_I);
 			}
 
 			/**
@@ -258,10 +259,11 @@ namespace pcpp
 			 */
 			PCAPPP_MOVE_ASSIGNMENT(SizeAwareMemoryProxy)
 			{
+				PCAPPP_PREPARE_MOVE_OTHER_I(SizeAwareMemoryProxy)
 				// Handle self assignment case
-				if (this == &PCAPPP_MOVE_OTHER)
+				if (this == &PCAPPP_MOVE_OTHER_I)
 					return *this;
-				moveDataFrom(PCAPPP_MOVE_OTHER);
+				moveDataFrom(PCAPPP_MOVE_OTHER_I);
 				return *this;
 			}
 

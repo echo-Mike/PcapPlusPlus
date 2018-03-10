@@ -168,8 +168,8 @@ namespace pcpp
 		 * @param[in] other The instance to move from.
 		 */
 		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
-			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
-			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER)) {}
+			Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
+			MPBase(PCAPPP_MOVE_WITH_CAST(const MPBase&, PCAPPP_MOVE_OTHER_O)) {}
 
 		/**
 		 * @brief Default auto-generated move assignment operator.
@@ -181,10 +181,11 @@ namespace pcpp
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(GenericRawPacket)
 		{
-			if (this == &PCAPPP_MOVE_OTHER)
+			PCAPPP_PREPARE_MOVE_OTHER_I(GenericRawPacket)
+			if (this == &PCAPPP_MOVE_OTHER_I)
 				return *this;
-			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
-			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER));
+			Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
+			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(const MPBase&, PCAPPP_MOVE_OTHER_O));
 			return *this;
 		}
 
@@ -543,17 +544,23 @@ namespace pcpp
 		}
 
 		PCAPPP_MOVE_CONSTRUCTOR(GenericRawPacket) :
-			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)),
-			MPBase(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER)),
-			m_MaxLength(PCAPPP_MOVE_OTHER.m_MaxLength) {}
+			Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
+			MPBase(PCAPPP_MOVE_WITH_CAST(const MPBase&, PCAPPP_MOVE_OTHER_O)),
+			m_MaxLength(PCAPPP_MOVE_OTHER_O.m_MaxLength) 
+		{
+			PCAPPP_PREPARE_MOVE_OTHER_I(GenericRawPacket)
+			PCAPPP_MOVE_OTHER_I.m_MaxLength = 0;
+		}
 
 		PCAPPP_MOVE_ASSIGNMENT(GenericRawPacket)
 		{
-			if (this == &PCAPPP_MOVE_OTHER)
+			PCAPPP_PREPARE_MOVE_OTHER_I(GenericRawPacket)
+			if (this == &PCAPPP_MOVE_OTHER_I)
 				return *this;
-			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
-			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(MPBase&, PCAPPP_MOVE_OTHER));
-			m_MaxLength = PCAPPP_MOVE_OTHER.m_MaxLength;
+			Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
+			MPBase::operator=(PCAPPP_MOVE_WITH_CAST(const MPBase&, PCAPPP_MOVE_OTHER_O));
+			m_MaxLength = PCAPPP_MOVE_OTHER_I.m_MaxLength;
+			PCAPPP_MOVE_OTHER_I.m_MaxLength = 0;
 			return *this;
 		}
 

@@ -105,7 +105,7 @@ namespace pcpp
 				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
-					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
+					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val2)) {}
 
 				/**
 				 * @brief Move assignment operator.
@@ -116,9 +116,9 @@ namespace pcpp
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
 				{
 					// Handle self assignment case
-					if (this == &PCAPPP_MOVE_OTHER)
+					if (this == &PCAPPP_MOVE_OTHER_O)
 						return *this;
-					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
+					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val2);
 					return *this;
 				}
 
@@ -223,8 +223,8 @@ namespace pcpp
 				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(CompressedPair) :
-					m_Val1(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1)),
-					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2)) {}
+					m_Val1(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val1)),
+					m_Val2(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val2)) {}
 
 				/**
 				 * @brief Move assignment operator.
@@ -235,10 +235,10 @@ namespace pcpp
 				PCAPPP_MOVE_ASSIGNMENT(CompressedPair)
 				{
 					// Handle self assignment case
-					if (this == &PCAPPP_MOVE_OTHER)
+					if (this == &PCAPPP_MOVE_OTHER_O)
 						return *this;
-					m_Val1 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val1);
-					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Val2);
+					m_Val1 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val1);
+					m_Val2 = PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Val2);
 					return *this;
 				}
 

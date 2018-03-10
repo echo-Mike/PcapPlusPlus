@@ -122,17 +122,20 @@ void Packet::copyDataFrom(const Packet& other)
 }
 
 PCAPPP_MOVE_CONSTRUCTOR_IMPL(Packet)
-{	// Create this object in null-state
+{	
+	PCAPPP_PREPARE_MOVE_OTHER_I(Packet)
+	// Create this object in null-state
 	initialize();
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 }
 
 PCAPPP_MOVE_ASSIGNMENT_IMPL(Packet)
 {
+	PCAPPP_PREPARE_MOVE_OTHER_I(Packet)
 	// Will not move if assigned to itself
-	if (this == &other) 
+	if (this == &PCAPPP_MOVE_OTHER_I)
 		return *this;
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 	return *this;
 }
 

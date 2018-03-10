@@ -126,15 +126,17 @@ void IPv4Address::copyDataFrom(const IPv4Address& other)
 PCAPPP_MOVE_CONSTRUCTOR_IMPL(IPv4Address) :
 	m_pInAddr(PCAPPP_NULLPTR)
 {
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 }
 
 PCAPPP_MOVE_ASSIGNMENT_IMPL(IPv4Address)
 {
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
 	// Handle self assignment case
-	if (this == &PCAPPP_MOVE_OTHER)
+	if (this == &PCAPPP_MOVE_OTHER_I)
 		return *this;
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 	return *this;
 }
 
@@ -288,15 +290,17 @@ void IPv6Address::copyDataFrom(const IPv6Address& other)
 PCAPPP_MOVE_CONSTRUCTOR_IMPL(IPv6Address) :
 	m_pInAddr(PCAPPP_NULLPTR)
 {
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 }
 
 PCAPPP_MOVE_ASSIGNMENT_IMPL(IPv6Address)
 {
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
 	// Handle self assignment case
-	if (this == &PCAPPP_MOVE_OTHER)
+	if (this == &PCAPPP_MOVE_OTHER_I)
 		return *this;
-	moveDataFrom(PCAPPP_MOVE_OTHER);
+	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 	return *this;
 }
 

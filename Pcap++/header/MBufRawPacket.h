@@ -405,7 +405,7 @@ namespace pcpp
 		 * @param[in] other The MBufRawPacket instance to move from.
 		 */
 		PCAPPP_MOVE_CONSTRUCTOR(MBufRawPacket) :
-			Base(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER)) {}
+			Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)) {}
 
 		/**
 		 * @brief An move assignment operator for this class.
@@ -416,9 +416,9 @@ namespace pcpp
 		 */
 		PCAPPP_MOVE_ASSIGNMENT(MBufRawPacket)
 		{
-			if (this == &PCAPPP_MOVE_OTHER)
+			if (this == &PCAPPP_MOVE_OTHER_O)
 				return *this;
-			Base::operator=(PCAPPP_MOVE_WITH_CAST(Base&, PCAPPP_MOVE_OTHER));
+			Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 			return *this;
 		}
 

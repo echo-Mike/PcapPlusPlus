@@ -121,11 +121,12 @@ namespace pcpp
 				 * @param[in:out] other The instance to move from.
 				 */
 				PCAPPP_MOVE_CONSTRUCTOR(AllocatorPointerPair) :
-					m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair))
+					m_Pair(PCAPPP_MOVE(PCAPPP_MOVE_OTHER_O.m_Pair))
 				{
+					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorAdapter)
 					// Nullify provided object
-					PCAPPP_MOVE_OTHER.m_Pair.get_first() = Adapter();
-					PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+					PCAPPP_MOVE_OTHER_I.m_Pair.get_first() = Adapter();
+					PCAPPP_MOVE_OTHER_I.m_Pair.get_second() = pointer();
 				}
 
 				/**
@@ -136,13 +137,14 @@ namespace pcpp
 				 */
 				PCAPPP_MOVE_ASSIGNMENT(AllocatorPointerPair)
 				{
+					PCAPPP_PREPARE_MOVE_OTHER_I(AllocatorAdapter)
 					// Handle self assignment case
-					if (this == &PCAPPP_MOVE_OTHER)
+					if (this == &PCAPPP_MOVE_OTHER_I)
 						return *this;
-					m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER.m_Pair);
+					m_Pair = PCAPPP_MOVE(PCAPPP_MOVE_OTHER_I.m_Pair);
 					// Nullify provided object
-					PCAPPP_MOVE_OTHER.m_Pair.get_first() = Adapter();
-					PCAPPP_MOVE_OTHER.m_Pair.get_second() = pointer();
+					PCAPPP_MOVE_OTHER_I.m_Pair.get_first() = Adapter();
+					PCAPPP_MOVE_OTHER_I.m_Pair.get_second() = pointer();
 					return *this;
 				}
 
