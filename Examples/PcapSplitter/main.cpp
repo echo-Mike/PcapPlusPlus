@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
 
 	int packetCountSoFar = 0;
 	int numOfFiles = 0;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 
 	// prepare a map of file number to PcapFileWriterDevice
 	std::map<int, PcapFileWriterDevice*> outputFiles;

@@ -290,13 +290,13 @@ void IPv6Address::copyDataFrom(const IPv6Address& other)
 PCAPPP_MOVE_CONSTRUCTOR_IMPL(IPv6Address) :
 	m_pInAddr(PCAPPP_NULLPTR)
 {
-	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv6Address)
 	moveDataFrom(PCAPPP_MOVE_OTHER_I);
 }
 
 PCAPPP_MOVE_ASSIGNMENT_IMPL(IPv6Address)
 {
-	PCAPPP_PREPARE_MOVE_OTHER_I(IPv4Address)
+	PCAPPP_PREPARE_MOVE_OTHER_I(IPv6Address)
 	// Handle self assignment case
 	if (this == &PCAPPP_MOVE_OTHER_I)
 		return *this;

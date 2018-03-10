@@ -342,7 +342,7 @@ void analyzeSSLFromPcapFile(std::string pcapFileName)
 
 	// read the input file packet by packet and give it to the SSLStatsCollector for collecting stats
 	SSLStatsCollector collector;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	while(reader->getNextPacket(rawPacket))
 	{
 		Packet parsedPacket(&rawPacket);

@@ -502,7 +502,7 @@ void doTcpReassemblyOnPcapFile(std::string fileName, TcpReassembly& tcpReassembl
 	printf("Starting reading '%s'...\n", fileName.c_str());
 
 	// run in a loop that reads one packet from the file in each iteration and feeds it to the TCP reassembly instance
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	while (reader->getNextPacket(rawPacket))
 	{
 		tcpReassembly.ReassemblePacket(&rawPacket);

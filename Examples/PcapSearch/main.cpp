@@ -154,7 +154,7 @@ int searchPcap(std::string pcapFilePath, std::string searchCriteria, std::ofstre
 	}
 
 	int packetCount = 0;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 
 	// read packets from the file. Since we already set the filter, only packets that matches the filter will be read
 	while (reader->getNextPacket(rawPacket))

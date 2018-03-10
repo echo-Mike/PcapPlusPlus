@@ -141,7 +141,7 @@ int printPcapPackets(PcapFileReaderDevice* reader, std::ostream* out, int packet
 {
 	// read packets from the file until end-of-file or until reached user requested packet count
 	int packetCountSoFar = 0;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	while (reader->getNextPacket(rawPacket) && packetCountSoFar != packetCount)
 	{
 		// parse the raw packet into a parsed packet
@@ -165,7 +165,7 @@ int printPcapNgPackets(PcapNgFileReaderDevice* reader, std::ostream* out, int pa
 {
 	// read packets from the file until end-of-file or until reached user requested packet count
 	int packetCountSoFar = 0;
-	RawPacket rawPacket;
+	DefaultRawPacket rawPacket;
 	std::string packetComment = "";
 	while (reader->getNextPacket(rawPacket, packetComment) && packetCountSoFar != packetCount)
 	{
