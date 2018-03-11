@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	}
 
 	// read the first (and only) packet from the file
-	pcpp::RawPacket rawPacket;
+	pcpp::DefaultRawPacket rawPacket;
 	if (!reader->getNextPacket(rawPacket))
 	{
 		printf("Couldn't read the first packet in the file\n");

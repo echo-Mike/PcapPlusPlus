@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 	}
 
 	// the packet container
-	pcpp::RawPacket rawPacket;
+	pcpp::DefaultRawPacket rawPacket;
 
 	// a while loop that will continue as long as there are packets in the input file
 	// matching the BPF filter
