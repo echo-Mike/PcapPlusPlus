@@ -67,8 +67,7 @@ endif
 	
 Obj/%.o: src/%.cpp
 	@echo 'Building file: $<'
-	@echo $(CXX) $(PCAPPP_LIBRARY_WIDE_CXXFLAGS)
-	$(CXX) $(PCAPPP_LIBRARY_WIDE_CXXFLAGS) $(DEPS) $(INCLUDES) $(FLAGS) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
+	@$(CXX) $(PCAPPP_LIBRARY_WIDE_CXXFLAGS) $(DEPS) $(INCLUDES) $(FLAGS) -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:Obj/%.o=Obj/%.d)" -MT"$(@:Obj/%.o=Obj/%.d)" -o "$@" "$<"
 
 CUR_TARGET := $(notdir $(shell pwd))
 

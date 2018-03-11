@@ -74,9 +74,9 @@ endif
 # PcapPlusPlus libs only
 libs:
 	@$(RM) -rf Dist
-	cd $(COMMONPP_HOME)             && $(MAKE) all
-	cd $(PACKETPP_HOME)             && $(MAKE) all
-	cd $(PCAPPP_HOME)               && $(MAKE) all
+	@cd $(COMMONPP_HOME)             && $(MAKE) all
+	@cd $(PACKETPP_HOME)             && $(MAKE) all
+	@cd $(PCAPPP_HOME)               && $(MAKE) all
 	@$(MKDIR) -p Dist
 	@$(MKDIR) -p Dist/header
 	@$(CP) $(COMMONPP_HOME)/Lib/Release/* ./Dist
