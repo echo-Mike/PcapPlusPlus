@@ -166,6 +166,646 @@ void printBufferDifferences(const uint8_t* buffer1, size_t buffer1Len, const uin
 //    return;
 //}
 
+namespace MoveSemanticsTestNS
+{
+
+	typedef char value_type;
+	typedef value_type* pointer;
+	typedef unsigned long length_t;
+
+	static const length_t baseLength = 100;
+
+	struct BaseMovable
+	{
+
+		BaseMovable() : ptr(PCAPPP_NULLPTR), length(0) {}
+
+		BaseMovable(length_t size) : ptr(new value_type[size]), length(size) {}
+
+		BaseMovable(pointer p, length_t size) : ptr(p), length(size) {}
+
+		~BaseMovable() { if (ptr != PCAPPP_NULLPTR) delete[] ptr; }
+
+		PCAPPP_DECLARE_MOVABLE(BaseMovable)
+
+		PCAPPP_COPY_CONSTRUCTOR(BaseMovable);
+		PCAPPP_COPY_ASSIGNMENT(BaseMovable);
+
+		PCAPPP_MOVE_CONSTRUCTOR(BaseMovable);
+		PCAPPP_MOVE_ASSIGNMENT(BaseMovable);
+
+		length_t getLength() const { return length; }
+
+		pointer getPointer() const { return ptr; }
+
+	protected:
+		inline void initialize()
+		{
+			ptr = PCAPPP_NULLPTR;
+			length = 0;
+		}
+
+		inline void copyData(const BaseMovable& other)
+		{
+			if (ptr != PCAPPP_NULLPTR)
+				delete[] ptr;
+			if (other.ptr != PCAPPP_NULLPTR && other.length != 0)
+			{
+				length = other.length;
+				ptr = new value_type[length];
+				std::memcpy(ptr, other.ptr, length * sizeof(value_type));
+			} else {
+				initialize();
+			}
+		}
+
+		inline void moveData(BaseMovable& other)
+		{
+			if (ptr != PCAPPP_NULLPTR)
+				delete[] ptr;
+			length = other.length;
+			ptr = other.ptr;
+			other.initialize();
+		}
+	private:
+		pointer ptr;
+		length_t length;
+	};
+
+	PCAPPP_COPY_CONSTRUCTOR_IMPL(BaseMovable)
+	{
+		initialize();
+		copyData(PCAPPP_COPY_OTHER);
+	}
+
+	PCAPPP_COPY_ASSIGNMENT_IMPL(BaseMovable)
+	{
+		if (this == &PCAPPP_COPY_OTHER)
+			return *this;
+		copyData(PCAPPP_COPY_OTHER);
+		return *this;
+	}
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL(BaseMovable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(BaseMovable)
+		initialize();
+		moveData(PCAPPP_MOVE_OTHER_I);
+	}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL(BaseMovable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(BaseMovable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		moveData(PCAPPP_MOVE_OTHER_I);
+		return *this;
+	}
+
+	struct CopyableFromMovable :
+		public BaseMovable
+	{
+		typedef BaseMovable Base;
+
+		CopyableFromMovable() : Base(), a(0), b(0) {}
+
+		CopyableFromMovable(length_t size) : Base(size), a(size - 1), b(size - 2) {}
+
+		CopyableFromMovable(pointer p, length_t size) : Base(p, size), a(size + 1), b(size + 2) {}
+
+		CopyableFromMovable(const CopyableFromMovable& other) : Base(PCAPPP_COPY_WITH_CAST(const Base&, other)), a(other.a), b(other.b) {}
+
+		CopyableFromMovable& operator=(const CopyableFromMovable& other)
+		{
+			if (this == &other)
+				return *this;
+			a = other.a;
+			b = other.b;
+			Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, other));
+			return *this;
+		}
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	private:
+		length_t a, b;
+	};
+
+	struct MovableFromMovable :
+		public BaseMovable
+	{
+		typedef BaseMovable Base;
+
+		MovableFromMovable() : Base(), a(0), b(0) {}
+
+		MovableFromMovable(length_t size) : Base(size), a(size - 1), b(size - 2) {}
+
+		MovableFromMovable(pointer p, length_t size) : Base(p, size), a(size + 1), b(size + 2) {}
+
+		PCAPPP_DECLARE_MOVABLE(MovableFromMovable)
+
+		PCAPPP_COPY_CONSTRUCTOR(MovableFromMovable);
+		PCAPPP_COPY_ASSIGNMENT(MovableFromMovable);
+
+		PCAPPP_MOVE_CONSTRUCTOR(MovableFromMovable);
+		PCAPPP_MOVE_ASSIGNMENT(MovableFromMovable);
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	private:
+		length_t a, b;
+	};
+
+	PCAPPP_COPY_CONSTRUCTOR_IMPL(MovableFromMovable) : 
+		Base(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER)), 
+		a(PCAPPP_COPY_OTHER.a), 
+		b(PCAPPP_COPY_OTHER.b) 
+	{}
+
+	PCAPPP_COPY_ASSIGNMENT_IMPL(MovableFromMovable)
+	{
+		if (this == &PCAPPP_COPY_OTHER)
+			return *this;
+		a = PCAPPP_COPY_OTHER.a;
+		b = PCAPPP_COPY_OTHER.b;
+		Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER));
+		return *this;
+	}
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL(MovableFromMovable) :
+		Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
+		a(PCAPPP_MOVE_OTHER_O.a),
+		b(PCAPPP_MOVE_OTHER_O.b)
+	{}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL(MovableFromMovable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(MovableFromMovable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		a = PCAPPP_MOVE_OTHER_I.a;
+		b = PCAPPP_MOVE_OTHER_I.b;
+		Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
+		return *this;
+	}
+
+	struct NotCopyableFromMovable :
+		public BaseMovable
+	{
+		typedef BaseMovable Base;
+
+		NotCopyableFromMovable() : Base(), a(0), b(0) {}
+
+		NotCopyableFromMovable(length_t size) : Base(size), a(size * 2), b(size * 2) {}
+
+		NotCopyableFromMovable(pointer p, length_t size) : Base(p, size), a(size / 2), b(size / 2) {}
+
+		PCAPPP_DECLARE_NOT_COPYABLE(NotCopyableFromMovable)
+
+		PCAPPP_MOVE_CONSTRUCTOR_NC(NotCopyableFromMovable);
+		PCAPPP_MOVE_ASSIGNMENT_NC(NotCopyableFromMovable);
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	private:
+		length_t a, b;
+	};
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL_NC(NotCopyableFromMovable) :
+		Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
+		a(PCAPPP_MOVE_OTHER_O.a),
+		b(PCAPPP_MOVE_OTHER_O.b)
+	{}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(NotCopyableFromMovable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(NotCopyableFromMovable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		a = PCAPPP_MOVE_OTHER_I.a;
+		b = PCAPPP_MOVE_OTHER_I.b;
+		Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
+		return *this;
+	}
+
+	struct BaseNotCopyable
+	{
+		BaseNotCopyable() : ptr(PCAPPP_NULLPTR), length(0) {}
+
+		BaseNotCopyable(length_t size) : ptr(new value_type[size]), length(size) {}
+
+		BaseNotCopyable(pointer p, length_t size) : ptr(p), length(size) {}
+
+		~BaseNotCopyable() { if (ptr != PCAPPP_NULLPTR) delete[] ptr; }
+
+		PCAPPP_DECLARE_NOT_COPYABLE(BaseNotCopyable)
+
+		PCAPPP_MOVE_CONSTRUCTOR_NC(BaseNotCopyable);
+		PCAPPP_MOVE_ASSIGNMENT_NC(BaseNotCopyable);
+
+		length_t getLength() const { return length; }
+
+		pointer getPointer() const { return ptr; }
+
+	protected:
+		inline void initialize()
+		{
+			ptr = PCAPPP_NULLPTR;
+			length = 0;
+		}
+
+		inline void moveData(BaseNotCopyable& other)
+		{
+			if (ptr != PCAPPP_NULLPTR)
+				delete[] ptr;
+			length = other.length;
+			ptr = other.ptr;
+			other.initialize();
+		}
+	private:
+		pointer ptr;
+		length_t length;
+	};
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL_NC(BaseNotCopyable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(BaseNotCopyable)
+		initialize();
+		moveData(PCAPPP_MOVE_OTHER_I);
+	}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(BaseNotCopyable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(BaseNotCopyable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		moveData(PCAPPP_MOVE_OTHER_I);
+		return *this;
+	}
+
+	struct CopyableFromNotCopyable :
+		public BaseNotCopyable
+	{
+		// Impossible without proper class API or protected access to NotCopyable members
+	};
+
+	struct MovableFromNotCopyable :
+		public BaseNotCopyable
+	{
+		// Impossible without proper class API or protected access to NotCopyable members
+	};
+
+	struct NotCopyableFromNotCopyable :
+		public BaseNotCopyable
+	{
+		typedef BaseNotCopyable Base;
+
+		NotCopyableFromNotCopyable() : Base(), a(0), b(0) {}
+
+		NotCopyableFromNotCopyable(length_t size) : Base(size), a(size * 2), b(size * 2) {}
+
+		NotCopyableFromNotCopyable(pointer p, length_t size) : Base(p, size), a(size / 2), b(size / 2) {}
+
+		PCAPPP_DECLARE_NOT_COPYABLE(NotCopyableFromNotCopyable)
+
+		PCAPPP_MOVE_CONSTRUCTOR_NC(NotCopyableFromNotCopyable);
+		PCAPPP_MOVE_ASSIGNMENT_NC(NotCopyableFromNotCopyable);
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	private:
+		length_t a, b;
+	};
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL_NC(NotCopyableFromNotCopyable) :
+		Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
+		a(PCAPPP_MOVE_OTHER_O.a),
+		b(PCAPPP_MOVE_OTHER_O.b)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(NotCopyableFromNotCopyable)
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
+	}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(NotCopyableFromNotCopyable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(NotCopyableFromNotCopyable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		a = PCAPPP_MOVE_OTHER_I.a;
+		b = PCAPPP_MOVE_OTHER_I.b;
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
+		Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
+		return *this;
+	}
+
+	namespace Tests 
+	{
+
+		namespace BaseMovableTestsNS
+		{
+			BaseMovable RetBaseMovable() { return PCAPPP_MOVE_OR_RVO(BaseMovable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(BaseMovableTests)
+		{
+			using namespace BaseMovableTestsNS;
+
+			{	// Copy constructor test
+				BaseMovable a(baseLength);
+				BaseMovable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseMovable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseMovable: Data is unequal after copy construction.");
+			}
+
+			{	// Move constructor test
+				BaseMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				BaseMovable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "BaseMovable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "BaseMovable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "BaseMovable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy assignment test
+				BaseMovable a(baseLength);
+				BaseMovable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseMovable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseMovable: Data is unequal after copy assignment.");
+			}
+
+			{	// Move assignment test
+				BaseMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				BaseMovable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "BaseMovable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "BaseMovable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "BaseMovable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy returned test
+				BaseMovable a(PCAPPP_COPY(RetBaseMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseMovable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseMovable: Object to which returned object was copied has invalid pointer value after.");
+			}
+
+			{	// Move returned test
+				BaseMovable a(PCAPPP_MOVE(RetBaseMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseMovable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseMovable: Object to which returned object was moved has invalid pointer value after.");
+			}
+
+			PACKETPP_TEST_PASSED;
+		}
+
+		namespace CopyableFromMovableTestsNS
+		{
+			CopyableFromMovable RetCopyableFromMovable() { return PCAPPP_MOVE_OR_RVO(CopyableFromMovable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(CopyableFromMovableTests)
+		{
+			using namespace CopyableFromMovableTestsNS;
+
+			{	// Copy constructor test
+				CopyableFromMovable a(baseLength);
+				CopyableFromMovable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromMovable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after copy construction.");
+			}
+
+			{	// Move constructor test
+				CopyableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				CopyableFromMovable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "CopyableFromMovable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "CopyableFromMovable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "CopyableFromMovable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "CopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy assignment test
+				CopyableFromMovable a(baseLength);
+				CopyableFromMovable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromMovable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after copy assignment.");
+			}
+
+			{	// Move assignment test
+				CopyableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				CopyableFromMovable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "CopyableFromMovable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "CopyableFromMovable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "CopyableFromMovable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "CopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy returned test
+				CopyableFromMovable a(PCAPPP_COPY(RetCopyableFromMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "CopyableFromMovable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromMovable: Object to which returned object was copied has invalid pointer value after.");
+			}
+
+			{	// Move returned test
+				CopyableFromMovable a(PCAPPP_MOVE(RetCopyableFromMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "CopyableFromMovable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromMovable: Object to which returned object was moved has invalid pointer value after.");
+			}
+		}
+
+		namespace MovableFromMovableTestsNS
+		{
+			MovableFromMovable RetMovableFromMovable() { return PCAPPP_MOVE_OR_RVO(MovableFromMovable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(MovableFromMovableTests)
+		{
+			using namespace MovableFromMovableTestsNS;
+
+			{	// Copy constructor test
+				MovableFromMovable a(baseLength);
+				MovableFromMovable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "MovableFromMovable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "MovableFromMovable: Data is unequal after copy construction.");
+			}
+
+			{	// Move constructor test
+				MovableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				MovableFromMovable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "MovableFromMovable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "MovableFromMovable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "MovableFromMovable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "MovableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy assignment test
+				MovableFromMovable a(baseLength);
+				MovableFromMovable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "MovableFromMovable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "MovableFromMovable: Data is unequal after copy assignment.");
+			}
+
+			{	// Move assignment test
+				MovableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				MovableFromMovable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "MovableFromMovable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "MovableFromMovable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "MovableFromMovable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "MovableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy returned test
+				MovableFromMovable a(PCAPPP_COPY(RetMovableFromMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "MovableFromMovable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "MovableFromMovable: Object to which returned object was copied has invalid pointer value after.");
+			}
+
+			{	// Move returned test
+				MovableFromMovable a(PCAPPP_MOVE(RetMovableFromMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "MovableFromMovable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "MovableFromMovable: Object to which returned object was moved has invalid pointer value after.");
+			}
+		}
+
+		namespace BaseNotCopyableTestsNS
+		{
+			BaseNotCopyable RetBaseNotCopyable() { return PCAPPP_MOVE_OR_RVO(BaseNotCopyable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(BaseNotCopyableTests)
+		{
+			using namespace BaseNotCopyableTestsNS;
+
+			/*{	// Copy constructor test
+				BaseNotCopyable a(baseLength);
+				BaseNotCopyable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseNotCopyable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseNotCopyable: Data is unequal after copy construction.");
+			}*/
+
+			{	// Move constructor test
+				BaseNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				BaseNotCopyable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "BaseNotCopyable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "BaseNotCopyable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "BaseNotCopyable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			/*{	// Copy assignment test
+				BaseNotCopyable a(baseLength);
+				BaseNotCopyable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseNotCopyable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseNotCopyable: Data is unequal after copy assignment.");
+			}*/
+
+			{	// Move assignment test
+				BaseNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				BaseNotCopyable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "BaseNotCopyable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "BaseNotCopyable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "BaseNotCopyable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			/*{	// Copy returned test
+				BaseNotCopyable a(PCAPPP_COPY(RetBaseNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseNotCopyable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseNotCopyable: Object to which returned object was copied has invalid pointer value after.");
+			}*/
+
+			{	// Move returned test
+				BaseNotCopyable a(PCAPPP_MOVE(RetBaseNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseNotCopyable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseNotCopyable: Object to which returned object was moved has invalid pointer value after.");
+			}
+		}
+
+		namespace NotCopyableFromNotCopyableTestsNS
+		{
+			NotCopyableFromNotCopyable RetNotCopyableFromNotCopyable() { return PCAPPP_MOVE_OR_RVO(NotCopyableFromNotCopyable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(NotCopyableFromNotCopyableTests)
+		{
+			using namespace NotCopyableFromNotCopyableTestsNS;
+
+			/*{	// Copy constructor test
+				NotCopyableFromNotCopyable a(baseLength);
+				NotCopyableFromNotCopyable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "NotCopyableFromNotCopyable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "NotCopyableFromNotCopyable: Data is unequal after copy construction.");
+			}*/
+
+			{	// Move constructor test
+				NotCopyableFromNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				NotCopyableFromNotCopyable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "NotCopyableFromNotCopyable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "NotCopyableFromNotCopyable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "NotCopyableFromNotCopyable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			/*{	// Copy assignment test
+				NotCopyableFromNotCopyable a(baseLength);
+				NotCopyableFromNotCopyable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "NotCopyableFromNotCopyable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "NotCopyableFromNotCopyable: Data is unequal after copy assignment.");
+			}*/
+
+			{	// Move assignment test
+				NotCopyableFromNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				NotCopyableFromNotCopyable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "NotCopyableFromNotCopyable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "NotCopyableFromNotCopyable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "NotCopyableFromNotCopyable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			/*{	// Copy returned test
+				NotCopyableFromNotCopyable a(PCAPPP_COPY(RetNotCopyableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "NotCopyableFromNotCopyable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object to which returned object was copied has invalid pointer value after.");
+			}*/
+
+			{	// Move returned test
+				NotCopyableFromNotCopyable a(PCAPPP_MOVE(RetNotCopyableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "NotCopyableFromNotCopyable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object to which returned object was moved has invalid pointer value after.");
+			}
+		}
+	}
+
+}
+
 
 namespace TestCompressedPairNS
 {
@@ -194,13 +834,14 @@ PACKETPP_TEST(TestCompressedPair)
 	PACKETPP_TEST_PASSED;
 }
 
+
 namespace TestSizeAwareMPNS
 {
 	typedef typename pcpp::memory::MemoryProxyDispatcher<pcpp::MemoryProxyTags::SizeAwareTag>::memory_proxy_t mem_proxy_t;
 	typedef typename mem_proxy_t::value_type value_type;
 	typedef typename mem_proxy_t::pointer pointer;
 	typedef typename mem_proxy_t::const_pointer const_pointer;
-	typedef typename mem_proxy_t::index index;
+	typedef typename mem_proxy_t::index index_type;
 	typedef typename mem_proxy_t::size size_type;
 }
 
@@ -305,7 +946,7 @@ PACKETPP_TEST(TestCreateSizeAwareMP)
 
 	{
 		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
-		mem_proxy_t constructedByCopyFromNotOwnMP(dummyNotOwn);
+		mem_proxy_t constructedByCopyFromNotOwnMP(PCAPPP_COPY(dummyNotOwn));
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.getLength() == defaultSize,
 			delete[] data_1,
@@ -328,7 +969,7 @@ PACKETPP_TEST(TestCreateSizeAwareMP)
 
 	{
 		mem_proxy_t dummyOwn(data_1, defaultSize, true);
-		mem_proxy_t constructedByCopyFromOwnMP(dummyOwn);
+		mem_proxy_t constructedByCopyFromOwnMP(PCAPPP_COPY(dummyOwn));
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.getLength() == defaultSize,
 			delete[] data_1,
@@ -495,7 +1136,7 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 	}
 
 	{	// Insert front test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
-		index toInsertInd = defaultSize / 2 - 1;
+		index_type toInsertInd = defaultSize / 2 - 1;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
@@ -535,8 +1176,8 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 
 	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
 		
-		index toInsertInd = -(index)(defaultSize / 2);
-		index realIndex = defaultSize + toInsertInd;
+		index_type toInsertInd = -(index_type)(defaultSize / 2);
+		index_type realIndex = defaultSize + toInsertInd;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
@@ -575,7 +1216,7 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 	}
 
 	{	// Remove front test
-		index toRemoveInd = defaultSize / 2 - 1;
+		index_type toRemoveInd = defaultSize / 2 - 1;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -634,8 +1275,8 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 	}
 
 	{	// Remove back test
-		index toRemoveInd = -(index)(defaultSize / 2);
-		index realIndex = defaultSize + toRemoveInd;
+		index_type toRemoveInd = -(index_type)(defaultSize / 2);
+		index_type realIndex = defaultSize + toRemoveInd;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -676,7 +1317,7 @@ PACKETPP_TEST(TestModifySizeAwareMP)
 
 		// Remove without carry
 
-		toRemoveInd = -(index)(toRemoveSize / 2);
+		toRemoveInd = -(index_type)(toRemoveSize / 2);
 		realIndex = defaultSize + toRemoveInd;
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
@@ -703,7 +1344,7 @@ namespace TestContentAwareMPNS
 	typedef typename mem_proxy_t::value_type value_type;
 	typedef typename mem_proxy_t::pointer pointer;
 	typedef typename mem_proxy_t::const_pointer const_pointer;
-	typedef typename mem_proxy_t::index index;
+	typedef typename mem_proxy_t::index index_type;
 	typedef typename mem_proxy_t::size size_type;
 }
 
@@ -808,7 +1449,7 @@ PACKETPP_TEST(TestCreateContentAwareMP)
 
 	{
 		mem_proxy_t dummyNotOwn(data_1, defaultSize, false);
-		mem_proxy_t constructedByCopyFromNotOwnMP(dummyNotOwn);
+		mem_proxy_t constructedByCopyFromNotOwnMP(PCAPPP_COPY(dummyNotOwn));
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromNotOwnMP.getLength() == defaultSize,
 			delete[] data_1,
@@ -831,7 +1472,7 @@ PACKETPP_TEST(TestCreateContentAwareMP)
 
 	{
 		mem_proxy_t dummyOwn(data_1, defaultSize, true);
-		mem_proxy_t constructedByCopyFromOwnMP(dummyOwn);
+		mem_proxy_t constructedByCopyFromOwnMP(PCAPPP_COPY(dummyOwn));
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(constructedByCopyFromOwnMP.getLength() == defaultSize,
 			delete[] data_1,
@@ -998,7 +1639,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Insert front test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
-		index toInsertInd = defaultSize / 2 - 1;
+		index_type toInsertInd = defaultSize / 2 - 1;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
@@ -1037,8 +1678,8 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Insert back test : Algorithm for insert with data and insert without data is the same --> so only one set of tests needed
-		index toInsertInd = -(index)(defaultSize / 2);
-		index realIndex = defaultSize + toInsertInd;
+		index_type toInsertInd = -(index_type)(defaultSize / 2);
+		index_type realIndex = defaultSize + toInsertInd;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.insert(toInsertInd, defaultSize, 0xFF) == true,
@@ -1077,7 +1718,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Remove front test
-		index toRemoveInd = defaultSize / 2 - 1;
+		index_type toRemoveInd = defaultSize / 2 - 1;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -1136,8 +1777,8 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 	}
 
 	{	// Remove back test
-		index toRemoveInd = -(index)(defaultSize / 2);
-		index realIndex = defaultSize + toRemoveInd;
+		index_type toRemoveInd = -(index_type)(defaultSize / 2);
+		index_type realIndex = defaultSize + toRemoveInd;
 		size_type toRemoveSize = 10;
 		mem_proxy_t mp(data_1, defaultSize, false);
 
@@ -1178,7 +1819,7 @@ PACKETPP_TEST(TestModifyContentAwareMP)
 
 		// Remove without carry
 
-		toRemoveInd = -(index)(toRemoveSize / 2);
+		toRemoveInd = -(index_type)(toRemoveSize / 2);
 		realIndex = defaultSize + toRemoveInd;
 
 		PACKETPP_ASSERT_AND_RUN_COMMAND(mp.remove(toRemoveInd, toRemoveSize) == true,
@@ -7069,6 +7710,11 @@ int main(int argc, char* argv[]) {
 
 	PACKETPP_START_RUNNING_TESTS;
 
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::BaseMovableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::CopyableFromMovableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::MovableFromMovableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::BaseNotCopyableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::NotCopyableFromNotCopyableTests);
 	PACKETPP_RUN_TEST(TestCompressedPair);
 	PACKETPP_RUN_TEST(TestCreateSizeAwareMP);
 	PACKETPP_RUN_TEST(TestModifySizeAwareMP);
