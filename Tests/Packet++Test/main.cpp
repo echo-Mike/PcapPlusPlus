@@ -1,5 +1,8 @@
+#define PCAPPP_SUPPRESS_CPP11_DETECTION
+#define PCAPPP_ENABLE_MOVE_OPTIMIZATION
 #include <Logger.h>
 #include <PcapPlusPlusVersion.h>
+#include <MoveSemantics.h>
 #include <MemoryProxy.h>
 #include <GenericRawPacket.h>
 #include <Packet.h>
@@ -199,6 +202,11 @@ namespace MoveSemanticsTestNS
 		pointer getPointer() const { return ptr; }
 
 	protected:
+
+		inline bool SafeToDeleteCondition() const { return ptr != PCAPPP_NULLPTR; }
+
+		inline bool SafeToCopyCondition() const { return length > 0 && ptr != PCAPPP_NULLPTR; }
+
 		inline void initialize()
 		{
 			ptr = PCAPPP_NULLPTR;
@@ -207,9 +215,9 @@ namespace MoveSemanticsTestNS
 
 		inline void copyData(const BaseMovable& other)
 		{
-			if (ptr != PCAPPP_NULLPTR)
+			if (SafeToDeleteCondition())
 				delete[] ptr;
-			if (other.ptr != PCAPPP_NULLPTR && other.length != 0)
+			if (other.SafeToCopyCondition())
 			{
 				length = other.length;
 				ptr = new value_type[length];
@@ -221,7 +229,7 @@ namespace MoveSemanticsTestNS
 
 		inline void moveData(BaseMovable& other)
 		{
-			if (ptr != PCAPPP_NULLPTR)
+			if (SafeToDeleteCondition())
 				delete[] ptr;
 			length = other.length;
 			ptr = other.ptr;
@@ -340,7 +348,11 @@ namespace MoveSemanticsTestNS
 		Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
 		a(PCAPPP_MOVE_OTHER_O.a),
 		b(PCAPPP_MOVE_OTHER_O.b)
-	{}
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(MovableFromMovable)
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
+	}
 
 	PCAPPP_MOVE_ASSIGNMENT_IMPL(MovableFromMovable)
 	{
@@ -349,6 +361,8 @@ namespace MoveSemanticsTestNS
 			return *this;
 		a = PCAPPP_MOVE_OTHER_I.a;
 		b = PCAPPP_MOVE_OTHER_I.b;
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
 		Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 		return *this;
 	}
@@ -381,7 +395,11 @@ namespace MoveSemanticsTestNS
 		Base(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O)),
 		a(PCAPPP_MOVE_OTHER_O.a),
 		b(PCAPPP_MOVE_OTHER_O.b)
-	{}
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(NotCopyableFromMovable)
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
+	}
 
 	PCAPPP_MOVE_ASSIGNMENT_IMPL_NC(NotCopyableFromMovable)
 	{
@@ -390,6 +408,8 @@ namespace MoveSemanticsTestNS
 			return *this;
 		a = PCAPPP_MOVE_OTHER_I.a;
 		b = PCAPPP_MOVE_OTHER_I.b;
+		PCAPPP_MOVE_OTHER_I.a = 0;
+		PCAPPP_MOVE_OTHER_I.b = 0;
 		Base::operator=(PCAPPP_MOVE_WITH_CAST(const Base&, PCAPPP_MOVE_OTHER_O));
 		return *this;
 	}
@@ -414,6 +434,7 @@ namespace MoveSemanticsTestNS
 		pointer getPointer() const { return ptr; }
 
 	protected:
+
 		inline void initialize()
 		{
 			ptr = PCAPPP_NULLPTR;
@@ -428,7 +449,7 @@ namespace MoveSemanticsTestNS
 			ptr = other.ptr;
 			other.initialize();
 		}
-	private:
+
 		pointer ptr;
 		length_t length;
 	};
@@ -448,18 +469,174 @@ namespace MoveSemanticsTestNS
 		moveData(PCAPPP_MOVE_OTHER_I);
 		return *this;
 	}
-
+	
 	struct CopyableFromNotCopyable :
 		public BaseNotCopyable
 	{
-		// Impossible without proper class API or protected access to NotCopyable members
+		// Impossible without proper class API (like reset) or protected access to NotCopyable members.
+		// Second approach is taken in this implementation: Access is encapsulated within initialize and copyData member functions.
+	protected:
+		
+		inline void initialize()
+		{
+			a = 0;
+			b = 0;
+			length = 0;
+			ptr = PCAPPP_NULLPTR;
+		}
+
+		inline void copyData(const CopyableFromNotCopyable& other)
+		{
+			if (getPointer() != PCAPPP_NULLPTR)
+				delete[] getPointer();
+			a = other.a;
+			b = other.b;
+			if (other.getLength() > 0 && other.getPointer() != PCAPPP_NULLPTR)
+			{
+				ptr = new value_type[other.getLength()];
+				length = other.getLength();
+				std::memcpy(ptr, other.getPointer(), length * sizeof(value_type));
+			} else {
+				initialize();
+			}
+		}
+
+	public:
+
+		typedef BaseNotCopyable Base;
+
+		CopyableFromNotCopyable() : Base(), a(0), b(0) {}
+
+		CopyableFromNotCopyable(length_t size) : Base(size), a(size * 3), b(size * 3) {}
+
+		CopyableFromNotCopyable(pointer p, length_t size) : Base(p, size), a(size / 3), b(size / 3) {}
+
+		// Base must be default constructible
+		CopyableFromNotCopyable(const CopyableFromNotCopyable& other) : Base()
+		{
+			initialize();
+			copyData(other);
+		}
+
+		CopyableFromNotCopyable& operator=(const CopyableFromNotCopyable& other)
+		{
+			if (this == &other)
+				return *this;
+			if (getPointer() != PCAPPP_NULLPTR)
+				delete[] getPointer();
+			initialize();
+			copyData(other);
+			return *this;
+		}
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	private:
+		length_t a, b;
 	};
 
 	struct MovableFromNotCopyable :
 		public BaseNotCopyable
 	{
-		// Impossible without proper class API or protected access to NotCopyable members
+		// Impossible without proper class API (like reset) or protected access to NotCopyable members.
+		// Second approach is taken in this implementation: Access is encapsulated within initialize, copyData and moveData member functions.
+
+		typedef BaseNotCopyable Base;
+
+		MovableFromNotCopyable() : Base(), a(0), b(0) {}
+
+		MovableFromNotCopyable(length_t size) : Base(size), a(size * 4), b(size * 4) {}
+
+		MovableFromNotCopyable(pointer p, length_t size) : Base(p, size), a(size / 4), b(size / 4) {}
+
+		PCAPPP_DECLARE_MOVABLE(MovableFromNotCopyable)
+
+		// Base must be default constructible
+		PCAPPP_COPY_CONSTRUCTOR(MovableFromNotCopyable);
+		PCAPPP_COPY_ASSIGNMENT(MovableFromNotCopyable);
+
+		PCAPPP_MOVE_CONSTRUCTOR(MovableFromNotCopyable);
+		PCAPPP_MOVE_ASSIGNMENT(MovableFromNotCopyable);
+
+		length_t getA() const { return a; }
+
+		length_t getB() const { return b; }
+
+	protected:
+
+		inline bool SafeToDeleteCondition() const { return getPointer() != PCAPPP_NULLPTR; }
+
+		inline bool SafeToCopyCondition() const { return getLength() > 0 && getPointer() != PCAPPP_NULLPTR; }
+
+		inline void initialize()
+		{
+			a = 0;
+			b = 0;
+			Base::initialize();
+		}
+
+		inline void copyData(const MovableFromNotCopyable& other)
+		{
+			if (SafeToDeleteCondition())
+				delete[] getPointer();
+			a = other.a;
+			b = other.b;
+			if (other.SafeToCopyCondition())
+			{
+				length = other.getLength();
+				ptr = new value_type[length];
+				std::memcpy(ptr, other.getPointer(), length * sizeof(value_type));
+			} else {
+				initialize();
+			}
+		}
+
+		inline void moveData(MovableFromNotCopyable& other)
+		{
+			if (SafeToDeleteCondition())
+				delete[] getPointer();
+			a = other.a;
+			b = other.b;
+			ptr = other.getPointer();
+			length = other.getLength();
+			other.initialize();
+		}
+
+	private:
+		length_t a, b;
 	};
+
+	PCAPPP_COPY_CONSTRUCTOR_IMPL(MovableFromNotCopyable) : Base()
+	{
+		initialize();
+		copyData(PCAPPP_COPY_OTHER);
+	}
+
+	PCAPPP_COPY_ASSIGNMENT_IMPL(MovableFromNotCopyable)
+	{
+		if (this == &PCAPPP_COPY_OTHER)
+			return *this;
+		copyData(PCAPPP_COPY_OTHER);
+		return *this;
+	}
+
+	PCAPPP_MOVE_CONSTRUCTOR_IMPL(MovableFromNotCopyable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(MovableFromNotCopyable)
+		initialize();
+		moveData(PCAPPP_MOVE_OTHER_I);
+	}
+
+	PCAPPP_MOVE_ASSIGNMENT_IMPL(MovableFromNotCopyable)
+	{
+		PCAPPP_PREPARE_MOVE_OTHER_I(MovableFromNotCopyable)
+		if (this == &PCAPPP_MOVE_OTHER_I)
+			return *this;
+		moveData(PCAPPP_MOVE_OTHER_I);
+		return *this;
+	}
 
 	struct NotCopyableFromNotCopyable :
 		public BaseNotCopyable
@@ -587,14 +764,11 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after copy construction.");
 			}
 
-			{	// Move constructor test
+			{	// Move constructor test --> expected to be same as copy constructor test
 				CopyableFromMovable a(baseLength);
-				pointer backupPtr = a.getPointer();
 				CopyableFromMovable b(PCAPPP_MOVE(a));
-				PACKETPP_ASSERT(b.getLength() == baseLength, "CopyableFromMovable: Object to which move was made has invalid length value after move construction.");
-				PACKETPP_ASSERT(b.getPointer() == backupPtr, "CopyableFromMovable: Object to which move was made has invalid pointer value after move construction.");
-				PACKETPP_ASSERT(a.getLength() == 0, "CopyableFromMovable: Object from which move was made have non-zero length value after move construction.");
-				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "CopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromMovable: Lengths of data are unequal after move construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after move construction.");
 			}
 
 			{	// Copy assignment test
@@ -605,15 +779,12 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after copy assignment.");
 			}
 
-			{	// Move assignment test
+			{	// Move assignment test --> expected to be same as copy assignment test
 				CopyableFromMovable a(baseLength);
-				pointer backupPtr = a.getPointer();
 				CopyableFromMovable b;
 				b = PCAPPP_MOVE(a);
-				PACKETPP_ASSERT(b.getLength() == baseLength, "CopyableFromMovable: Object to which move was made has invalid length value after move assignment.");
-				PACKETPP_ASSERT(b.getPointer() == backupPtr, "CopyableFromMovable: Object to which move was made has invalid pointer value after move assignment.");
-				PACKETPP_ASSERT(a.getLength() == 0, "CopyableFromMovable: Object from which move was made have non-zero length value after move assignment.");
-				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "CopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromMovable: Lengths of data are unequal after move assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromMovable: Data is unequal after move assignment.");
 			}
 
 			{	// Copy returned test
@@ -622,11 +793,13 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromMovable: Object to which returned object was copied has invalid pointer value after.");
 			}
 
-			{	// Move returned test
+			{	// Move returned test --> expected to be same as copy returned test
 				CopyableFromMovable a(PCAPPP_MOVE(RetCopyableFromMovable()));
 				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "CopyableFromMovable: Object to which returned object was moved has invalid length value after.");
 				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromMovable: Object to which returned object was moved has invalid pointer value after.");
 			}
+
+			PACKETPP_TEST_PASSED;
 		}
 
 		namespace MovableFromMovableTestsNS
@@ -685,8 +858,50 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "MovableFromMovable: Object to which returned object was moved has invalid length value after.");
 				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "MovableFromMovable: Object to which returned object was moved has invalid pointer value after.");
 			}
+
+			PACKETPP_TEST_PASSED;
 		}
 
+		namespace NotCopyableFromMovableTestsNS
+		{
+			NotCopyableFromMovable RetNotCopyableFromMovable() { return PCAPPP_MOVE_OR_RVO(NotCopyableFromMovable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(NotCopyableFromMovableTests)
+		{
+			using namespace NotCopyableFromMovableTestsNS;
+
+			{	// Move constructor test
+				NotCopyableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				NotCopyableFromMovable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "NotCopyableFromMovable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "NotCopyableFromMovable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "NotCopyableFromMovable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Move assignment test
+				NotCopyableFromMovable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				NotCopyableFromMovable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "NotCopyableFromMovable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "NotCopyableFromMovable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "NotCopyableFromMovable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromMovable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Move returned test
+				NotCopyableFromMovable a(PCAPPP_MOVE(RetNotCopyableFromMovable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "NotCopyableFromMovable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "NotCopyableFromMovable: Object to which returned object was moved has invalid pointer value after.");
+			}
+
+			PACKETPP_TEST_PASSED;
+		}
+
+		
 		namespace BaseNotCopyableTestsNS
 		{
 			BaseNotCopyable RetBaseNotCopyable() { return PCAPPP_MOVE_OR_RVO(BaseNotCopyable(baseLength * 2)); }
@@ -695,13 +910,6 @@ namespace MoveSemanticsTestNS
 		PACKETPP_TEST(BaseNotCopyableTests)
 		{
 			using namespace BaseNotCopyableTestsNS;
-
-			/*{	// Copy constructor test
-				BaseNotCopyable a(baseLength);
-				BaseNotCopyable b(PCAPPP_COPY(a));
-				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseNotCopyable: Lengths of data are unequal after copy construction.");
-				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseNotCopyable: Data is unequal after copy construction.");
-			}*/
 
 			{	// Move constructor test
 				BaseNotCopyable a(baseLength);
@@ -712,14 +920,6 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getLength() == 0, "BaseNotCopyable: Object from which move was made have non-zero length value after move construction.");
 				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseNotCopyable: Object from which move was made has invalid pointer value after move construction.");
 			}
-
-			/*{	// Copy assignment test
-				BaseNotCopyable a(baseLength);
-				BaseNotCopyable b;
-				b = PCAPPP_COPY(a);
-				PACKETPP_ASSERT(a.getLength() == b.getLength(), "BaseNotCopyable: Lengths of data are unequal after copy assignment.");
-				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "BaseNotCopyable: Data is unequal after copy assignment.");
-			}*/
 
 			{	// Move assignment test
 				BaseNotCopyable a(baseLength);
@@ -732,17 +932,127 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "BaseNotCopyable: Object from which move was made has invalid pointer value after move construction.");
 			}
 
-			/*{	// Copy returned test
-				BaseNotCopyable a(PCAPPP_COPY(RetBaseNotCopyable()));
-				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseNotCopyable: Object to which returned object was copied has invalid length value after.");
-				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseNotCopyable: Object to which returned object was copied has invalid pointer value after.");
-			}*/
-
 			{	// Move returned test
 				BaseNotCopyable a(PCAPPP_MOVE(RetBaseNotCopyable()));
 				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "BaseNotCopyable: Object to which returned object was moved has invalid length value after.");
 				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "BaseNotCopyable: Object to which returned object was moved has invalid pointer value after.");
 			}
+
+			PACKETPP_TEST_PASSED;
+		}
+
+		namespace CopyableFromNotCopyableTestsNS
+		{
+			CopyableFromNotCopyable RetCopyableFromNotCopyable() { return PCAPPP_MOVE_OR_RVO(CopyableFromNotCopyable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(CopyableFromNotCopyableTests)
+		{
+			using namespace CopyableFromNotCopyableTestsNS;
+
+			{	// Copy constructor test
+				CopyableFromNotCopyable a(baseLength);
+				CopyableFromNotCopyable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromNotCopyable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromNotCopyable: Data is unequal after copy construction.");
+			}
+
+			{	// Move constructor test --> expected to be same as copy constructor test
+				CopyableFromNotCopyable a(baseLength);
+				CopyableFromNotCopyable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromNotCopyable: Lengths of data are unequal after move construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromNotCopyable: Data is unequal after move construction.");
+			}
+
+			{	// Copy assignment test
+				CopyableFromNotCopyable a(baseLength);
+				CopyableFromNotCopyable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromNotCopyable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromNotCopyable: Data is unequal after copy assignment.");
+			}
+
+			{	// Move assignment test --> expected to be same as copy assignment test
+				CopyableFromNotCopyable a(baseLength);
+				CopyableFromNotCopyable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "CopyableFromNotCopyable: Lengths of data are unequal after move assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "CopyableFromNotCopyable: Data is unequal after move assignment.");
+			}
+
+			{	// Copy returned test
+				CopyableFromNotCopyable a(PCAPPP_COPY(RetCopyableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "CopyableFromNotCopyable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromNotCopyable: Object to which returned object was copied has invalid pointer value after.");
+			}
+
+			{	// Move returned test --> expected to be same as copy returned test
+				CopyableFromNotCopyable a(PCAPPP_MOVE(RetCopyableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "CopyableFromNotCopyable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "CopyableFromNotCopyable: Object to which returned object was moved has invalid pointer value after.");
+			}
+
+			PACKETPP_TEST_PASSED;
+		}
+
+		namespace MovableFromNotCopyableTestsNS
+		{
+			MovableFromNotCopyable RetMovableFromNotCopyable() { return PCAPPP_MOVE_OR_RVO(MovableFromNotCopyable(baseLength * 2)); }
+		}
+
+		PACKETPP_TEST(MovableFromNotCopyableTests)
+		{
+			using namespace MovableFromNotCopyableTestsNS;
+
+			{	// Copy constructor test
+				MovableFromNotCopyable a(baseLength);
+				MovableFromNotCopyable b(PCAPPP_COPY(a));
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "MovableFromNotCopyable: Lengths of data are unequal after copy construction.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "MovableFromNotCopyable: Data is unequal after copy construction.");
+			}
+
+			{	// Move constructor test
+				MovableFromNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				MovableFromNotCopyable b(PCAPPP_MOVE(a));
+				PACKETPP_ASSERT(b.getLength() == baseLength, "MovableFromNotCopyable: Object to which move was made has invalid length value after move construction.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "MovableFromNotCopyable: Object to which move was made has invalid pointer value after move construction.");
+				PACKETPP_ASSERT(a.getLength() == 0, "MovableFromNotCopyable: Object from which move was made have non-zero length value after move construction.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "MovableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy assignment test
+				MovableFromNotCopyable a(baseLength);
+				MovableFromNotCopyable b;
+				b = PCAPPP_COPY(a);
+				PACKETPP_ASSERT(a.getLength() == b.getLength(), "MovableFromNotCopyable: Lengths of data are unequal after copy assignment.");
+				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "MovableFromNotCopyable: Data is unequal after copy assignment.");
+			}
+
+			{	// Move assignment test
+				MovableFromNotCopyable a(baseLength);
+				pointer backupPtr = a.getPointer();
+				MovableFromNotCopyable b;
+				b = PCAPPP_MOVE(a);
+				PACKETPP_ASSERT(b.getLength() == baseLength, "MovableFromNotCopyable: Object to which move was made has invalid length value after move assignment.");
+				PACKETPP_ASSERT(b.getPointer() == backupPtr, "MovableFromNotCopyable: Object to which move was made has invalid pointer value after move assignment.");
+				PACKETPP_ASSERT(a.getLength() == 0, "MovableFromNotCopyable: Object from which move was made have non-zero length value after move assignment.");
+				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "MovableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
+			}
+
+			{	// Copy returned test
+				MovableFromNotCopyable a(PCAPPP_COPY(RetMovableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "MovableFromNotCopyable: Object to which returned object was copied has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "MovableFromNotCopyable: Object to which returned object was copied has invalid pointer value after.");
+			}
+
+			{	// Move returned test
+				MovableFromNotCopyable a(PCAPPP_MOVE(RetMovableFromNotCopyable()));
+				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "MovableFromNotCopyable: Object to which returned object was moved has invalid length value after.");
+				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "MovableFromNotCopyable: Object to which returned object was moved has invalid pointer value after.");
+			}
+
+			PACKETPP_TEST_PASSED;
 		}
 
 		namespace NotCopyableFromNotCopyableTestsNS
@@ -754,13 +1064,6 @@ namespace MoveSemanticsTestNS
 		{
 			using namespace NotCopyableFromNotCopyableTestsNS;
 
-			/*{	// Copy constructor test
-				NotCopyableFromNotCopyable a(baseLength);
-				NotCopyableFromNotCopyable b(PCAPPP_COPY(a));
-				PACKETPP_ASSERT(a.getLength() == b.getLength(), "NotCopyableFromNotCopyable: Lengths of data are unequal after copy construction.");
-				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "NotCopyableFromNotCopyable: Data is unequal after copy construction.");
-			}*/
-
 			{	// Move constructor test
 				NotCopyableFromNotCopyable a(baseLength);
 				pointer backupPtr = a.getPointer();
@@ -770,14 +1073,6 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getLength() == 0, "NotCopyableFromNotCopyable: Object from which move was made have non-zero length value after move construction.");
 				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
 			}
-
-			/*{	// Copy assignment test
-				NotCopyableFromNotCopyable a(baseLength);
-				NotCopyableFromNotCopyable b;
-				b = PCAPPP_COPY(a);
-				PACKETPP_ASSERT(a.getLength() == b.getLength(), "NotCopyableFromNotCopyable: Lengths of data are unequal after copy assignment.");
-				PACKETPP_ASSERT(!std::memcmp(b.getPointer(), a.getPointer(), a.getLength() * sizeof(value_type)), "NotCopyableFromNotCopyable: Data is unequal after copy assignment.");
-			}*/
 
 			{	// Move assignment test
 				NotCopyableFromNotCopyable a(baseLength);
@@ -790,18 +1085,15 @@ namespace MoveSemanticsTestNS
 				PACKETPP_ASSERT(a.getPointer() == PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object from which move was made has invalid pointer value after move construction.");
 			}
 
-			/*{	// Copy returned test
-				NotCopyableFromNotCopyable a(PCAPPP_COPY(RetNotCopyableFromNotCopyable()));
-				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "NotCopyableFromNotCopyable: Object to which returned object was copied has invalid length value after.");
-				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object to which returned object was copied has invalid pointer value after.");
-			}*/
-
 			{	// Move returned test
 				NotCopyableFromNotCopyable a(PCAPPP_MOVE(RetNotCopyableFromNotCopyable()));
 				PACKETPP_ASSERT(a.getLength() == baseLength * 2, "NotCopyableFromNotCopyable: Object to which returned object was moved has invalid length value after.");
 				PACKETPP_ASSERT(a.getPointer() != PCAPPP_NULLPTR, "NotCopyableFromNotCopyable: Object to which returned object was moved has invalid pointer value after.");
 			}
+
+			PACKETPP_TEST_PASSED;
 		}
+
 	}
 
 }
@@ -1862,7 +2154,7 @@ PACKETPP_TEST(EthPacketCreation) {
 
 	RawPacket* rawPacket = ethPacket.getRawPacket();
 	PACKETPP_ASSERT(rawPacket != NULL, "Raw packet is NULL");
-	PACKETPP_ASSERT(rawPacket->getRawDataLen() == 18, "Raw packet length expected to be 18 but it's %d", rawPacket->getRawDataLen());
+	PACKETPP_ASSERT(rawPacket->getRawDataLen() == 18, "Raw packet length expected to be 18 but it's %d", (int)rawPacket->getRawDataLen());
 
 	uint8_t expectedBuffer[18] = { 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0x08, 0x00, 0x01, 0x02, 0x03, 0x04 };
 	PACKETPP_ASSERT(memcmp(rawPacket->getRawData(), expectedBuffer, 18) == 0, "Raw packet data is different than expected");
@@ -1917,7 +2209,7 @@ PACKETPP_TEST(ArpPacketCreation)
 	PACKETPP_ASSERT(arpRequestPacket.addLayer(&ethLayer), "Couldn't add eth layer");
 	PACKETPP_ASSERT(arpRequestPacket.addLayer(&arpLayer), "Couldn't add arp layer");
 	arpRequestPacket.computeCalculateFields();
-	PACKETPP_ASSERT(arpRequestPacket.getRawPacket()->getRawDataLen() == 42, "arp packet size != 42 bytes, Actual: %d", arpRequestPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(arpRequestPacket.getRawPacket()->getRawDataLen() == 42, "arp packet size != 42 bytes, Actual: %d", (int)arpRequestPacket.getRawPacket()->getRawDataLen());
 
 	ArpLayer* pArpLayer = arpRequestPacket.getLayerOfType<ArpLayer>();
 	PACKETPP_ASSERT(pArpLayer != NULL, "Packet doesn't contain arp layer");
@@ -1929,7 +2221,7 @@ PACKETPP_TEST(ArpPacketCreation)
 	int bufferLength = 0;
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/ArpRequestPacket.dat", bufferLength);
 	PACKETPP_ASSERT(buffer != NULL, "cannot read file");
-	PACKETPP_ASSERT(bufferLength == arpRequestPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", arpRequestPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == arpRequestPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)arpRequestPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(arpRequestPacket.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	delete [] buffer;
@@ -1972,7 +2264,7 @@ PACKETPP_TEST(VlanParseAndCreation)
 
 	arpWithVlanNew.computeCalculateFields();
 
-	PACKETPP_ASSERT(bufferLength == arpWithVlanNew.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", arpWithVlanNew.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == arpWithVlanNew.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)arpWithVlanNew.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(arpWithVlanNew.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -1994,7 +2286,7 @@ PACKETPP_TEST(Ipv4PacketCreation)
 
 	RawPacket* rawPacket = ip4Packet.getRawPacket();
 	PACKETPP_ASSERT(rawPacket != NULL, "Raw packet is NULL");
-	PACKETPP_ASSERT(rawPacket->getRawDataLen() == 14, "Raw packet length expected to be 14 but it's %d", rawPacket->getRawDataLen());
+	PACKETPP_ASSERT(rawPacket->getRawDataLen() == 14, "Raw packet length expected to be 14 but it's %d", (int)rawPacket->getRawDataLen());
 
 
 	IPv4Address ipSrc(string("1.1.1.1"));
@@ -2376,7 +2668,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	ipOpt1.computeCalculateFields();
 
 
-	PACKETPP_ASSERT(buffer11Length == ipOpt1.getRawPacket()->getRawDataLen(), "ipOpt1 len (%d) is different than read packet len (%d)", ipOpt1.getRawPacket()->getRawDataLen(), buffer11Length);
+	PACKETPP_ASSERT(buffer11Length == ipOpt1.getRawPacket()->getRawDataLen(), "ipOpt1 len (%d) is different than read packet len (%d)", (int)ipOpt1.getRawPacket()->getRawDataLen(), buffer11Length);
 	PACKETPP_ASSERT(memcmp(ipOpt1.getRawPacket()->getRawData(), buffer11, ipOpt1.getRawPacket()->getRawDataLen()) == 0, "ipOpt1: Raw packet data is different than expected");
 
 	ipLayer = ipOpt2.getLayerOfType<IPv4Layer>();
@@ -2387,7 +2679,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 		tsOption.timestamps.push_back(0);
 	PACKETPP_ASSERT(ipLayer->addTimestampOption(tsOption) != NULL, "Cannot add timestamp option to packet 2");
 	ipOpt2.computeCalculateFields();
-	PACKETPP_ASSERT(buffer22Length == ipOpt2.getRawPacket()->getRawDataLen(), "ipOpt2 len (%d) is different than read packet len (%d)", ipOpt2.getRawPacket()->getRawDataLen(), buffer22Length);
+	PACKETPP_ASSERT(buffer22Length == ipOpt2.getRawPacket()->getRawDataLen(), "ipOpt2 len (%d) is different than read packet len (%d)", (int)ipOpt2.getRawPacket()->getRawDataLen(), buffer22Length);
 	PACKETPP_ASSERT(memcmp(ipOpt2.getRawPacket()->getRawData(), buffer22, ipOpt2.getRawPacket()->getRawDataLen()) == 0, "ipOpt2: Raw packet data is different than expected");
 
 
@@ -2395,7 +2687,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	uint16_t routerAlerVal = 0;
 	PACKETPP_ASSERT(ipLayer->addOption(IPV4OPT_RouterAlert, sizeof(uint16_t), (uint8_t*)&routerAlerVal) != NULL, "Cannot add router alert option to packet 3");
 	ipOpt3.computeCalculateFields();
-	PACKETPP_ASSERT(buffer33Length == ipOpt3.getRawPacket()->getRawDataLen(), "ipOpt3 len (%d) is different than read packet len (%d)", ipOpt3.getRawPacket()->getRawDataLen(), buffer33Length);
+	PACKETPP_ASSERT(buffer33Length == ipOpt3.getRawPacket()->getRawDataLen(), "ipOpt3 len (%d) is different than read packet len (%d)", (int)ipOpt3.getRawPacket()->getRawDataLen(), buffer33Length);
 	PACKETPP_ASSERT(memcmp(ipOpt3.getRawPacket()->getRawData(), buffer33, ipOpt3.getRawPacket()->getRawDataLen()) == 0, "ipOpt3: Raw packet data is different than expected");
 
 
@@ -2409,7 +2701,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	PACKETPP_ASSERT(ipLayer->addOption(IPV4OPT_RecordRoute, ipListValue) != NULL, "Cannot add record route option to packet 4");
 	PACKETPP_ASSERT(ipLayer->addOption(IPV4OPT_EndOfOtionsList, 0, NULL) != NULL, "Cannot add end-of-opt-list option to packet 4");
 	ipOpt4.computeCalculateFields();
-	PACKETPP_ASSERT(buffer44Length == ipOpt4.getRawPacket()->getRawDataLen(), "ipOpt4 len (%d) is different than read packet len (%d)", ipOpt4.getRawPacket()->getRawDataLen(), buffer44Length);
+	PACKETPP_ASSERT(buffer44Length == ipOpt4.getRawPacket()->getRawDataLen(), "ipOpt4 len (%d) is different than read packet len (%d)", (int)ipOpt4.getRawPacket()->getRawDataLen(), buffer44Length);
 	PACKETPP_ASSERT(memcmp(ipOpt4.getRawPacket()->getRawData(), buffer44, ipOpt4.getRawPacket()->getRawDataLen()) == 0, "ipOpt4: Raw packet data is different than expected");
 
 
@@ -2442,7 +2734,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	PACKETPP_ASSERT(tsOption.ipAddresses.size() == 3, "Packet 5: number of IP addresses isn't 3");
 	PACKETPP_ASSERT(tsOption.ipAddresses.at(2) == IPv4Address(std::string("10.0.0.138")), "Packet 5: IP[2] isn't 10.0.0.138");
 	ipOpt5.computeCalculateFields();
-	PACKETPP_ASSERT(buffer55Length == ipOpt5.getRawPacket()->getRawDataLen(), "ipOpt5 len (%d) is different than read packet len (%d)", ipOpt5.getRawPacket()->getRawDataLen(), buffer55Length);
+	PACKETPP_ASSERT(buffer55Length == ipOpt5.getRawPacket()->getRawDataLen(), "ipOpt5 len (%d) is different than read packet len (%d)", (int)ipOpt5.getRawPacket()->getRawDataLen(), buffer55Length);
 	PACKETPP_ASSERT(memcmp(ipOpt5.getRawPacket()->getRawData(), buffer55, ipOpt5.getRawPacket()->getRawDataLen()) == 0, "ipOpt5: Raw packet data is different than expected");
 
 
@@ -2460,7 +2752,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	PACKETPP_ASSERT(optData->getType() == IPV4OPT_NOP, "Packet 6: NOP option doesn't have type NOP");
 	PACKETPP_ASSERT(optData->getTotalSize() == 1, "Packet 6: NOP option length isn't 1");
 	ipOpt6.computeCalculateFields();
-	PACKETPP_ASSERT(buffer66Length == ipOpt6.getRawPacket()->getRawDataLen(), "ipOpt6 len (%d) is different than read packet len (%d)", ipOpt6.getRawPacket()->getRawDataLen(), buffer66Length);
+	PACKETPP_ASSERT(buffer66Length == ipOpt6.getRawPacket()->getRawDataLen(), "ipOpt6 len (%d) is different than read packet len (%d)", (int)ipOpt6.getRawPacket()->getRawDataLen(), buffer66Length);
 	PACKETPP_ASSERT(memcmp(ipOpt6.getRawPacket()->getRawData(), buffer66, ipOpt6.getRawPacket()->getRawDataLen()) == 0, "ipOpt6: Raw packet data is different than expected");
 
 
@@ -2470,7 +2762,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	ipListValue.push_back(IPv4Address::Zero);
 	PACKETPP_ASSERT(ipLayer->addOption(IPV4OPT_LooseSourceRoute, ipListValue) != NULL, "Cannot add loose source route option to packet 7");
 	ipOpt7.computeCalculateFields();
-	PACKETPP_ASSERT(buffer77Length == ipOpt7.getRawPacket()->getRawDataLen(), "ipOpt7 len (%d) is different than read packet len (%d)", ipOpt7.getRawPacket()->getRawDataLen(), buffer77Length);
+	PACKETPP_ASSERT(buffer77Length == ipOpt7.getRawPacket()->getRawDataLen(), "ipOpt7 len (%d) is different than read packet len (%d)", (int)ipOpt7.getRawPacket()->getRawDataLen(), buffer77Length);
 	PACKETPP_ASSERT(memcmp(ipOpt7.getRawPacket()->getRawData(), buffer77, ipOpt7.getRawPacket()->getRawDataLen()) == 0, "ipOpt7: Raw packet data is different than expected");
 	PACKETPP_ASSERT(ipLayer->getOptionsCount() == 2, "Packet 7 option count after adding loose source route isn't 2, it's %d", (int)ipLayer->getOptionsCount());
 
@@ -2504,7 +2796,7 @@ PACKETPP_TEST(Ipv4OptionsEditTest)
 	PACKETPP_ASSERT(ipLayer->removeOption(IPV4OPT_Timestamp) == true, "Cannot remove 2nd timestamp option");
 	PACKETPP_ASSERT(ipLayer->getOptionsCount() == 2, "Packet 7 option count after removing 2nd timestamp option isn't 2");
 	ipOpt7.computeCalculateFields();
-	PACKETPP_ASSERT(buffer77Length == ipOpt7.getRawPacket()->getRawDataLen(), "ipOpt7 len (%d) is different than read packet len (%d)", ipOpt7.getRawPacket()->getRawDataLen(), buffer77Length);
+	PACKETPP_ASSERT(buffer77Length == ipOpt7.getRawPacket()->getRawDataLen(), "ipOpt7 len (%d) is different than read packet len (%d)", (int)ipOpt7.getRawPacket()->getRawDataLen(), buffer77Length);
 	PACKETPP_ASSERT(memcmp(ipOpt7.getRawPacket()->getRawData(), buffer77, ipOpt7.getRawPacket()->getRawDataLen()) == 0, "ipOpt7: Raw packet data is different than expected");
 
 	PACKETPP_ASSERT(ipLayer->removeAllOptions() == true, "Cannot remove all remaining options");
@@ -2599,7 +2891,7 @@ PACKETPP_TEST(Ipv6UdpPacketParseAndCreate)
 	PACKETPP_ASSERT(ip6UdpPacketNew.addLayer(&payloadLayer), "Couldn't add payload layer");
 	ip6UdpPacketNew.computeCalculateFields();
 
-	PACKETPP_ASSERT(bufferLength == ip6UdpPacketNew.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", ip6UdpPacketNew.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == ip6UdpPacketNew.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)ip6UdpPacketNew.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(ip6UdpPacketNew.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	delete[] payloadData;
@@ -3043,7 +3335,7 @@ PACKETPP_TEST(InsertVlanToPacket)
 //		printf("0x%2X ", tcpPacket.getRawPacket()->getRawData()[i]);
 //	printf("\n\n\n");
 
-	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 78, "Size of packet after vlan insert isn't 78, it's %d", tcpPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 78, "Size of packet after vlan insert isn't 78, it's %d", (int)tcpPacket.getRawPacket()->getRawDataLen());
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer()->getNextLayer() == &vlanLayer, "VLAN layer isn't the second layer as expected");
 	PACKETPP_ASSERT(vlanLayer.getNextLayer() != NULL, "VLAN layer next layer is null");
 	PACKETPP_ASSERT(vlanLayer.getNextLayer()->getProtocol() == IPv4, "VLAN layer next layer isn't IPv4");
@@ -3080,7 +3372,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(tcpPacket.isPacketOfType(Ethernet) == true, "Packet isn't of type Ethernet");
 	PACKETPP_ASSERT(tcpPacket.getLayerOfType<IPv4Layer>() == NULL, "Can still retrieve IPv4 layer");
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer()->getNextLayer()->getProtocol() == TCP, "Layer next to Ethernet isn't TCP");
-	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 271, "Data length != 271, it's %d", tcpPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 271, "Data length != 271, it's %d", (int)tcpPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<tcpPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3095,7 +3387,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(tcpPacket.isPacketOfType(Ethernet) == false, "Packet is still of type Ethernet");
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer()->getProtocol() == TCP, "First layer isn't of type TCP");
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer()->getNextLayer()->getNextLayer() == NULL, "More than 2 layers in packet");
-	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 257, "Data length != 257, it's %d", tcpPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 257, "Data length != 257, it's %d", (int)tcpPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<tcpPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3109,7 +3401,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(tcpPacket.isPacketOfType(Ethernet) == false, "Packet is still of type Ethernet");
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer() == tcpPacket.getLastLayer(), "More than 1 layer still in packet");
 	PACKETPP_ASSERT(tcpPacket.getFirstLayer()->getProtocol() == TCP, "TCP layer was accidently removed from packet");
-	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 20, "Data length != 20, it's %d", tcpPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(tcpPacket.getRawPacket()->getRawDataLen() == 20, "Data length != 20, it's %d", (int)tcpPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<tcpPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3149,7 +3441,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(testPacket.getFirstLayer()->getNextLayer()->getNextLayer() == NULL, "More than 2 layers remain in packet");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(Ethernet) == false, "Packet is wrongly of type Ethernet");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(IPv4) == true, "Packet isn't of type IPv4");
-	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 30, "Raw packet length != 30, it's %d", testPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 30, "Raw packet length != 30, it's %d", (int)testPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<testPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3165,7 +3457,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(testPacket.getFirstLayer()->getNextLayer() == NULL, "More than 1 layer remain in packet");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(IPv4) == true, "Packet isn't of type IPv4");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(Ethernet) == false, "Packet is wrongly of type Ethernet");
-	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 20, "Raw packet length != 20, it's %d", testPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 20, "Raw packet length != 20, it's %d", (int)testPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<testPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3181,7 +3473,7 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(testPacket.getFirstLayer() == &vlanLayer, "VLAN isn't the first layer");
 	PACKETPP_ASSERT(testPacket.getFirstLayer()->getNextLayer() == &ip4Layer, "IPv4 isn't the second layer");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(VLAN) == true, "Packet isn't of type VLAN");
-	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 24, "Raw packet length != 24, it's %d", testPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 24, "Raw packet length != 24, it's %d", (int)testPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<testPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3195,10 +3487,10 @@ PACKETPP_TEST(RemoveLayerTest)
 	PACKETPP_ASSERT(testPacket.getFirstLayer() == &vlanLayer, "VLAN isn't the first layer");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(IPv4) == false, "Packet is wrongly of type IPv4");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(VLAN) == true, "Packet isn't of type VLAN");
-	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 4, "Raw packet length != 4, it's %d", testPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 4, "Raw packet length != 4, it's %d", (int)testPacket.getRawPacket()->getRawDataLen());
 	PACKETPP_ASSERT(testPacket.removeLayer(&vlanLayer), "Couldn't remove VLAN layer");
 	PACKETPP_ASSERT(testPacket.isPacketOfType(VLAN) == false, "Packet is wrongly of type VLAN");
-	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 0, "Raw packet length != 0, it's %d", testPacket.getRawPacket()->getRawDataLen());
+	PACKETPP_ASSERT(testPacket.getRawPacket()->getRawDataLen() == 0, "Raw packet length != 0, it's %d", (int)testPacket.getRawPacket()->getRawDataLen());
 
 //	printf("\n\n\n");
 //	for(int i = 0; i<testPacket.getRawPacket()->getRawDataLen(); i++)
@@ -3319,7 +3611,7 @@ PACKETPP_TEST(HttpRequestLayerCreationTest)
 //	}
 //	printf("\n\n\n");
 
-	PACKETPP_ASSERT(bufferLength == httpPacket.getRawPacket()->getRawDataLen(), "Raw packet length (%d) != expected length (%d)", httpPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == httpPacket.getRawPacket()->getRawDataLen(), "Raw packet length (%d) != expected length (%d)", (int)httpPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(buffer, httpPacket.getRawPacket()->getRawData(), bufferLength) == 0, "Constructed packet data is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -3359,7 +3651,7 @@ PACKETPP_TEST(HttpRequestLayerEditTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/TwoHttpRequests2.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file");
 
-	PACKETPP_ASSERT(buffer2Length == httpRequest.getRawPacket()->getRawDataLen(), "Raw packet length (%d) != expected length (%d)", httpRequest.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == httpRequest.getRawPacket()->getRawDataLen(), "Raw packet length (%d) != expected length (%d)", (int)httpRequest.getRawPacket()->getRawDataLen(), buffer2Length);
 
 	httpRequest.computeCalculateFields();
 
@@ -3576,7 +3868,7 @@ PACKETPP_TEST(PPPoESessionLayerCreationTest)
 
 	pppoesPacket.computeCalculateFields();
 
-	PACKETPP_ASSERT(bufferLength == pppoesPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", pppoesPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == pppoesPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)pppoesPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(pppoesPacket.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -3672,7 +3964,7 @@ PACKETPP_TEST(PPPoEDiscoveryLayerCreateTest)
 
 	pppoedPacket.computeCalculateFields();
 
-	PACKETPP_ASSERT(bufferLength == pppoedPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", pppoedPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == pppoedPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)pppoedPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(pppoedPacket.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected PPPoEDiscovery1");
 
 	int buffer2Length = 0;
@@ -3720,7 +4012,7 @@ PACKETPP_TEST(PPPoEDiscoveryLayerCreateTest)
 //	}
 //	printf("\n\n\n");
 
-	PACKETPP_ASSERT(buffer2Length == pppoedPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", pppoedPacket.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == pppoedPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)pppoedPacket.getRawPacket()->getRawDataLen(), buffer2Length);
 	PACKETPP_ASSERT(memcmp(pppoedPacket.getRawPacket()->getRawData(), buffer2, buffer2Length) == 0, "Raw packet data is different than expected PPPoEDiscovery2");
 
 	delete [] buffer2;
@@ -3923,7 +4215,7 @@ PACKETPP_TEST(DnsLayerQueryCreationTest)
 
 	dnsEdit2Packet.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer2Length == dnsEdit2Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", dnsEdit2Packet.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == dnsEdit2Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)dnsEdit2Packet.getRawPacket()->getRawDataLen(), buffer2Length);
 
 	PACKETPP_ASSERT(memcmp(dnsEdit2Packet.getRawPacket()->getRawData(), buffer2, buffer2Length) == 0, "Raw packet data is different than expected DnsEdit2");
 
@@ -3967,7 +4259,7 @@ PACKETPP_TEST(DnsLayerQueryCreationTest)
 
 	dnsEdit1Packet.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer1Length == dnsEdit1Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", dnsEdit1Packet.getRawPacket()->getRawDataLen(), buffer1Length);
+	PACKETPP_ASSERT(buffer1Length == dnsEdit1Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)dnsEdit1Packet.getRawPacket()->getRawDataLen(), buffer1Length);
 
 	PACKETPP_ASSERT(memcmp(dnsEdit1Packet.getRawPacket()->getRawData(), buffer1, buffer1Length) == 0, "Raw packet data is different than expected DnsEdit1");
 
@@ -4034,7 +4326,7 @@ PACKETPP_TEST(DnsLayerResourceCreationTest)
 
 	dnsEdit4Packet.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer4Length == dnsEdit4Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", dnsEdit4Packet.getRawPacket()->getRawDataLen(), buffer4Length);
+	PACKETPP_ASSERT(buffer4Length == dnsEdit4Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)dnsEdit4Packet.getRawPacket()->getRawDataLen(), buffer4Length);
 
 	PACKETPP_ASSERT(memcmp(dnsEdit4Packet.getRawPacket()->getRawData(), buffer4, buffer4Length) == 0, "Raw packet data is different than expected DnsEdit4");
 
@@ -4102,7 +4394,7 @@ PACKETPP_TEST(DnsLayerResourceCreationTest)
 
 	dnsEdit6Packet.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer6Length == dnsEdit6Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", dnsEdit6Packet.getRawPacket()->getRawDataLen(), buffer6Length);
+	PACKETPP_ASSERT(buffer6Length == dnsEdit6Packet.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)dnsEdit6Packet.getRawPacket()->getRawDataLen(), buffer6Length);
 
 	PACKETPP_ASSERT(memcmp(dnsEdit6Packet.getRawPacket()->getRawData(), buffer6, buffer6Length) == 0, "Raw packet data is different than expected");
 
@@ -6097,7 +6389,7 @@ PACKETPP_TEST(SllPacketCreationTest)
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/SllPacket2.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file");
 
-	PACKETPP_ASSERT(bufferLength == sllPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", sllPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == sllPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)sllPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(sllPacket.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	delete [] buffer;
@@ -6313,7 +6605,7 @@ PACKETPP_TEST(DhcpCreationTest)
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/Dhcp1.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file");
 
-	PACKETPP_ASSERT(bufferLength == newPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", newPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == newPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)newPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(newPacket.getRawPacket()->getRawData(), buffer, bufferLength) == 0, "Raw packet data is different than expected");
 
 	delete [] buffer;
@@ -6364,7 +6656,7 @@ PACKETPP_TEST(DhcpEditTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/Dhcp3.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file Dhcp3.dat");
 
-	PACKETPP_ASSERT(buffer2Length == dhcpPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", dhcpPacket.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == dhcpPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)dhcpPacket.getRawPacket()->getRawDataLen(), buffer2Length);
 	PACKETPP_ASSERT(memcmp(dhcpPacket.getRawPacket()->getRawData(), buffer2, buffer2Length) == 0, "Raw packet data is different than expected");
 
 	delete [] buffer2;
@@ -6450,7 +6742,7 @@ PACKETPP_TEST(NullLoopbackTest)
 
 	newNullPacket.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer2Length == newNullPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", newNullPacket.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == newNullPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)newNullPacket.getRawPacket()->getRawDataLen(), buffer2Length);
 	PACKETPP_ASSERT(memcmp(newNullPacket.getRawPacket()->getRawData(), buffer2, buffer2Length) == 0, "Raw packet data is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -6543,10 +6835,10 @@ PACKETPP_TEST(IgmpCreateAndEditTest)
 	uint8_t* buffer2 = readFileIntoBuffer("PacketExamples/IGMPv2_1.dat", buffer2Length);
 	PACKETPP_ASSERT(!(buffer2 == NULL), "cannot read file IGMPv2_1.dat");
 
-	PACKETPP_ASSERT(buffer1Length-14 == igmpv1Packet.getRawPacket()->getRawDataLen(), "IGMPv1: Generated packet len (%d) is different than read packet len (%d)", igmpv1Packet.getRawPacket()->getRawDataLen(), buffer1Length);
+	PACKETPP_ASSERT(buffer1Length-14 == igmpv1Packet.getRawPacket()->getRawDataLen(), "IGMPv1: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv1Packet.getRawPacket()->getRawDataLen(), buffer1Length);
 	PACKETPP_ASSERT(memcmp(igmpv1Packet.getRawPacket()->getRawData(), buffer1, igmpv1Packet.getRawPacket()->getRawDataLen()) == 0, "IGMPv1: Raw packet data is different than expected");
 
-	PACKETPP_ASSERT(buffer2Length-14 == igmpv2Packet.getRawPacket()->getRawDataLen(), "IGMPv2: Generated packet len (%d) is different than read packet len (%d)", igmpv2Packet.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length-14 == igmpv2Packet.getRawPacket()->getRawDataLen(), "IGMPv2: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv2Packet.getRawPacket()->getRawDataLen(), buffer2Length);
 	PACKETPP_ASSERT(memcmp(igmpv2Packet.getRawPacket()->getRawData(), buffer2, igmpv2Packet.getRawPacket()->getRawDataLen()) == 0, "IGMPv2: Raw packet data is different than expected");
 
 	IgmpV1Layer* igmpLayer = igmpv1Packet.getLayerOfType<IgmpV1Layer>();
@@ -6677,7 +6969,7 @@ PACKETPP_TEST(Igmpv3QueryCreateAndEditTest)
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/igmpv3_query2.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file igmpv3_query2.dat");
 
-	PACKETPP_ASSERT(bufferLength == igmpv3QueryPacket.getRawPacket()->getRawDataLen(), "IGMPv3 query: Generated packet len (%d) is different than read packet len (%d)", igmpv3QueryPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == igmpv3QueryPacket.getRawPacket()->getRawDataLen(), "IGMPv3 query: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv3QueryPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(igmpv3QueryPacket.getRawPacket()->getRawData(), buffer, igmpv3QueryPacket.getRawPacket()->getRawDataLen()) == 0, "IGMPv3 query: Raw packet data is different than expected");
 
 	delete[] buffer;
@@ -6705,7 +6997,7 @@ PACKETPP_TEST(Igmpv3QueryCreateAndEditTest)
 	buffer = readFileIntoBuffer("PacketExamples/igmpv3_query.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file igmpv3_query.dat");
 
-	PACKETPP_ASSERT(bufferLength == igmpv3QueryPacket.getRawPacket()->getRawDataLen(), "IGMPv3 query: Generated packet len (%d) is different than read packet len (%d)", igmpv3QueryPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == igmpv3QueryPacket.getRawPacket()->getRawDataLen(), "IGMPv3 query: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv3QueryPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(igmpv3QueryPacket.getRawPacket()->getRawData(), buffer, igmpv3QueryPacket.getRawPacket()->getRawDataLen()) == 0, "IGMPv3 query: Raw packet data after edit is different than expected");
 
 	delete[] buffer;
@@ -6778,7 +7070,7 @@ PACKETPP_TEST(Igmpv3ReportCreateAndEditTest)
 	uint8_t* buffer = readFileIntoBuffer("PacketExamples/igmpv3_report2.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file igmpv3_report2.dat");
 
-	PACKETPP_ASSERT(bufferLength == igmpv3ReportPacket.getRawPacket()->getRawDataLen(), "IGMPv3 report: Generated packet len (%d) is different than read packet len (%d)", igmpv3ReportPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == igmpv3ReportPacket.getRawPacket()->getRawDataLen(), "IGMPv3 report: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv3ReportPacket.getRawPacket()->getRawDataLen(), bufferLength);
 	PACKETPP_ASSERT(memcmp(igmpv3ReportPacket.getRawPacket()->getRawData(), buffer, igmpv3ReportPacket.getRawPacket()->getRawDataLen()) == 0, "IGMPv3 report: Raw packet data is different than expected");
 
 	delete[] buffer;
@@ -6799,7 +7091,7 @@ PACKETPP_TEST(Igmpv3ReportCreateAndEditTest)
 	buffer = readFileIntoBuffer("PacketExamples/igmpv3_report.dat", bufferLength);
 	PACKETPP_ASSERT(!(buffer == NULL), "cannot read file igmpv3_report.dat");
 
-	PACKETPP_ASSERT(bufferLength == igmpv3ReportPacket.getRawPacket()->getRawDataLen(), "IGMPv3 report edit: Generated packet len (%d) is different than read packet len (%d)", igmpv3ReportPacket.getRawPacket()->getRawDataLen(), bufferLength);
+	PACKETPP_ASSERT(bufferLength == igmpv3ReportPacket.getRawPacket()->getRawDataLen(), "IGMPv3 report edit: Generated packet len (%d) is different than read packet len (%d)", (int)igmpv3ReportPacket.getRawPacket()->getRawDataLen(), bufferLength);
 
 	igmpv3ReportPacket.computeCalculateFields();
 	ipLayer.getIPv4Header()->headerChecksum = 0x4fb6;
@@ -6970,7 +7262,7 @@ PACKETPP_TEST(VxlanParsingAndCreationTest)
 	vxlanPacket.computeCalculateFields();
 
 	// verify edited fields
-	PACKETPP_ASSERT(buffer2Length == vxlanPacket.getRawPacket()->getRawDataLen(), "Edited packet len (%d) is different than read packet len (%d)", vxlanPacket.getRawPacket()->getRawDataLen(), buffer2Length);
+	PACKETPP_ASSERT(buffer2Length == vxlanPacket.getRawPacket()->getRawDataLen(), "Edited packet len (%d) is different than read packet len (%d)", (int)vxlanPacket.getRawPacket()->getRawDataLen(), buffer2Length);
 	PACKETPP_ASSERT(memcmp(vxlanPacket.getRawPacket()->getRawData(), buffer2, vxlanPacket.getRawPacket()->getRawDataLen()) == 0, "Edited raw packet data after edit is different than expected");
 
 	// remove vxlan layer
@@ -6982,7 +7274,7 @@ PACKETPP_TEST(VxlanParsingAndCreationTest)
 	PACKETPP_ASSERT(vxlanPacket.insertLayer(vxlanPacket.getLayerOfType<UdpLayer>(), &newVxlanLayer) == true, "Couldn't insert new vxlan layer");
 
 	// verify new vxlan layer
-	PACKETPP_ASSERT(buffer1Length == vxlanPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", vxlanPacket.getRawPacket()->getRawDataLen(), buffer1Length);
+	PACKETPP_ASSERT(buffer1Length == vxlanPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)vxlanPacket.getRawPacket()->getRawDataLen(), buffer1Length);
 	PACKETPP_ASSERT(memcmp(vxlanPacket.getRawPacket()->getRawData(), buffer1, vxlanPacket.getRawPacket()->getRawDataLen()) == 0, "Generated raw packet data after edit is different than expected");
 
 	delete [] buffer2;
@@ -7178,7 +7470,7 @@ PACKETPP_TEST(SipRequestLayerCreationTest)
 
 	newSipPacket.computeCalculateFields();
 
-	PACKETPP_ASSERT(buffer1Length == newSipPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", newSipPacket.getRawPacket()->getRawDataLen(), buffer1Length);
+	PACKETPP_ASSERT(buffer1Length == newSipPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)newSipPacket.getRawPacket()->getRawDataLen(), buffer1Length);
 	PACKETPP_ASSERT(memcmp(newSipPacket.getRawPacket()->getRawData(), buffer1, newSipPacket.getRawPacket()->getRawDataLen()) == 0, "Generated raw packet data after edit is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -7426,7 +7718,7 @@ PACKETPP_TEST(SipResponseLayerCreationTest)
 	newSipPacket.getLayerOfType<UdpLayer>()->getUdpHeader()->headerChecksum = 0xced8;
 
 
-	PACKETPP_ASSERT(buffer6Length == newSipPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", newSipPacket.getRawPacket()->getRawDataLen(), buffer6Length);
+	PACKETPP_ASSERT(buffer6Length == newSipPacket.getRawPacket()->getRawDataLen(), "Generated packet len (%d) is different than read packet len (%d)", (int)newSipPacket.getRawPacket()->getRawDataLen(), buffer6Length);
 	PACKETPP_ASSERT(memcmp(newSipPacket.getRawPacket()->getRawData(), buffer6, newSipPacket.getRawPacket()->getRawDataLen()) == 0, "Generated raw packet data after edit is different than expected");
 
 	PACKETPP_TEST_PASSED;
@@ -7713,7 +8005,10 @@ int main(int argc, char* argv[]) {
 	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::BaseMovableTests);
 	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::CopyableFromMovableTests);
 	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::MovableFromMovableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::NotCopyableFromMovableTests);
 	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::BaseNotCopyableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::CopyableFromNotCopyableTests);
+	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::MovableFromNotCopyableTests);
 	PACKETPP_RUN_TEST(MoveSemanticsTestNS::Tests::NotCopyableFromNotCopyableTests);
 	PACKETPP_RUN_TEST(TestCompressedPair);
 	PACKETPP_RUN_TEST(TestCreateSizeAwareMP);

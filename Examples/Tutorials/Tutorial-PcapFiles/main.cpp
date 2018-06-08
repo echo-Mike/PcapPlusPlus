@@ -1,4 +1,5 @@
 #include "stdlib.h"
+#include "Packet.h"
 #include "PcapFileDevice.h"
 
 /**

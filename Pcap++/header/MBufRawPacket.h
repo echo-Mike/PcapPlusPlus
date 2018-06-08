@@ -69,7 +69,7 @@ namespace pcpp
 			 * @return True if initialization succeeded and false if this method was already called for this instance (and an mbuf is
 			 * already attached) or if allocating an mbuf from the pool failed.
 			 */
-			inline bool initialize()
+			inline void initialize()
 			{
 				m_MBuf = PCAPPP_NULLPTR;
 				m_Device = PCAPPP_NULLPTR;
@@ -177,7 +177,7 @@ namespace pcpp
 			 * @brief Returns known underlying data length.
 			 * @return Known underlying data length.
 			 */
-			inline size getLength() const PCAPPP_OVERRIDE;
+			size getLength() const PCAPPP_OVERRIDE;
 			
 			/**
 			 * @brief Returns owning status of underlying data.
@@ -189,14 +189,14 @@ namespace pcpp
 			 * @brief Returns pointer to the beginning of underlying data.
 			 * @return Pointer to the beginning of underlying data.
 			 */
-			inline pointer get() PCAPPP_OVERRIDE;
+			pointer get() PCAPPP_OVERRIDE;
 			
 			/**
 			 * @brief Returns pointer to the beginning of const-qualified underlying data.
 			 * This overload is called in object is const-qualified.
 			 * @return Pointer to the beginning of const-qualified underlying data.
 			 */
-			inline const_pointer get() const PCAPPP_OVERRIDE;
+			const_pointer get() const PCAPPP_OVERRIDE;
 			
 			/**
 			 * @brief The ownership release method.
@@ -380,7 +380,7 @@ namespace pcpp
 		 * @param[in] other The MBufRawPacket instance to make copy of.
 		 */
 		PCAPPP_COPY_CONSTRUCTOR(MBufRawPacket) :
-			Base(PCAPPP_COPY_WITH_CAST(Base&, PCAPPP_COPY_OTHER)) {}
+			Base(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER)) {}
 
 		/**
 		 * @brief An copy assignment operator for this class. 
@@ -393,7 +393,7 @@ namespace pcpp
 		{
 			if (this == &PCAPPP_COPY_OTHER)
 				return *this;
-			Base::operator=(PCAPPP_COPY_WITH_CAST(Base&, PCAPPP_COPY_OTHER));
+			Base::operator=(PCAPPP_COPY_WITH_CAST(const Base&, PCAPPP_COPY_OTHER));
 			return *this;
 		}
 
